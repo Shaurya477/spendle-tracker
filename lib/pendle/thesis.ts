@@ -54,7 +54,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "ultra-sound",
     title: "Buybacks outrun emissions",
     value: fmtMult(ratio, 1),
-    detail: `The latest distribution bought ${fmtInt(latest.amount)} PENDLE off the market with protocol fees and paid it to stakers. AIM currently assigns ${fmtCompact(revenue.aim.pendle)} PENDLE a week, ${fmtCompact(emissionsPerEpoch)} per 14-day epoch, across every chain and stream. Since 29 Jan, ${fmtCompact(data.yield.totalDistributed)} PENDLE has been bought back. ${supplyNote}`,
+    detail: `The buyback is the sPENDLE yield: the latest distribution bought ${fmtInt(latest.amount)} PENDLE on the market for ${fmtUsd(latest.usdtSpent)} USDT of protocol fees and paid it to stakers. AIM currently assigns ${fmtCompact(revenue.aim.pendle)} PENDLE a week, ${fmtCompact(emissionsPerEpoch)} per 14-day epoch, across every chain and stream. Since 29 Jan, ${fmtCompact(data.yield.totalDistributed)} PENDLE has been bought back for ${fmtUsd(data.yield.totalBuybackUsd)}. ${supplyNote}`,
     test: "PENDLE bought back in the latest distribution > 2 × the weekly AIM assignment",
     passing: ratio > 1,
   };

@@ -81,7 +81,12 @@ export function Methodology({ data }: { data: TrackerData }) {
                 00:00 UTC 14-day epochs as sPENDLE. The 80/10/10 split of Revenue into buyback share,
                 treasury, and operations is policy, not a flow; funded is every USDT{" "}
                 <code>Transfer</code> into the buyback contract, attributed to the fee epoch whose
-                end is nearest (Pendle funds it around the epoch boundary). PENDLE supply is
+                end is nearest (Pendle funds it around the epoch boundary). Bought is the buyback
+                that funding executed: the PENDLE the contract received and the USDT it spent between
+                consecutive distributions, from its <code>Transfer</code> logs, credited to the fee
+                epoch whose distribution landed 14 to 28 days after the epoch start. In-kind airdrops
+                are Pendle&apos;s <code>/spendle/data</code> airdrop USD per epoch; they sit inside
+                Revenue but are passed to stakers as-is, never bought back. PENDLE supply is
                 unchanged; ETH gauge spend is Performance-stream PENDLE leaving the Ethereum gauge
                 controller (start balance + top-ups − end balance, epoch boundaries approximated
                 from block times); limit-order and co-incentive PENDLE is paid elsewhere and is not

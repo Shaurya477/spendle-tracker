@@ -22,10 +22,17 @@ function setDark(dark: boolean) {
   for (const listener of listeners) listener();
 }
 
-export function ThemeToggle() {
-  // Server snapshot is dark (the default); the client snapshot reads the class the bootstrap
-  // script left on <html>, so a stored light preference is picked up without a hydration error.
+/**
+ * Current theme and a setter. The server snapshot is dark (the default); the client snapshot reads
+ * the class the bootstrap script left on <html>, so a stored light preference hydrates cleanly.
+ */
+export function useDarkTheme() {
   const dark = useSyncExternalStore(subscribe, isDark, () => true);
+  return [dark, setDark] as const;
+}
+
+export function ThemeToggle() {
+  const [dark, setDark] = useDarkTheme();
   return (
     <Button
       variant="outline"

@@ -119,12 +119,13 @@ export async function getPosition(input: string): Promise<PositionData> {
     fetchUserState(address, live.blockNumber),
     fetchApiUserSPendleAccrued(address),
   ]);
-  const distributions = buildDistributions(raw, snapshot);
-  const blocks = distributions.map((d) => BigInt(d.blockNumber));
+  raw.sort((a, b) => Number(a.blockNumber - b.blockNumber));
+  const blocks = raw.map((d) => d.blockNumber);
   const [balances, windows] = await Promise.all([
     fetchUserEpochBalances(address, blocks),
     fetchBuybackWindows([SNAPSHOT_BLOCK, ...blocks]),
   ]);
+  const distributions = buildDistributions(raw, windows, snapshot);
 
   const now = live.timestamp;
   const epochs = distributions.map((d, k): EpochRow => {
@@ -137,8 +138,7 @@ export async function getPosition(input: string): Promise<PositionData> {
     const premiumEarned = ((virtual - lockedAtEpoch) / d.eligibleTotal) * d.amount;
     const dilutionCost =
       bal * d.amount * (1 / (d.eligibleSPendle + d.lockedSnapshot) - 1 / d.eligibleTotal);
-    const w = windows[k];
-    const execPrice = Number(w.usdtSpent) / 1e6 / toTokens(w.pendleBought);
+    const execPrice = d.usdtSpent / d.pendleBought;
     const api = apiEpochFor(apiEpochs, d.timestamp);
     const airdropUsd = api ? api.airdropUsd : null;
     const userAirdropUsd = airdropUsd === null ? null : share * airdropUsd;

@@ -1,9 +1,11 @@
 import { unstable_cache } from "next/cache";
 import {
+  fetchBuybackWindows,
   fetchDistributions,
   fetchLiveState,
   fetchSnapshotPendleSupply,
   fetchSnapshotSchedule,
+  type BuybackWindow,
   type RawDistribution,
 } from "./chain";
 import {
@@ -18,15 +20,19 @@ import {
 } from "./config";
 import { lastExpiry, loyaltyAt, multiplierFor, toTokens, type LockBucket } from "./model";
 import { fetchPendleUsd } from "./pendle-api";
-import { getRevenueData, type RevenueData } from "./revenue";
+import { getRevenueData, withExecutedBuybacks, type RevenueData } from "./revenue";
 
 export type Distribution = {
   epoch: number;
   timestamp: number;
   blockNumber: number;
   txHash: string;
-  /** sPENDLE handed to the Merkle distributor. */
+  /** sPENDLE handed to the Merkle distributor: the PENDLE bought back for this epoch, staked 1:1. */
   amount: number;
+  /** USDT the buyback contract spent on swaps between the previous distribution and this one (USD). */
+  usdtSpent: number;
+  /** PENDLE the buyback contract received in that window; every inflow, not only swap output. */
+  pendleBought: number;
   /** Reward-eligible sPENDLE the block before: supply minus unclaimed rewards parked in the distributor. */
   eligibleSPendle: number;
   virtualSPendle: number;
@@ -103,6 +109,8 @@ export type TrackerData = {
     pendingBuyback: number;
     nextDistributionEta: number;
     totalDistributed: number;
+    /** USDT spent buying everything distributed so far. */
+    totalBuybackUsd: number;
   };
   dilution: {
     lockerShare: number;
@@ -122,10 +130,16 @@ export function annualise(amount: number, base: number) {
   return (amount / base) * EPOCHS_PER_YEAR;
 }
 
-export function buildDistributions(raw: RawDistribution[], snapshot: LockBucket[]): Distribution[] {
-  return raw
-    .sort((a, b) => Number(a.blockNumber - b.blockNumber))
-    .map((d, i) => {
+export function buildDistributions(
+  raw: RawDistribution[],
+  windows: BuybackWindow[],
+  snapshot: LockBucket[],
+): Distribution[] {
+  if (windows.length !== raw.length) {
+    throw new Error(`Expected ${raw.length} buyback windows, got ${windows.length}`);
+  }
+  return raw.map((d, i) => {
+      const w = windows[i];
       const v = loyaltyAt(snapshot, d.timestamp);
       const amount = toTokens(d.amount);
       const eligible = toTokens(d.supplyBefore - d.distributorBefore);
@@ -140,6 +154,8 @@ export function buildDistributions(raw: RawDistribution[], snapshot: LockBucket[
         blockNumber: Number(d.blockNumber),
         txHash: d.txHash,
         amount,
+        usdtSpent: Number(w.usdtSpent) / 1e6,
+        pendleBought: toTokens(w.pendleBought),
         eligibleSPendle: eligible,
         virtualSPendle: virtualThen,
         lockedSnapshot: lockedThen,
@@ -169,15 +185,17 @@ export const getTrackerData = unstable_cache(computeTrackerData, ["tracker-data"
 });
 
 async function computeTrackerData(): Promise<TrackerData> {
-  const [live, snapshot, snapshotSupply, pendleUsd, revenue] = await Promise.all([
+  const [live, snapshot, snapshotSupply, pendleUsd, revenueBase] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),
     fetchSnapshotPendleSupply(),
     fetchPendleUsd(),
     getRevenueData(),
   ]);
-  const raw = await fetchDistributions(live.blockNumber);
+  const raw = (await fetchDistributions(live.blockNumber)).sort((a, b) => Number(a.blockNumber - b.blockNumber));
   if (raw.length === 0) throw new Error("No sPENDLE reward distributions found onchain");
+  // Buyback execution between consecutive distributions: (previous distribution block, this one].
+  const windows = await fetchBuybackWindows([SNAPSHOT_BLOCK, ...raw.map((d) => d.blockNumber)]);
 
   const now = live.timestamp;
   const loyaltyNow = loyaltyAt(snapshot, now);
@@ -193,7 +211,11 @@ async function computeTrackerData(): Promise<TrackerData> {
   const premium = virtual - locked;
   const eligibleTotal = eligibleSPendle + virtual;
 
-  const distributions = buildDistributions(raw, snapshot);
+  const distributions = buildDistributions(raw, windows, snapshot);
+  const revenue = withExecutedBuybacks(
+    revenueBase,
+    distributions.map((d) => ({ distributedAt: d.timestamp, pendle: d.amount, usd: d.usdtSpent })),
+  );
 
   const latest = distributions[distributions.length - 1];
   const trailingSet = distributions.slice(-TRAILING_EPOCHS);
@@ -268,6 +290,7 @@ async function computeTrackerData(): Promise<TrackerData> {
       pendingBuyback: toTokens(live.pendleInBuyback),
       nextDistributionEta: latest.timestamp + EPOCH_SECONDS,
       totalDistributed: distributions.reduce((s, d) => s + d.amount, 0),
+      totalBuybackUsd: distributions.reduce((s, d) => s + d.usdtSpent, 0),
     },
     dilution: {
       lockerShare: virtual / eligibleTotal,

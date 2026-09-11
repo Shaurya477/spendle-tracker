@@ -1,6 +1,6 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { EPOCHS_PER_YEAR } from "@/lib/pendle/config";
-import { fmtCompact, fmtDate, fmtDateTime, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtDateTime, fmtInt, fmtMult, fmtPct, fmtUsd, fmtUsdPrice, usdOf } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow, SectionHeading, Stat, TxLink } from "./primitives";
@@ -138,6 +138,7 @@ export function Yield({ data }: { data: TrackerData }) {
               size="lg"
               sub={
                 <>
+                  bought for {fmtUsd(latest.usdtSpent)} USDT at {fmtUsdPrice(latest.usdtSpent / latest.pendleBought)} average;{" "}
                   {fmtDateTime(latest.timestamp)}, tx <TxLink hash={latest.txHash} />
                 </>
               }
@@ -161,7 +162,7 @@ export function Yield({ data }: { data: TrackerData }) {
                 label="Distributed since launch"
                 value={fmtInt(y.totalDistributed)}
                 unit="sPENDLE"
-                sub={`${data.distributions.length} epochs`}
+                sub={`${data.distributions.length} distributions; bought for ${fmtUsd(y.totalBuybackUsd)} USDT in total`}
               />
             </div>
           </CardContent>

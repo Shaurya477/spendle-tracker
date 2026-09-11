@@ -1,15 +1,21 @@
 import { TRACKER_MAX_AGE_SECONDS, type TrackerData } from "@/lib/pendle/tracker";
+import { REPO_URL } from "@/lib/pendle/config";
 import { fmtDateTime, fmtInt, fmtUsdPrice } from "@/lib/format";
 import { Eyebrow } from "./primitives";
 import { RefreshButton } from "./refresh-button";
 import { GitHubLink } from "./github-link";
 import { ThemeToggle } from "./theme-toggle";
+import { HeaderMenu } from "./header-menu";
 
 export function Header({ data }: { data: TrackerData }) {
   return (
-    <header className="flex flex-col gap-8">
+    <header className="relative flex flex-col gap-8">
+      {/* Phones: the three actions collapse into one menu knob at the top right. */}
+      <div className="absolute right-0 top-0 sm:hidden">
+        <HeaderMenu repoUrl={REPO_URL} />
+      </div>
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pr-10 sm:pr-0">
           <Eyebrow>Pendle · Ethereum mainnet</Eyebrow>
           <h1
             aria-label="Penconomics"
@@ -23,13 +29,13 @@ export function Header({ data }: { data: TrackerData }) {
             that dilutes stakers until it ends in January 2028.
           </p>
         </div>
-        <div className="flex flex-wrap items-start justify-between gap-4 sm:flex-col sm:items-end sm:gap-3">
-          <div className="order-2 flex shrink-0 items-center gap-2 sm:order-1">
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="hidden items-center gap-2 sm:flex">
             <ThemeToggle />
             <GitHubLink />
             <RefreshButton />
           </div>
-          <div className="order-1 shrink-0 sm:order-2 sm:text-right">
+          <div className="sm:text-right">
             <Eyebrow className="text-spendle">$PENDLE</Eyebrow>
             <div className="tabular mt-1 font-mono text-4xl leading-none tracking-tight text-spendle">
               {fmtUsdPrice(data.pendleUsd)}

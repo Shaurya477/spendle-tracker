@@ -1,4 +1,5 @@
 import { fetchBuybackFunding, fetchGaugePendleOutflow } from "./chain";
+import { fetchApiEpochs } from "./pendle-api";
 import {
   EPOCH_SECONDS,
   FEE_EPOCH_ORIGIN,
@@ -40,6 +41,14 @@ export type FeeEpoch = {
   buybackFunded: number;
   /** No further funding can be attributed to this epoch: `start + 21d ≤ now`. */
   buybackWindowClosed: boolean;
+  /**
+   * The buyback executed for this epoch: PENDLE bought with that USDT and paid to stakers as sPENDLE in
+   * the distribution that landed 14–28 days after `start`, and the USDT the contract spent buying it.
+   * `null` until that distribution lands.
+   */
+  bought: { pendle: number; usd: number; distributedAt: number } | null;
+  /** In-kind airdrops Pendle passed to stakers for this epoch, in USD as its API reports them; `null` where the API has no row. */
+  airdropUsd: number | null;
 };
 
 export type CumPoint = {
@@ -72,6 +81,10 @@ export type RevenueTotals = {
   lp: number;
   buyback: number;
   buybackFunded: number;
+  /** PENDLE bought and paid to stakers across every distribution so far. */
+  boughtPendle: number;
+  /** USDT the buyback contract spent buying it. */
+  boughtUsd: number;
   treasury: number;
   ops: number;
   emittedPendle: number;
@@ -86,6 +99,8 @@ export type RevenueData = {
   totals: RevenueTotals;
   cumulative: CumPoint[];
   gaugePendle: number;
+  /** In-kind airdrops over the epochs Pendle's API covers (its last 12). */
+  airdrops: { usd: number; epochs: number; from: number };
 };
 
 type LlamaBreakdown = [number, Record<string, Record<string, number>>][];
@@ -150,6 +165,8 @@ function zeroTotals(): RevenueTotals {
     lp: 0,
     buyback: 0,
     buybackFunded: 0,
+    boughtPendle: 0,
+    boughtUsd: 0,
     treasury: 0,
     ops: 0,
     emittedPendle: 0,
@@ -165,6 +182,8 @@ function addEpoch(s: RevenueTotals, e: FeeEpoch): RevenueTotals {
     lp: s.lp + e.lp,
     buyback: s.buyback + e.buyback,
     buybackFunded: s.buybackFunded + e.buybackFunded,
+    boughtPendle: s.boughtPendle + (e.bought?.pendle ?? 0),
+    boughtUsd: s.boughtUsd + (e.bought?.usd ?? 0),
     treasury: s.treasury + e.treasury,
     ops: s.ops + e.ops,
     emittedPendle: s.emittedPendle + e.emittedPendle,
@@ -176,6 +195,7 @@ function toEpoch(
   bucket: FeeDay[],
   emittedPendle: number,
   buybackFunded: number,
+  airdropUsd: number | null,
   now: number,
 ): FeeEpoch {
   const sum = (k: keyof FeeDay) => bucket.reduce((s, d) => s + d[k], 0);
@@ -197,11 +217,13 @@ function toEpoch(
     emittedPendle,
     buybackFunded,
     buybackWindowClosed: start + EPOCH_SECONDS + FUNDING_HALF_WINDOW <= now,
+    bought: null,
+    airdropUsd,
   };
 }
 
 export async function getRevenueData(): Promise<RevenueData> {
-  const [feesS, revenueS, lpS, holdersS, protocolS, emission, outflow, funding] = await Promise.all([
+  const [feesS, revenueS, lpS, holdersS, protocolS, emission, outflow, funding, apiEpochs] = await Promise.all([
     llama("dailyFees"),
     llama("dailyRevenue"),
     llama("dailySupplySideRevenue"),
@@ -210,6 +232,7 @@ export async function getRevenueData(): Promise<RevenueData> {
     getJson<{ markets: EmissionMarket[] }>(PENDLE_EMISSION_API),
     fetchGaugePendleOutflow(),
     fetchBuybackFunding(),
+    fetchApiEpochs(),
   ]);
 
   const feesM = byDay(feesS.totalDataChartBreakdown);
@@ -272,11 +295,21 @@ export async function getRevenueData(): Promise<RevenueData> {
     fundedByEpoch.set(start, (fundedByEpoch.get(start) ?? 0) + Number(f.usdt) / 1e6);
   }
 
+  if (apiEpochs.length === 0) throw new Error("Pendle API returned no sPENDLE epochs");
+  const airdropByEpoch = new Map(apiEpochs.map((a) => [a.start, a.airdropUsd]));
+
   const now = Date.now() / 1000;
   const epochs: FeeEpoch[] = [...grouped.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([start, bucket]) =>
-      toEpoch(start, bucket, emitByEpoch.get(start) ?? 0, fundedByEpoch.get(start) ?? 0, now),
+      toEpoch(
+        start,
+        bucket,
+        emitByEpoch.get(start) ?? 0,
+        fundedByEpoch.get(start) ?? 0,
+        airdropByEpoch.get(start) ?? null,
+        now,
+      ),
     );
 
   const complete = epochs.filter((e) => e.complete);
@@ -322,5 +355,45 @@ export async function getRevenueData(): Promise<RevenueData> {
     totals,
     cumulative,
     gaugePendle: outflow.gaugePendle,
+    airdrops: {
+      usd: apiEpochs.reduce((s, a) => s + a.airdropUsd, 0),
+      epochs: apiEpochs.length,
+      from: Math.min(...apiEpochs.map((a) => a.start)),
+    },
+  };
+}
+
+export type ExecutedBuyback = { distributedAt: number; pendle: number; usd: number };
+
+/**
+ * Attach each executed buyback to its fee epoch. The buyback for the epoch starting `T` is funded
+ * around `T + 14d`, executed by hourly TWAP over the following weeks, and paid to stakers in the
+ * distribution that lands in `[T + 14d, T + 28d)`; that distribution's PENDLE is the epoch's buyback.
+ */
+export function withExecutedBuybacks(revenue: RevenueData, executed: ExecutedBuyback[]): RevenueData {
+  const byEpoch = new Map<number, ExecutedBuyback>();
+  for (const x of executed) {
+    const start = epochStart(x.distributedAt - EPOCH_SECONDS);
+    if (!revenue.epochs.some((e) => e.start === start)) {
+      throw new Error(
+        `Distribution at ${new Date(x.distributedAt * 1000).toISOString()} maps to fee epoch ${new Date(start * 1000).toISOString()} with no DefiLlama days`,
+      );
+    }
+    if (byEpoch.has(start)) {
+      throw new Error(`Two distributions map to the fee epoch starting ${new Date(start * 1000).toISOString()}`);
+    }
+    byEpoch.set(start, x);
+  }
+  const epochs = revenue.epochs.map((e) => {
+    const x = byEpoch.get(e.start);
+    return x ? { ...e, bought: { pendle: x.pendle, usd: x.usd, distributedAt: x.distributedAt } } : e;
+  });
+  const find = (start: number) => epochs.find((e) => e.start === start)!;
+  return {
+    ...revenue,
+    epochs,
+    latestComplete: find(revenue.latestComplete.start),
+    current: find(revenue.current.start),
+    totals: epochs.reduce(addEpoch, zeroTotals()),
   };
 }
