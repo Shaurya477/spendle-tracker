@@ -90,8 +90,8 @@ export function AddressLink({ address, label }: { address: string; label?: strin
       rel="noreferrer"
       className="inline-flex items-center gap-1 font-mono text-xs text-foreground/80 underline decoration-border underline-offset-4 hover:text-spendle"
     >
-      {label ?? shortHash(address)}
-      <ArrowUpRight className="size-3" />
+      <span className="min-w-0 break-all">{label ?? shortHash(address)}</span>
+      <ArrowUpRight className="size-3 shrink-0" />
     </a>
   );
 }

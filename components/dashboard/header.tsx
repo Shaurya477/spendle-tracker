@@ -7,7 +7,7 @@ import { GitHubLink } from "./github-link";
 export function Header({ data }: { data: TrackerData }) {
   return (
     <header className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-2">
           <Eyebrow>Pendle Protocol · Ethereum mainnet · public contracts</Eyebrow>
           <h1
@@ -22,12 +22,12 @@ export function Header({ data }: { data: TrackerData }) {
             hand-off from locked vePENDLE.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-4 sm:flex-col sm:items-end sm:gap-3">
+          <div className="order-2 flex shrink-0 items-center gap-2 sm:order-1">
             <GitHubLink />
             <RefreshButton />
           </div>
-          <div className="text-right">
+          <div className="order-1 sm:order-2 sm:text-right">
             <Eyebrow className="text-spendle">PENDLE · USD</Eyebrow>
             <div className="tabular mt-1 font-mono text-4xl leading-none tracking-tight text-spendle">
               {fmtUsdPrice(data.pendleUsd)}

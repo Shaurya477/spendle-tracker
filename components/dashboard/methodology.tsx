@@ -14,17 +14,17 @@ export function Methodology({ data }: { data: TrackerData }) {
             <Eyebrow>Contracts · Ethereum mainnet</Eyebrow>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <dt className="text-muted-foreground">PENDLE</dt>
-              <dd><AddressLink address={a.pendle} label={a.pendle} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.pendle} label={a.pendle} /></dd>
               <dt className="text-muted-foreground">sPENDLE</dt>
-              <dd><AddressLink address={a.sPendle} label={a.sPendle} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.sPendle} label={a.sPendle} /></dd>
               <dt className="text-muted-foreground">vePENDLE</dt>
-              <dd><AddressLink address={a.vePendle} label={a.vePendle} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.vePendle} label={a.vePendle} /></dd>
               <dt className="text-muted-foreground">Buyback</dt>
-              <dd><AddressLink address={a.buyback} label={a.buyback} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.buyback} label={a.buyback} /></dd>
               <dt className="text-muted-foreground">Merkle distributor</dt>
-              <dd><AddressLink address={a.merkleDistributor} label={a.merkleDistributor} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.merkleDistributor} label={a.merkleDistributor} /></dd>
               <dt className="text-muted-foreground">Gauge controller</dt>
-              <dd><AddressLink address={a.gaugeController} label={a.gaugeController} /></dd>
+              <dd className="min-w-0"><AddressLink address={a.gaugeController} label={a.gaugeController} /></dd>
             </dl>
             <div className="rule" />
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
