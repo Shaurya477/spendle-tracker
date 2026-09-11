@@ -5,6 +5,7 @@ import { Header } from "@/components/dashboard/header";
 import { Balances } from "@/components/dashboard/balances";
 import { Yield } from "@/components/dashboard/yield";
 import { Dilution } from "@/components/dashboard/dilution";
+import { Revenue } from "@/components/dashboard/revenue";
 import { Ledger } from "@/components/dashboard/ledger";
 import { Position } from "@/components/dashboard/position";
 import { Methodology } from "@/components/dashboard/methodology";
@@ -24,12 +25,13 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       <Balances data={data} />
       <Yield data={data} />
       <Dilution data={data} />
+      <Revenue data={data} />
       <Ledger data={data} />
       <Position initialHex={preset.replace(/^0x/i, "")} initial={position} />
       <Methodology data={data} />
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-6 font-mono text-[11px] text-muted-foreground">
         <span>Not affiliated with Pendle. Numbers are computed from public contract state; verify before acting.</span>
-        <span>sPENDLE Tracker</span>
+        <span>Penconomics</span>
       </footer>
     </main>
   );

@@ -15,6 +15,8 @@ import {
   fmtNum,
   fmtPct,
   fmtUsd,
+  fmtUsdPrice,
+  usdOf,
 } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,7 +85,7 @@ export function Position({
   return (
     <section id="position" className="flex flex-col gap-8">
       <SectionHeading
-        index="05"
+        index="06"
         title="Your position"
         lede="Paste a wallet. Everything below is that address's own share of the numbers above: what it holds, what it has been paid epoch by epoch, its personal APR with in-kind airdrops folded in, and what the boost is doing to it — for and against — until January 2028."
       />
@@ -131,8 +133,8 @@ export function Position({
       {state.kind === "idle" && (
         <p className="text-sm text-muted-foreground">
           Nothing is fetched until you look an address up. Reads are the same contracts as the rest of
-          the page plus Pendle&apos;s API for in-kind airdrops and its own record of what the address
-          has accrued.
+          the page plus Pendle&apos;s API for in-kind airdrops, its own record of what the address has
+          accrued, and the live PENDLE/USD quote applied to what the wallet holds.
         </p>
       )}
       {state.kind === "loading" && (
@@ -154,10 +156,13 @@ export function Position({
 }
 
 function Result({ data }: { data: PositionData }) {
-  const { sPendle, lock, weight, rewards, apr, outlook, epochs } = data;
+  const { sPendle, lock, weight, rewards, apr, outlook, epochs, pendleUsd } = data;
   const rows = [...epochs].reverse();
   const hasStake = sPendle.balance > 0;
   const hasBoost = lock?.boostActive ?? false;
+  const locked = lock && lock.amount > 0 ? lock.amount : 0;
+  const held = sPendle.balance + sPendle.cooldownAmount + locked + sPendle.walletPendle;
+  const usd = (qty: number) => usdOf(qty, pendleUsd, 2);
 
   if (data.empty) {
     return (
@@ -191,41 +196,59 @@ function Result({ data }: { data: PositionData }) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-spendle/20">
-          <CardContent>
+      <Card className="border-0 bg-card/80 ring-1 ring-spendle/25">
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <Stat
-              label="sPENDLE held"
-              value={fmtInt(sPendle.balance)}
+              label="Dollar value held"
+              value={usd(held)}
               tone="spendle"
               size="lg"
+              sub={`sPENDLE + locked PENDLE + cooldown + wallet PENDLE × ${fmtUsdPrice(pendleUsd)}`}
+            />
+          </div>
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              label="sPENDLE"
+              value={fmtInt(sPendle.balance)}
+              usd={usd(sPendle.balance)}
+              tone="spendle"
+              sub={sPendle.cooldownAmount > 0 ? "staked, 1:1 with PENDLE" : "staked, no unstake in progress"}
+            />
+            <Stat
+              label="Locked"
+              value={fmtInt(locked)}
+              usd={usd(locked)}
+              tone="vependle"
               sub={
-                sPendle.cooldownAmount > 0
-                  ? `plus ${fmtInt(sPendle.cooldownAmount)} PENDLE in cooldown, withdrawable ${fmtDate(sPendle.cooldownReadyAt!)}`
-                  : "no unstake in progress"
+                lock && lock.amount > 0
+                  ? `unlocks ${fmtDate(lock.expiry)} · snapshot ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
+                  : lock
+                    ? `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}; withdrawn`
+                    : "no lock at the snapshot, none now"
               }
             />
-          </CardContent>
-        </Card>
-        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-vependle/20">
-          <CardContent>
-            {lock ? (
-              <Stat
-                label="PENDLE locked in vePENDLE"
-                value={fmtInt(lock.amount)}
-                tone="vependle"
-                size="lg"
-                sub={
-                  lock.amount > 0
-                    ? `unlocks ${fmtDate(lock.expiry)} · snapshot lock ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
-                    : `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}; withdrawn`
-                }
-              />
-            ) : (
-              <Stat label="PENDLE locked in vePENDLE" value="0" size="lg" sub="no lock at the snapshot, none now" />
-            )}
-          </CardContent>
-        </Card>
+            <Stat
+              label="Cooldown"
+              value={fmtInt(sPendle.cooldownAmount)}
+              usd={usd(sPendle.cooldownAmount)}
+              sub={
+                sPendle.cooldownAmount > 0
+                  ? `withdrawable ${fmtDate(sPendle.cooldownReadyAt!)}`
+                  : "none"
+              }
+            />
+            <Stat
+              label="Wallet PENDLE"
+              value={fmtInt(sPendle.walletPendle)}
+              usd={usd(sPendle.walletPendle)}
+              sub="liquid in the wallet, not staked"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
         <Card size="sm" className="border-0 bg-card/80 ring-1 ring-boost/25">
           <CardContent>
             <Stat
@@ -235,8 +258,8 @@ function Result({ data }: { data: PositionData }) {
               size="lg"
               sub={
                 hasBoost && lock
-                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, sliding to 1× on ${fmtDate(lock.snapshotExpiry)}`
-                  : "no active loyalty boost"
+                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, sliding to 1× on ${fmtDate(lock.snapshotExpiry)} · reward weight, not a held balance`
+                  : "no active loyalty boost · not a held balance"
               }
             />
           </CardContent>
@@ -261,6 +284,7 @@ function Result({ data }: { data: PositionData }) {
               label="sPENDLE earned · pro-rata estimate"
               value={fmtNum(rewards.earnedEstimate)}
               unit="sPENDLE"
+              usd={usd(rewards.earnedEstimate)}
               size="lg"
               sub={`${rewards.epochsWithPosition} epochs with a position · your weight ÷ eligible total × each distribution`}
             />
@@ -268,7 +292,8 @@ function Result({ data }: { data: PositionData }) {
               <Stat
                 label="Pendle's record"
                 value={fmtNum(rewards.apiAccrued)}
-                sub={`accrued per the Pendle API · ${fmtNum(rewards.claimed)} claimed onchain · ${fmtNum(rewards.unclaimed)} unclaimed`}
+                usd={usd(rewards.apiAccrued)}
+                sub={`accrued per the Pendle API · ${fmtNum(rewards.claimed)} claimed onchain · ${fmtNum(rewards.unclaimed)} unclaimed (${usd(rewards.unclaimed)})`}
               />
               <Stat
                 label="In-kind airdrops"
@@ -423,10 +448,11 @@ function Result({ data }: { data: PositionData }) {
           </Table>
           <p className="px-4 pt-2 text-xs leading-relaxed text-muted-foreground">
             Same denomination as the yield section: sPENDLE earned ÷ (your sPENDLE + your locked PENDLE) × {EPY}.
-            Airdrops are the one place a dollar figure enters: Pendle reports each epoch&apos;s in-kind
+            Airdrops are the one place a historical dollar figure enters: Pendle reports each epoch&apos;s in-kind
             airdrops in USD at distribution time; your share of that is converted to PENDLE at the same
             epoch&apos;s realised buyback price (USDT spent ÷ PENDLE bought by the buyback contract, read
-            from its swap transfers) and added to the sPENDLE you earned. Pendle&apos;s API only covers the
+            from its swap transfers) and added to the sPENDLE you earned. Held balances above are marked
+            to the live PENDLE/USD quote ({fmtUsdPrice(pendleUsd)}); APR stays in token terms. Pendle&apos;s API only covers the
             last 12 epochs, so earlier rows show &ldquo;no data&rdquo; and are left out of the
             airdrop-inclusive mean. &ldquo;Your sPENDLE&rdquo; is the balance the block before each
             distribution; the estimate assumes you were active in every epoch.

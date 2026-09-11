@@ -44,6 +44,7 @@ export function Stat({
   label,
   value,
   unit,
+  usd,
   sub,
   tone,
   className,
@@ -52,6 +53,7 @@ export function Stat({
   label: ReactNode;
   value: ReactNode;
   unit?: ReactNode;
+  usd?: ReactNode;
   sub?: ReactNode;
   tone?: "spendle" | "vependle" | "boost";
   className?: string;
@@ -74,6 +76,7 @@ export function Stat({
         </span>
         {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
       </div>
+      {usd != null && <div className="tabular font-mono text-sm text-muted-foreground">{usd}</div>}
       {sub && <div className="text-xs leading-relaxed text-muted-foreground">{sub}</div>}
     </div>
   );

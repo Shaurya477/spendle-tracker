@@ -16,7 +16,7 @@ export function Ledger({ data }: { data: TrackerData }) {
   return (
     <section className="flex flex-col gap-8">
       <SectionHeading
-        index="04"
+        index="05"
         title="Distribution ledger"
         lede="Every reward epoch found onchain: the PENDLE the buyback contract staked and forwarded to the Merkle distributor, the eligible balances the block before, and the APR each side saw for that epoch."
       />

@@ -15,6 +15,8 @@ import {
   WEEK,
 } from "./config";
 import { lastExpiry, loyaltyAt, multiplierFor, toTokens, type LockBucket } from "./model";
+import { fetchPendleUsd } from "./pendle-api";
+import { getRevenueData, type RevenueData } from "./revenue";
 
 export type Distribution = {
   epoch: number;
@@ -86,6 +88,8 @@ export type TrackerData = {
     decayPerDay: number;
   };
   combined: { hubTotalStaked: number; rewardEligible: number };
+  /** Live PENDLE/USD from Pendle's asset-price feed. */
+  pendleUsd: number;
   yield: {
     latest: Distribution;
     trailing: { epochs: number; aprPlain: number; aprBoostedAvg: number; from: number; to: number };
@@ -105,6 +109,7 @@ export type TrackerData = {
   distributions: Distribution[];
   projection: ProjectionPoint[];
   unlocks: UnlockWeek[];
+  revenue: RevenueData;
 };
 
 const TRAILING_EPOCHS = 6;
@@ -143,7 +148,12 @@ export function buildDistributions(raw: RawDistribution[], snapshot: LockBucket[
 }
 
 export async function getTrackerData(): Promise<TrackerData> {
-  const [live, snapshot] = await Promise.all([fetchLiveState(), fetchSnapshotSchedule()]);
+  const [live, snapshot, pendleUsd, revenue] = await Promise.all([
+    fetchLiveState(),
+    fetchSnapshotSchedule(),
+    fetchPendleUsd(),
+    getRevenueData(),
+  ]);
   const raw = await fetchDistributions(live.blockNumber);
   if (raw.length === 0) throw new Error("No sPENDLE reward distributions found onchain");
 
@@ -219,6 +229,7 @@ export async function getTrackerData(): Promise<TrackerData> {
       hubTotalStaked: supply + toTokens(live.pendleInVePendle),
       rewardEligible: eligibleTotal,
     },
+    pendleUsd,
     yield: {
       latest,
       trailing: {
@@ -244,6 +255,7 @@ export async function getTrackerData(): Promise<TrackerData> {
     distributions,
     projection,
     unlocks,
+    revenue,
   };
 }
 

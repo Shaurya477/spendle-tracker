@@ -14,10 +14,12 @@ import {
   SNAPSHOT_TS,
   SNAPSHOT_WEEKS,
   WEEK,
+  EPOCH_SECONDS,
+  FEE_EPOCH_ORIGIN,
 } from "./config";
 import type { LockBucket } from "./model";
 
-const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt } = ADDRESSES;
+const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt, gaugeController } = ADDRESSES;
 
 /**
  * Memoised immutable chain reads. Kept on globalThis because Next bundles the page and
@@ -267,6 +269,69 @@ export async function fetchUserState(user: Address, blockNumber: bigint): Promis
     snapshotLockExpiry: snapshotLock[1],
     claimedSPendle,
   };
+}
+
+/**
+ * PENDLE leaving the Ethereum gauge controller since the snapshot.
+ * AIM does not mint — supply is flat — so spend is inventory: start balance + inflows − end
+ * balance over each 14-day fee epoch. Outbound `getLogs` on this range exceed the RPC body
+ * limit; inflows are rare (a handful of top-ups) and fit in one call.
+ */
+export async function fetchGaugePendleOutflow(): Promise<{
+  spent: { timestamp: number; amount: bigint }[];
+  gaugePendle: number;
+}> {
+  const latest = await client.getBlock({ blockTag: "latest" });
+  const inLogs = await client.getLogs({
+    address: pendle,
+    event: transferEvent,
+    args: { to: gaugeController },
+    fromBlock: SNAPSHOT_BLOCK,
+    toBlock: latest.number,
+  });
+  const dt = Number(latest.timestamp - SNAPSHOT_TS) / Number(latest.number - SNAPSHOT_BLOCK);
+  const tsOf = (blockNumber: bigint) => Number(SNAPSHOT_TS) + Number(blockNumber - SNAPSHOT_BLOCK) * dt;
+  const blockAt = (ts: number) => {
+    const b = SNAPSHOT_BLOCK + BigInt(Math.round((ts - Number(SNAPSHOT_TS)) / dt));
+    if (b < SNAPSHOT_BLOCK) return SNAPSHOT_BLOCK;
+    if (b > latest.number) return latest.number;
+    return b;
+  };
+
+  const bounds: number[] = [];
+  let t = FEE_EPOCH_ORIGIN + Math.floor((Number(SNAPSHOT_TS) - FEE_EPOCH_ORIGIN) / EPOCH_SECONDS) * EPOCH_SECONDS;
+  const now = Number(latest.timestamp);
+  while (t <= now) {
+    bounds.push(t);
+    t += EPOCH_SECONDS;
+  }
+  bounds.push(now);
+
+  const bals = await Promise.all(
+    bounds.map((ts) =>
+      client.readContract({
+        address: pendle,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [gaugeController],
+        blockNumber: blockAt(ts),
+      }),
+    ),
+  );
+
+  const spent: { timestamp: number; amount: bigint }[] = [];
+  for (let i = 0; i < bounds.length - 1; i++) {
+    const start = bounds[i];
+    const end = bounds[i + 1];
+    let inflows = 0n;
+    for (const l of inLogs) {
+      const ts = tsOf(l.blockNumber);
+      if (ts > start && ts <= end) inflows += l.args.value!;
+    }
+    const out = bals[i] + inflows - bals[i + 1];
+    if (out > 0n) spent.push({ timestamp: start, amount: out });
+  }
+  return { spent, gaugePendle: Number(bals[bals.length - 1]) / 1e18 };
 }
 
 /** The user's sPENDLE balance the block before each distribution landed. */

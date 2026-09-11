@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   ReferenceLine,
@@ -12,12 +13,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { CumPoint, FeeEpoch } from "@/lib/pendle/revenue";
 import type { ProjectionPoint } from "@/lib/pendle/tracker";
-import { fmtCompact, fmtDate, fmtMult, fmtPct } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
 
 const SPENDLE = "var(--spendle)";
 const VEPENDLE = "var(--vependle)";
 const BOOST = "var(--boost)";
+const TREASURY = "var(--chart-4)";
+const LP = "oklch(0.62 0.02 80)";
 const GRID = "oklch(1 0 0 / 6%)";
 const AXIS = "oklch(0.68 0.015 80)";
 
@@ -283,6 +287,206 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           isAnimationActive={false}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={320}>
+      <AreaChart data={epochs} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="gYt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={SPENDLE} stopOpacity={0.55} />
+            <stop offset="100%" stopColor={SPENDLE} stopOpacity={0.08} />
+          </linearGradient>
+          <linearGradient id="gSwap" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={VEPENDLE} stopOpacity={0.55} />
+            <stop offset="100%" stopColor={VEPENDLE} stopOpacity={0.08} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="start"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          tickFormatter={(v: number) => fmtUsdCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={false}
+          tickLine={false}
+          width={56}
+        />
+        <Tooltip
+          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const e = payload[0].payload as FeeEpoch;
+            return (
+              <TipFrame
+                title={`${fmtDate(e.start)}${e.complete ? "" : " · in progress"}`}
+                rows={[
+                  { label: "YT fees", value: fmtUsd(e.yt), color: SPENDLE },
+                  { label: "Swap fees", value: fmtUsd(e.swap), color: VEPENDLE },
+                  { label: "Gross (YT + swap)", value: fmtUsd(e.yt + e.swap) },
+                  { label: "Protocol take", value: fmtUsd(e.revenue) },
+                  { label: "LP 20% of swap", value: fmtUsd(e.lp), color: LP },
+                ]}
+              />
+            );
+          }}
+        />
+        <Area
+          type="linear"
+          dataKey="yt"
+          stackId="g"
+          stroke={SPENDLE}
+          strokeWidth={1.5}
+          fill="url(#gYt)"
+          isAnimationActive={false}
+        />
+        <Area
+          type="linear"
+          dataKey="swap"
+          stackId="g"
+          stroke={VEPENDLE}
+          strokeWidth={1.5}
+          fill="url(#gSwap)"
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function AccrualChart({ points }: { points: CumPoint[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={320}>
+      <ComposedChart data={points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="gBuyback" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={SPENDLE} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={SPENDLE} stopOpacity={0.08} />
+          </linearGradient>
+          <linearGradient id="gTreasury" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={TREASURY} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={TREASURY} stopOpacity={0.08} />
+          </linearGradient>
+          <linearGradient id="gOps" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={BOOST} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={BOOST} stopOpacity={0.08} />
+          </linearGradient>
+          <linearGradient id="gLp" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={LP} stopOpacity={0.45} />
+            <stop offset="100%" stopColor={LP} stopOpacity={0.06} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="t"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          yAxisId="usd"
+          tickFormatter={(v: number) => fmtUsdCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={false}
+          tickLine={false}
+          width={56}
+        />
+        <YAxis
+          yAxisId="pendle"
+          orientation="right"
+          tickFormatter={(v: number) => fmtCompact(v)}
+          tick={{ fill: BOOST, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <Tooltip
+          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0].payload as CumPoint;
+            return (
+              <TipFrame
+                title={`Cumulative to ${fmtDate(p.t)}`}
+                rows={[
+                  { label: "Buybacks", value: fmtUsd(p.buyback), color: SPENDLE },
+                  { label: "Treasury", value: fmtUsd(p.treasury), color: TREASURY },
+                  { label: "Operations", value: fmtUsd(p.ops), color: BOOST },
+                  { label: "LP swap fees", value: fmtUsd(p.lp), color: LP },
+                  { label: "PENDLE leaving ETH gauge", value: `${fmtCompact(p.emittedPendle)} PENDLE` },
+                ]}
+              />
+            );
+          }}
+        />
+        <Area
+          yAxisId="usd"
+          type="linear"
+          dataKey="buyback"
+          stackId="cut"
+          stroke={SPENDLE}
+          strokeWidth={1.5}
+          fill="url(#gBuyback)"
+          isAnimationActive={false}
+        />
+        <Area
+          yAxisId="usd"
+          type="linear"
+          dataKey="treasury"
+          stackId="cut"
+          stroke={TREASURY}
+          strokeWidth={1.5}
+          fill="url(#gTreasury)"
+          isAnimationActive={false}
+        />
+        <Area
+          yAxisId="usd"
+          type="linear"
+          dataKey="ops"
+          stackId="cut"
+          stroke={BOOST}
+          strokeWidth={1.5}
+          fill="url(#gOps)"
+          isAnimationActive={false}
+        />
+        <Area
+          yAxisId="usd"
+          type="linear"
+          dataKey="lp"
+          stackId="cut"
+          stroke={LP}
+          strokeWidth={1.5}
+          fill="url(#gLp)"
+          isAnimationActive={false}
+        />
+        <Line
+          yAxisId="pendle"
+          type="linear"
+          dataKey="emittedPendle"
+          stroke={BOOST}
+          strokeWidth={1.75}
+          strokeDasharray="5 4"
+          dot={false}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

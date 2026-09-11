@@ -1,6 +1,6 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { EPOCHS_PER_YEAR } from "@/lib/pendle/config";
-import { fmtCompact, fmtDate, fmtDateTime, fmtInt, fmtMult, fmtPct } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtDateTime, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow, SectionHeading, Stat, TxLink } from "./primitives";
@@ -32,13 +32,13 @@ export function Yield({ data }: { data: TrackerData }) {
           <div className="flex items-center gap-2">
             <Eyebrow>Denomination</Eyebrow>
             <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
-              token terms · no USD
+              token terms
             </Badge>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
             APR = sPENDLE distributed ÷ (eligible sPENDLE + virtual sPENDLE). Rewards are paid in
-            the asset that is staked, so PENDLE&apos;s dollar price cancels out. No price feed is
-            used anywhere.
+            the asset that is staked, so PENDLE&apos;s dollar price cancels out of the ratio. Holdings
+            elsewhere on this page use the live USD quote; APR does not.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -147,6 +147,7 @@ export function Yield({ data }: { data: TrackerData }) {
                 label="Awaiting distribution"
                 value={fmtCompact(y.pendingBuyback)}
                 unit="PENDLE"
+                usd={usdOf(y.pendingBuyback, data.pendleUsd)}
                 sub="bought back, still in the buyback contract"
               />
               <Stat

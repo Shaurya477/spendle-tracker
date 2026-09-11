@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import { ADDRESSES, PENDLE_API } from "./config";
+import { ADDRESSES, PENDLE_API, PENDLE_PRICE_API } from "./config";
 
 export type AirdropToken = { token: string; amount: number; valueInUSD: number };
 
@@ -42,6 +42,17 @@ export async function fetchApiEpochs(): Promise<ApiEpoch[]> {
     airdropUsd: h.airdropInUSDs[i],
     airdrops: h.airdropBreakdowns[i],
   }));
+}
+
+/** Live PENDLE/USD from Pendle's asset-price feed. Fails if the quote is missing. */
+export async function fetchPendleUsd(): Promise<number> {
+  const id = `1-${ADDRESSES.pendle.toLowerCase()}`;
+  const data = await getJson<{ prices: Record<string, number> }>(`${PENDLE_PRICE_API}?ids=${id}`);
+  const price = data.prices[id];
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    throw new Error(`Pendle API returned no USD price for ${id}`);
+  }
+  return price;
 }
 
 /**

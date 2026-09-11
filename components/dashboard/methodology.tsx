@@ -7,7 +7,7 @@ export function Methodology({ data }: { data: TrackerData }) {
   const a = data.addresses;
   return (
     <section className="flex flex-col gap-8">
-      <SectionHeading index="06" title="How the numbers are made" />
+      <SectionHeading index="07" title="How the numbers are made" />
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card className="rise rise-1 border-0 bg-card/60">
           <CardContent className="flex flex-col gap-4">
@@ -23,6 +23,8 @@ export function Methodology({ data }: { data: TrackerData }) {
               <dd><AddressLink address={a.buyback} label={a.buyback} /></dd>
               <dt className="text-muted-foreground">Merkle distributor</dt>
               <dd><AddressLink address={a.merkleDistributor} label={a.merkleDistributor} /></dd>
+              <dt className="text-muted-foreground">Gauge controller</dt>
+              <dd><AddressLink address={a.gaugeController} label={a.gaugeController} /></dd>
             </dl>
             <div className="rule" />
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -60,6 +62,24 @@ export function Methodology({ data }: { data: TrackerData }) {
                 distributor. APR = amount ÷ (eligible sPENDLE + virtual sPENDLE the block before) ×
                 26.09 epochs per year. Eligible sPENDLE excludes rewards still unclaimed inside the
                 distributor.
+              </Step>
+              <Step title="USD">
+                Live PENDLE/USD is Pendle&apos;s <code>/v1/prices/assets</code> quote for the PENDLE
+                token. Token quantities that are actually held — protocol sPENDLE and locked PENDLE,
+                a wallet&apos;s sPENDLE, lock, cooldown, and wallet PENDLE — are multiplied by that
+                price. Virtual sPENDLE and APR stay unpriced: one is reward weight, the other is a
+                token-for-token ratio.
+              </Step>
+              <Step title="Fees">
+                Daily USD is DefiLlama <code>summary/fees/pendle</code>, summing the Pendle V2
+                label and dropping Boros, from the 29 Jan 2026 snapshot onward — vePENDLE gauge-voting
+                fees are excluded. Gross swap = supply-side revenue ÷ 0.20; YT fees =
+                protocol revenue − 0.80 × swap. Those days are summed into the same Tuesday 00:00
+                UTC 14-day windows as sPENDLE. Protocol take is split 80/10/10 into buybacks,
+                treasury, and operations — the documented cut, not wallet balances. PENDLE supply
+                is unchanged; LP incentives are PENDLE leaving the Ethereum gauge controller
+                (start balance + top-ups − end balance over each epoch). This week&apos;s AIM split is Pendle&apos;s{" "}
+                <code>/pendle-emission</code> assignment across every chain.
               </Step>
               <Step title="Assumptions">
                 Every holder is treated as &ldquo;active&rdquo; (no one forfeited an epoch by skipping a

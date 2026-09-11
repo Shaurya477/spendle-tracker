@@ -1,11 +1,11 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
-import { fmtCompact, fmtDate, fmtDays, fmtInt, fmtMult, fmtPct } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtDays, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow, SectionHeading, Stat, Swatch } from "./primitives";
 
 export function Balances({ data }: { data: TrackerData }) {
-  const { sPendle, vePendle, loyalty, combined } = data;
+  const { sPendle, vePendle, loyalty, combined, pendleUsd } = data;
   const total = combined.hubTotalStaked;
   const pctS = sPendle.supply / total;
   const pctActive = vePendle.activeLocked / total;
@@ -19,9 +19,10 @@ export function Balances({ data }: { data: TrackerData }) {
         lede={
           <>
             Pendle&apos;s staking hub adds sPENDLE and legacy vePENDLE into a single{" "}
-            <span className="tabular font-mono text-foreground">{fmtInt(total)}</span> &ldquo;total
-            staked&rdquo;. Read straight from the contracts, they are two different things: liquid
-            sPENDLE, and PENDLE still sitting in the deprecated vePENDLE escrow waiting to unlock.
+            <span className="tabular font-mono text-foreground">{fmtInt(total)}</span>{" "}
+            <span className="tabular font-mono text-foreground/70">({usdOf(total, pendleUsd)})</span>{" "}
+            &ldquo;total staked&rdquo;. Read straight from the contracts, they are two different things:
+            liquid sPENDLE, and PENDLE still sitting in the deprecated vePENDLE escrow waiting to unlock.
           </>
         }
       />
@@ -40,6 +41,9 @@ export function Balances({ data }: { data: TrackerData }) {
               <div className="tabular font-mono text-5xl leading-none tracking-tight text-spendle sm:text-6xl">
                 {fmtInt(sPendle.supply)}
               </div>
+              <div className="tabular font-mono text-lg text-muted-foreground">
+                {usdOf(sPendle.supply, pendleUsd)}
+              </div>
               <div className="text-xs text-muted-foreground">
                 sPENDLE supply · <code className="font-mono">totalSupply()</code> on the StakedPendle
                 contract, 1:1 with PENDLE
@@ -49,17 +53,20 @@ export function Balances({ data }: { data: TrackerData }) {
               <Stat
                 label="Reward-eligible"
                 value={fmtCompact(sPendle.eligible)}
+                usd={usdOf(sPendle.eligible, pendleUsd)}
                 sub={`supply minus ${fmtCompact(sPendle.unclaimedInDistributor)} unclaimed rewards parked in the Merkle distributor`}
               />
               <Stat
                 label="In unstake queue"
                 value={fmtCompact(sPendle.cooldownQueue)}
                 unit="PENDLE"
+                usd={usdOf(sPendle.cooldownQueue, pendleUsd)}
                 sub={`${sPendle.cooldownDays}-day cooldown; sPENDLE already burned, PENDLE not yet withdrawn`}
               />
               <Stat
                 label="PENDLE in contract"
                 value={fmtCompact(sPendle.pendleHeld)}
+                usd={usdOf(sPendle.pendleHeld, pendleUsd)}
                 sub={`instant unstake fee ${sPendle.instantFeePct}%`}
               />
             </div>
@@ -79,6 +86,9 @@ export function Balances({ data }: { data: TrackerData }) {
               <div className="tabular font-mono text-5xl leading-none tracking-tight text-vependle sm:text-6xl">
                 {fmtInt(vePendle.pendleHeld)}
               </div>
+              <div className="tabular font-mono text-lg text-muted-foreground">
+                {usdOf(vePendle.pendleHeld, pendleUsd)}
+              </div>
               <div className="text-xs text-muted-foreground">
                 PENDLE held by the VotingEscrow contract ·{" "}
                 <code className="font-mono">PENDLE.balanceOf(vePENDLE)</code>
@@ -88,17 +98,19 @@ export function Balances({ data }: { data: TrackerData }) {
               <Stat
                 label="Under active lock"
                 value={fmtCompact(vePendle.activeLocked)}
+                usd={usdOf(vePendle.activeLocked, pendleUsd)}
                 sub={`unexpired locks, from the weekly slope schedule · last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
                 value={fmtCompact(vePendle.expiredUnwithdrawn)}
+                usd={usdOf(vePendle.expiredUnwithdrawn, pendleUsd)}
                 sub="lock ended, owner has not called withdraw()"
               />
               <Stat
                 label="vePENDLE balance"
                 value={fmtCompact(vePendle.veBalance)}
-                sub="time-decayed voting weight of all live locks"
+                sub="time-decayed voting weight of all live locks · not a PENDLE quantity"
               />
             </div>
           </CardContent>

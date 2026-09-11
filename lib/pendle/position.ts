@@ -9,7 +9,7 @@ import {
 } from "./chain";
 import { EPOCHS_PER_YEAR, EPOCH_SECONDS, MAX_LOCK_TIME, SNAPSHOT_BLOCK, WEEK } from "./config";
 import { lastExpiry, loyaltyAt, toTokens, type LockBucket } from "./model";
-import { fetchApiEpochs, fetchApiUserSPendleAccrued, type ApiEpoch } from "./pendle-api";
+import { fetchApiEpochs, fetchApiUserSPendleAccrued, fetchPendleUsd, type ApiEpoch } from "./pendle-api";
 import { annualise, buildDistributions, type Distribution } from "./tracker";
 
 export type EpochRow = {
@@ -41,6 +41,8 @@ export type PositionData = {
   address: Address;
   block: { number: number; timestamp: number };
   empty: boolean;
+  /** Live PENDLE/USD from Pendle's asset-price feed. */
+  pendleUsd: number;
   sPendle: {
     balance: number;
     cooldownAmount: number;
@@ -106,10 +108,11 @@ function apiEpochFor(epochs: ApiEpoch[], t: number): ApiEpoch | undefined {
 
 export async function getPosition(input: string): Promise<PositionData> {
   const address = getAddress(input);
-  const [live, snapshot, apiEpochs] = await Promise.all([
+  const [live, snapshot, apiEpochs, pendleUsd] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),
     fetchApiEpochs(),
+    fetchPendleUsd(),
   ]);
   const [raw, user, apiAccrued] = await Promise.all([
     fetchDistributions(live.blockNumber),
@@ -209,6 +212,7 @@ export async function getPosition(input: string): Promise<PositionData> {
     address,
     block: { number: Number(live.blockNumber), timestamp: Number(now) },
     empty: balance === 0 && user.cooldownAmount === 0n && !hasLock && accrued === 0,
+    pendleUsd,
     sPendle: {
       balance,
       cooldownAmount: toTokens(user.cooldownAmount),
