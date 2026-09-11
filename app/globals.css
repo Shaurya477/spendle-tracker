@@ -42,23 +42,58 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-:root,
+/* Light theme. The token accents are darkened so teal, gold and orange text pass contrast on white. */
+:root {
+  --ink: oklch(0.97 0.006 80);
+  --background: oklch(0.985 0.004 80);
+  --foreground: oklch(0.22 0.02 255);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.22 0.02 255);
+  --primary-foreground: oklch(0.985 0.004 80);
+  --secondary: oklch(0.95 0.008 80);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.945 0.008 80);
+  --muted-foreground: oklch(0.45 0.015 255);
+  --accent: oklch(0.93 0.01 80);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 8%);
+  --ring: oklch(0.5 0.12 190);
+  --spendle: oklch(0.5 0.11 190);
+  --vependle: oklch(0.55 0.14 75);
+  --boost: oklch(0.55 0.19 30);
+  --chart-1: var(--spendle);
+  --chart-2: var(--vependle);
+  --chart-3: var(--boost);
+  --chart-4: oklch(0.55 0.12 300);
+  --chart-5: oklch(0.5 0.02 80);
+  --chart-lp: oklch(0.5 0.02 80);
+  --chart-grid: oklch(0 0 0 / 8%);
+  --chart-axis: oklch(0.45 0.015 255);
+  --chart-cursor: oklch(0 0 0 / 25%);
+  --glow-1: oklch(0.5 0.11 190 / 0.07);
+  --glow-2: oklch(0.55 0.14 75 / 0.07);
+  --grain-opacity: 0.12;
+  --radius: 0.5rem;
+}
+
+/* Dark theme (default; `dark` is set on <html> in the root layout). */
 .dark {
   --ink: oklch(0.15 0.018 255);
   --background: oklch(0.17 0.018 255);
   --foreground: oklch(0.94 0.012 80);
   --card: oklch(0.205 0.02 255);
-  --card-foreground: var(--foreground);
   --popover: oklch(0.23 0.02 255);
-  --popover-foreground: var(--foreground);
   --primary: oklch(0.94 0.012 80);
   --primary-foreground: oklch(0.17 0.018 255);
   --secondary: oklch(0.26 0.02 255);
-  --secondary-foreground: var(--foreground);
   --muted: oklch(0.25 0.018 255);
   --muted-foreground: oklch(0.68 0.015 80);
   --accent: oklch(0.27 0.022 255);
-  --accent-foreground: var(--foreground);
   --destructive: oklch(0.68 0.2 25);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
@@ -66,12 +101,15 @@
   --spendle: oklch(0.82 0.13 190);
   --vependle: oklch(0.84 0.15 80);
   --boost: oklch(0.72 0.18 30);
-  --chart-1: var(--spendle);
-  --chart-2: var(--vependle);
-  --chart-3: var(--boost);
   --chart-4: oklch(0.7 0.1 300);
   --chart-5: oklch(0.6 0.02 80);
-  --radius: 0.5rem;
+  --chart-lp: oklch(0.62 0.02 80);
+  --chart-grid: oklch(1 0 0 / 6%);
+  --chart-axis: oklch(0.68 0.015 80);
+  --chart-cursor: oklch(1 0 0 / 25%);
+  --glow-1: oklch(0.82 0.13 190 / 0.09);
+  --glow-2: oklch(0.84 0.15 80 / 0.08);
+  --grain-opacity: 0.35;
 }
 
 @layer base {
@@ -80,13 +118,16 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
     color-scheme: dark;
   }
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(1200px 600px at 10% -10%, oklch(0.82 0.13 190 / 0.09), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, oklch(0.84 0.15 80 / 0.08), transparent 60%);
+      radial-gradient(1200px 600px at 10% -10%, var(--glow-1), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, var(--glow-2), transparent 60%);
     background-attachment: fixed;
   }
 }
@@ -106,7 +147,7 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.35;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -144,5 +185,5 @@
 }
 
 .recharts-tooltip-cursor {
-  stroke: oklch(1 0 0 / 25%);
+  stroke: var(--chart-cursor);
 }

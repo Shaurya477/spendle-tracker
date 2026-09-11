@@ -3,6 +3,7 @@ import { fmtDateTime, fmtInt, fmtUsdPrice } from "@/lib/format";
 import { Eyebrow } from "./primitives";
 import { RefreshButton } from "./refresh-button";
 import { GitHubLink } from "./github-link";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Header({ data }: { data: TrackerData }) {
   return (
@@ -24,6 +25,7 @@ export function Header({ data }: { data: TrackerData }) {
         </div>
         <div className="flex items-start justify-between gap-4 sm:flex-col sm:items-end sm:gap-3">
           <div className="order-2 flex shrink-0 items-center gap-2 sm:order-1">
+            <ThemeToggle />
             <GitHubLink />
             <RefreshButton />
           </div>

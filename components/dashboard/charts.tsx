@@ -21,9 +21,10 @@ const SPENDLE = "var(--spendle)";
 const VEPENDLE = "var(--vependle)";
 const BOOST = "var(--boost)";
 const TREASURY = "var(--chart-4)";
-const LP = "oklch(0.62 0.02 80)";
-const GRID = "oklch(1 0 0 / 6%)";
-const AXIS = "oklch(0.68 0.015 80)";
+const LP = "var(--chart-lp)";
+const GRID = "var(--chart-grid)";
+const AXIS = "var(--chart-axis)";
+const CURSOR = "var(--chart-cursor)";
 
 const monthTick = (t: number) => {
   const d = new Date(t * 1000);
@@ -92,7 +93,7 @@ export function DecayChart({
           width={56}
         />
         <Tooltip
-          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as ProjectionPoint;
@@ -184,7 +185,7 @@ export function PersonalAprChart({
           width={52}
         />
         <Tooltip
-          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as { t: number; apr: number };
@@ -236,7 +237,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           width={52}
         />
         <Tooltip
-          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as ProjectionPoint;
@@ -321,7 +322,7 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
           width={56}
         />
         <Tooltip
-          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const e = payload[0].payload as FeeEpoch;
@@ -414,7 +415,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           width={52}
         />
         <Tooltip
-          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as CumPoint;

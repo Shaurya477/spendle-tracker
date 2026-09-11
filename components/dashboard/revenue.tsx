@@ -19,7 +19,7 @@ const YT = "var(--spendle)";
 const SWAP = "var(--vependle)";
 const TREASURY = "var(--chart-4)";
 const OPS = "var(--boost)";
-const LP = "oklch(0.62 0.02 80)";
+const LP = "var(--chart-lp)";
 
 function share(part: number, whole: number) {
   return whole > 0 ? part / whole : 0;
