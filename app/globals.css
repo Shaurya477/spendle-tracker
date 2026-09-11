@@ -252,11 +252,13 @@
   transition: opacity 160ms ease-out;
 }
 
-.ruler-link:hover + .ruler-tip {
+.ruler-link:hover + .ruler-tip,
+.ruler-tip.is-open {
   opacity: 1;
 }
 
-.ruler:has(.ruler-link:hover) .ruler-link:not(:hover) > span:first-child {
+.ruler:has(.ruler-link:hover) .ruler-link:not(:hover) > span:first-child,
+.ruler.ruler-selected .ruler-link:not(.is-selected) > span:first-child {
   opacity: 0.35;
 }
 
