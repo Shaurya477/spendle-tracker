@@ -45,3 +45,5 @@ export const BOOST_SPAN = 3n;
 export const ETHERSCAN = "https://etherscan.io";
 
 export const REPO_URL = "https://github.com/Shaurya477/spendle-tracker";
+export const AUTHOR_X_URL = "https://x.com/Shaurya477";
+export const AUTHOR_X_HANDLE = "@Shaurya477";

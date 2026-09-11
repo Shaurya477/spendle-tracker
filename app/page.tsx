@@ -11,8 +11,9 @@ import { Thesis } from "@/components/dashboard/thesis";
 import { Position } from "@/components/dashboard/position";
 import { Methodology } from "@/components/dashboard/methodology";
 import { GitHubMark } from "@/components/dashboard/github-link";
+import { XMark } from "@/components/dashboard/x-mark";
 import { SectionNav } from "@/components/dashboard/section-nav";
-import { REPO_URL } from "@/lib/pendle/config";
+import { AUTHOR_X_HANDLE, AUTHOR_X_URL, REPO_URL } from "@/lib/pendle/config";
 
 const SECTIONS = [
   { id: "balances", index: "01", title: "Balances" },
@@ -48,15 +49,26 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       <Methodology data={data} />
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-6 font-mono text-[11px] text-muted-foreground">
         <span>Not affiliated with Pendle. Numbers are computed from public contract state; verify before acting.</span>
-        <a
-          href={REPO_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 hover:text-foreground"
-        >
-          <GitHubMark className="size-3.5" />
-          Penconomics on GitHub
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href={AUTHOR_X_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 hover:text-foreground"
+          >
+            <XMark className="size-3" />
+            Built by {AUTHOR_X_HANDLE}
+          </a>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 hover:text-foreground"
+          >
+            <GitHubMark className="size-3.5" />
+            Source on GitHub
+          </a>
+        </div>
       </footer>
     </main>
   );
