@@ -1,6 +1,7 @@
 import { TRACKER_MAX_AGE_SECONDS, type TrackerData } from "@/lib/pendle/tracker";
 import { REPO_URL } from "@/lib/pendle/config";
 import { fmtDateTime, fmtInt, fmtUsdPrice } from "@/lib/format";
+import { PendleCoin } from "./pendle-coin";
 import { Eyebrow } from "./primitives";
 import { RefreshButton } from "./refresh-button";
 import { GitHubLink } from "./github-link";
@@ -16,7 +17,10 @@ export function Header({ data }: { data: TrackerData }) {
       </div>
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-2 pr-10 sm:pr-0">
-          <Eyebrow>Pendle · Ethereum mainnet</Eyebrow>
+          <Eyebrow className="flex items-center gap-2">
+            <PendleCoin className="size-3.5 shrink-0" />
+            Pendle · Ethereum mainnet
+          </Eyebrow>
           <h1
             aria-label="Penconomics"
             className="font-display text-5xl leading-[0.95] tracking-tight sm:text-7xl"
