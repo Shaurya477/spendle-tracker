@@ -154,9 +154,15 @@ export function PersonalAprChart({
   unlockAt: number | null;
   boostEndsAt: number;
 }) {
+  // The unlock and boost-end markers sit within days of the series' end. Carry the last point six
+  // weeks further at the same APR (the projection already holds everything flat past the boost) so
+  // the markers stand clear of the right edge. Their names and dates are the stat labels above.
+  const PAD = 6 * 7 * 86_400;
+  const last = points[points.length - 1];
+  const series = last ? [...points, { t: last.t + PAD, apr: last.apr }] : points;
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+      <LineChart data={series} margin={{ top: 12, right: 24, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis
           dataKey="t"
@@ -187,19 +193,9 @@ export function PersonalAprChart({
         />
         <Line type="linear" dataKey="apr" stroke={SPENDLE} strokeWidth={2} dot={false} isAnimationActive={false} />
         {unlockAt !== null && unlockAt < boostEndsAt && (
-          <ReferenceLine
-            x={unlockAt}
-            stroke={VEPENDLE}
-            strokeDasharray="4 4"
-            label={{ value: "your unlock", position: "insideBottomLeft", fill: VEPENDLE, fontSize: 11, fontFamily: "var(--font-mono)" }}
-          />
+          <ReferenceLine x={unlockAt} stroke={VEPENDLE} strokeDasharray="4 4" strokeWidth={1.5} />
         )}
-        <ReferenceLine
-          x={boostEndsAt}
-          stroke={AXIS}
-          strokeDasharray="2 4"
-          label={{ value: "boost gone", position: "insideTopRight", fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
-        />
+        <ReferenceLine x={boostEndsAt} stroke={BOOST} strokeDasharray="4 4" strokeWidth={1.5} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -250,7 +246,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
                 rows={[
                   { label: "Dilution · sPENDLE flat", value: fmtPct(p.dilutionFlat, 1), color: BOOST },
                   { label: "Dilution · unlocks restaked", value: fmtPct(p.dilutionRestake, 1), color: VEPENDLE },
-                  { label: "Plain APR at latest epoch's payout", value: fmtPct(p.aprPlainFlat), color: SPENDLE },
+                  { label: "Plain APR at latest distribution", value: fmtPct(p.aprPlainFlat), color: SPENDLE },
                   { label: "Stakers' reward share (flat)", value: fmtPct(p.stakerShareFlat, 1) },
                   { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
                 ]}

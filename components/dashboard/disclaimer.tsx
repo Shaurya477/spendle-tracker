@@ -47,8 +47,8 @@ export function Disclaimer() {
           <li>This dashboard is independent. It is not built, operated, or endorsed by Pendle.</li>
           <li>Nothing here is financial advice. Do your own research.</li>
           <li>
-            Figures are computed from public contract state and Pendle&apos;s public APIs. They can
-            be wrong, delayed, or incomplete. Verify before acting.
+            Figures are computed from public contract state, Pendle&apos;s public API, and
+            DefiLlama. They can be wrong, delayed, or incomplete. Verify before acting.
           </li>
           <li>You use this site at your own risk.</li>
         </ul>

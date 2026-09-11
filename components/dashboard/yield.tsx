@@ -16,13 +16,13 @@ export function Yield({ data }: { data: TrackerData }) {
     <section className="flex flex-col gap-8">
       <SectionHeading
         index="02"
-        title="What each side earns"
+        title="sPENDLE yield"
         lede={
           <>
-            Every two weeks the buyback contract stakes the PENDLE it bought with protocol fees and
-            hands the minted sPENDLE to the Merkle distributor. That amount, split pro-rata over
-            eligible sPENDLE plus virtual sPENDLE, is the yield. A plain staker gets a 1× share; a
-            vePENDLE locker gets their multiplier times that.
+            About every 14 days the buyback contract stakes the PENDLE it bought with protocol fees
+            and sends the minted sPENDLE to the Merkle distributor. That sPENDLE is split pro-rata
+            over eligible sPENDLE plus virtual sPENDLE. A staker gets a 1× share; a locker gets
+            their multiplier times that.
           </>
         }
       />
@@ -45,7 +45,7 @@ export function Yield({ data }: { data: TrackerData }) {
           <Eyebrow>Annualisation</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
             One epoch = 14 days. Each epoch&apos;s ratio is multiplied by 365.25 ÷ 14 = {EPY}.
-            Simple, not compounded: nothing is assumed about restaking rewards.
+            Simple interest, not compounded; rewards are not assumed to be restaked.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -84,12 +84,12 @@ export function Yield({ data }: { data: TrackerData }) {
               <Stat
                 label="If lockers counted 1×"
                 value={fmtPct(y.aprNoBoost)}
-                sub={`latest payout ÷ (${fmtCompact(sPendle.eligible)} sPENDLE + ${fmtCompact(vePendle.snapshotLocked)} locked PENDLE) × ${EPY}`}
+                sub={`latest distribution ÷ (${fmtCompact(sPendle.eligible)} sPENDLE + ${fmtCompact(vePendle.snapshotLocked)} locked PENDLE) × ${EPY}`}
               />
               <Stat
                 label="If only sPENDLE existed"
                 value={fmtPct(y.aprSolo)}
-                sub={`latest payout ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY} · where plain APR lands after the last unlock`}
+                sub={`latest distribution ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY} · plain APR once the last lock expires`}
               />
             </div>
           </CardContent>
@@ -102,7 +102,7 @@ export function Yield({ data }: { data: TrackerData }) {
               <span className="font-mono text-[10px] text-muted-foreground">sPENDLE earned per PENDLE locked, per year</span>
             </div>
             <Stat
-              label="Average locker, latest epoch"
+              label="Latest · avg locker"
               value={fmtPct(latest.aprBoostedAvg)}
               tone="boost"
               size="lg"

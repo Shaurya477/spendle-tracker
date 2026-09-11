@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PersonalAprChart } from "./charts";
-import { Eyebrow, SectionHeading, Stat, TxLink } from "./primitives";
+import { Eyebrow, LineSwatch, SectionHeading, Stat, TxLink, keepTokenCase } from "./primitives";
 
 const EPY = EPOCHS_PER_YEAR.toFixed(2);
 const HEX40 = /^[0-9a-fA-F]{40}$/;
@@ -87,7 +87,7 @@ export function Position({
       <SectionHeading
         index="06"
         title="Your position"
-        lede="Paste a wallet. Everything below is that address's own share of the numbers above: what it holds, what it has been paid epoch by epoch, its personal APR with in-kind airdrops folded in, and what the boost is doing to it — for and against — until January 2028."
+        lede="Paste a wallet address. Below is that address's share of the numbers above: holdings, sPENDLE paid per epoch, its own APR including in-kind airdrops, and what the boost costs or earns it until January 2028."
       />
 
       <form onSubmit={onSubmit} className="rise rise-1 flex flex-col gap-2">
@@ -132,9 +132,9 @@ export function Position({
 
       {state.kind === "idle" && (
         <p className="text-sm text-muted-foreground">
-          Nothing is fetched until you look an address up. Reads are the same contracts as the rest of
-          the page plus Pendle&apos;s API for in-kind airdrops, its own record of what the address has
-          accrued, and the live PENDLE/USD quote applied to what the wallet holds.
+          Nothing is fetched until you look up an address. The lookup reads the same contracts as the
+          rest of the page, plus Pendle&apos;s API for the address&apos;s accrued rewards and in-kind
+          airdrops. Held balances are priced at the live PENDLE/USD quote.
         </p>
       )}
       {state.kind === "loading" && (
@@ -169,8 +169,8 @@ function Result({ data }: { data: PositionData }) {
       <div className="rounded-lg border border-border bg-card/60 p-6">
         <Eyebrow>{data.address}</Eyebrow>
         <p className="mt-2 text-sm text-muted-foreground">
-          No sPENDLE, no unstake in progress, no vePENDLE lock at the snapshot or now, and no sPENDLE
-          rewards on Pendle&apos;s books. There is nothing to break down for this address.
+          No sPENDLE, no cooldown in progress, no vePENDLE lock at the snapshot or now, and no sPENDLE
+          rewards recorded by Pendle&apos;s API. Nothing to show for this address.
         </p>
       </div>
     );
@@ -190,7 +190,7 @@ function Result({ data }: { data: PositionData }) {
           )}
           {lock && (
             <Badge variant="outline" className="font-mono text-[10px] text-vependle ring-vependle/30">
-              {hasBoost ? "boosted vePENDLE locker" : "former vePENDLE locker"}
+              {hasBoost ? "boosted locker" : "former locker"}
             </Badge>
           )}
         </div>
@@ -204,7 +204,7 @@ function Result({ data }: { data: PositionData }) {
               value={usd(held)}
               tone="spendle"
               size="lg"
-              sub={`sPENDLE + locked PENDLE + cooldown + wallet PENDLE × ${fmtUsdPrice(pendleUsd)}`}
+              sub={`(sPENDLE + locked + cooldown + wallet PENDLE) × ${fmtUsdPrice(pendleUsd)}`}
             />
           </div>
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -213,7 +213,7 @@ function Result({ data }: { data: PositionData }) {
               value={fmtInt(sPendle.balance)}
               usd={usd(sPendle.balance)}
               tone="spendle"
-              sub={sPendle.cooldownAmount > 0 ? "staked, 1:1 with PENDLE" : "staked, no unstake in progress"}
+              sub={sPendle.cooldownAmount > 0 ? "staked, 1:1 with PENDLE" : "staked, no cooldown in progress"}
             />
             <Stat
               label="Locked"
@@ -258,7 +258,7 @@ function Result({ data }: { data: PositionData }) {
               size="lg"
               sub={
                 hasBoost && lock
-                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, sliding to 1× on ${fmtDate(lock.snapshotExpiry)} · reward weight, not a held balance`
+                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, falling to 1× on ${fmtDate(lock.snapshotExpiry)} · reward weight, not a held balance`
                   : "no active loyalty boost · not a held balance"
               }
             />
@@ -281,7 +281,7 @@ function Result({ data }: { data: PositionData }) {
           <CardContent className="flex flex-col gap-5">
             <Eyebrow>Paid so far</Eyebrow>
             <Stat
-              label="sPENDLE earned · pro-rata estimate"
+              label="Earned · estimate"
               value={fmtNum(rewards.earnedEstimate)}
               unit="sPENDLE"
               usd={usd(rewards.earnedEstimate)}
@@ -312,14 +312,14 @@ function Result({ data }: { data: PositionData }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Stat
-                label="Latest epoch · buybacks"
+                label="Latest · buybacks"
                 value={apr.latestBuyback === null ? "—" : fmtPct(apr.latestBuyback)}
                 tone="spendle"
                 size="lg"
                 sub={`protocol plain ${fmtPct(apr.protocolPlainLatest)} · avg locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
               />
               <Stat
-                label="Latest epoch · incl. airdrops"
+                label="Latest · incl. airdrops"
                 value={apr.latestTotal === null ? "—" : fmtPct(apr.latestTotal)}
                 size="lg"
                 sub="airdrops converted to PENDLE at that epoch's buyback price"
@@ -327,14 +327,14 @@ function Result({ data }: { data: PositionData }) {
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <Stat
-                label={`Mean · ${apr.epochsAveraged} epochs`}
+                label="Mean · buybacks"
                 value={apr.meanBuyback === null ? "—" : fmtPct(apr.meanBuyback)}
-                sub="buybacks only, every epoch you held a position"
+                sub={`${apr.epochsAveraged} epochs you held a position, buybacks only`}
               />
               <Stat
-                label={`Mean · ${apr.epochsAveragedTotal} epochs`}
+                label="Mean · incl. airdrops"
                 value={apr.meanTotal === null ? "—" : fmtPct(apr.meanTotal)}
-                sub="incl. airdrops, epochs with airdrop data"
+                sub={`${apr.epochsAveragedTotal} of those epochs with airdrop data`}
               />
             </div>
           </CardContent>
@@ -350,7 +350,7 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="boost"
                 size="lg"
-                sub={`what a 1× world would have paid you, minus what you got · another ≈ ${fmtNum(outlook.remainingDilutionCost)} by ${fmtDate(outlook.boostEndsAt)} at the latest payout`}
+                sub={`shortfall vs everyone at 1× · ≈ ${fmtNum(outlook.remainingDilutionCost)} more by ${fmtDate(outlook.boostEndsAt)} at the latest distribution`}
               />
             )}
             {lock && (rewards.premiumEarned > 0 || hasBoost) && (
@@ -360,7 +360,7 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="vependle"
                 size="lg"
-                sub={`rewards above a 1× count of your locked PENDLE · another ≈ ${fmtNum(outlook.remainingPremium)} before your boost ends`}
+                sub={`rewards above a 1× count of your locked PENDLE · ≈ ${fmtNum(outlook.remainingPremium)} more before your boost ends`}
               />
             )}
             {hasStake && lock && hasBoost && (
@@ -379,7 +379,7 @@ function Result({ data }: { data: PositionData }) {
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <Eyebrow>Your APR from here to the end of the boost</Eyebrow>
+                <Eyebrow>Your APR until boost ends</Eyebrow>
                 <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                   Position held as-is, protocol sPENDLE flat, every epoch paying the latest{" "}
                   {fmtInt(outlook.latestDistribution)} sPENDLE. When your lock expires the PENDLE is
@@ -387,11 +387,36 @@ function Result({ data }: { data: PositionData }) {
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-6">
-                <Stat label="Today" value={fmtPct(outlook.aprNow)} />
+                <Stat
+                  label={
+                    <span className="inline-flex items-center gap-1.5">
+                      <LineSwatch tone="spendle" />
+                      Today
+                    </span>
+                  }
+                  value={fmtPct(outlook.aprNow)}
+                />
                 {outlook.aprAtUnlockRestaked !== null && (
-                  <Stat label={`At your unlock · ${fmtDate(outlook.unlockAt!)}`} value={fmtPct(outlook.aprAtUnlockRestaked)} />
+                  <Stat
+                    label={
+                      <span className="inline-flex items-center gap-1.5">
+                        <LineSwatch tone="vependle" dashed />
+                        Your unlock · {fmtDate(outlook.unlockAt!)}
+                      </span>
+                    }
+                    value={fmtPct(outlook.aprAtUnlockRestaked)}
+                  />
                 )}
-                <Stat label={`Boost gone · ${fmtDate(outlook.boostEndsAt)}`} value={fmtPct(outlook.aprAfterBoost!)} tone="spendle" />
+                <Stat
+                  label={
+                    <span className="inline-flex items-center gap-1.5">
+                      <LineSwatch tone="boost" dashed />
+                      Boost ends · {fmtDate(outlook.boostEndsAt)}
+                    </span>
+                  }
+                  value={fmtPct(outlook.aprAfterBoost!)}
+                  tone="spendle"
+                />
               </div>
             </div>
             <PersonalAprChart points={data.projection} unlockAt={outlook.unlockAt} boostEndsAt={outlook.boostEndsAt} />
@@ -475,7 +500,7 @@ function Th({ children, right, className }: { children: React.ReactNode; right?:
         className,
       )}
     >
-      {children}
+      {keepTokenCase(children)}
     </TableHead>
   );
 }

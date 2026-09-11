@@ -24,7 +24,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Penconomics — Pendle fees, yield, and incentives",
   description:
-    "The economics of Pendle: protocol fees, LP incentives, sPENDLE yield, and the vePENDLE hand-off. Read from Ethereum contracts and public Pendle data.",
+    "Pendle's protocol fees, LP incentives, sPENDLE yield, and vePENDLE boost dilution, read from Ethereum contracts, Pendle's API, and DefiLlama.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

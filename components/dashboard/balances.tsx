@@ -15,14 +15,14 @@ export function Balances({ data }: { data: TrackerData }) {
     <section className="flex flex-col gap-8">
       <SectionHeading
         index="01"
-        title="Two balances, not one"
+        title="Staked vs locked"
         lede={
           <>
-            Pendle&apos;s staking hub adds sPENDLE and legacy vePENDLE into a single{" "}
+            Pendle&apos;s staking hub reports one &ldquo;total staked&rdquo; figure,{" "}
             <span className="tabular font-mono text-foreground">{fmtInt(total)}</span>{" "}
-            <span className="tabular font-mono text-foreground/70">({usdOf(total, pendleUsd)})</span>{" "}
-            &ldquo;total staked&rdquo;. Read straight from the contracts, they are two different things:
-            liquid sPENDLE, and PENDLE still sitting in the deprecated vePENDLE escrow waiting to unlock.
+            <span className="tabular font-mono text-foreground/70">({usdOf(total, pendleUsd)})</span>.
+            Onchain that is two balances: liquid sPENDLE, and PENDLE still in the deprecated vePENDLE
+            escrow.
           </>
         }
       />
@@ -54,20 +54,20 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Reward-eligible"
                 value={fmtCompact(sPendle.eligible)}
                 usd={usdOf(sPendle.eligible, pendleUsd)}
-                sub={`supply minus ${fmtCompact(sPendle.unclaimedInDistributor)} unclaimed rewards parked in the Merkle distributor`}
+                sub={`supply minus ${fmtCompact(sPendle.unclaimedInDistributor)} unclaimed rewards held in the Merkle distributor`}
               />
               <Stat
-                label="In unstake queue"
+                label="In cooldown"
                 value={fmtCompact(sPendle.cooldownQueue)}
                 unit="PENDLE"
                 usd={usdOf(sPendle.cooldownQueue, pendleUsd)}
-                sub={`${sPendle.cooldownDays}-day cooldown; sPENDLE already burned, PENDLE not yet withdrawn`}
+                sub={`sPENDLE already burned; PENDLE withdrawable ${sPendle.cooldownDays} days after unstaking`}
               />
               <Stat
                 label="PENDLE in contract"
                 value={fmtCompact(sPendle.pendleHeld)}
                 usd={usdOf(sPendle.pendleHeld, pendleUsd)}
-                sub={`instant unstake fee ${sPendle.instantFeePct}%`}
+                sub={`sPENDLE supply + cooldown queue · instant unstake fee ${sPendle.instantFeePct}%`}
               />
             </div>
           </CardContent>
@@ -99,7 +99,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Under active lock"
                 value={fmtCompact(vePendle.activeLocked)}
                 usd={usdOf(vePendle.activeLocked, pendleUsd)}
-                sub={`unexpired locks, from the weekly slope schedule · last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
+                sub={`from the weekly slope schedule · last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
@@ -119,7 +119,7 @@ export function Balances({ data }: { data: TrackerData }) {
 
       <div className="rise rise-3 flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Eyebrow>How the hub&apos;s combined figure splits</Eyebrow>
+          <Eyebrow>Total staked · split</Eyebrow>
           <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Swatch tone="spendle" /> sPENDLE {fmtPct(pctS, 1)}
@@ -143,11 +143,11 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card size="sm" className="border-0 bg-card/60 ring-1 ring-boost/25">
           <CardContent>
             <Stat
-              label="Virtual sPENDLE (loyalty boost)"
+              label="Virtual sPENDLE"
               value={fmtCompact(loyalty.virtual)}
               tone="boost"
               size="lg"
-              sub={`${fmtCompact(vePendle.snapshotLocked)} snapshot-eligible PENDLE × ${fmtMult(loyalty.avgMultiplier)} average multiplier`}
+              sub={`loyalty boost · ${fmtCompact(vePendle.snapshotLocked)} snapshot-eligible PENDLE still locked × ${fmtMult(loyalty.avgMultiplier)} average multiplier`}
             />
           </CardContent>
         </Card>
@@ -157,7 +157,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Boost premium"
               value={fmtCompact(loyalty.premium)}
               size="lg"
-              sub="virtual sPENDLE above a 1:1 count of the locked PENDLE — the part that dilutes"
+              sub="virtual sPENDLE above a 1× count of the locked PENDLE; the part that dilutes stakers"
             />
           </CardContent>
         </Card>
@@ -174,7 +174,7 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card size="sm" className="border-0 bg-card/60">
           <CardContent>
             <Stat
-              label="Boost fully expires"
+              label="Boost ends"
               value={fmtDate(loyalty.expiresAt)}
               size="lg"
               sub={`${fmtDays(loyalty.maxRemainingDays)} left · virtual balance falls ~${fmtCompact(loyalty.decayPerDay)} per day between unlocks`}

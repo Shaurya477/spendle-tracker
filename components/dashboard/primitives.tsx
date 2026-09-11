@@ -1,8 +1,22 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "cn";
 import { ETHERSCAN } from "@/lib/pendle/config";
 import { shortHash } from "@/lib/format";
+
+const TOKEN_CASE = /(sPENDLE|vePENDLE)/;
+
+/** Inside `uppercase` text, keep the token names' own casing: sPENDLE and vePENDLE, never SPENDLE. */
+export function keepTokenCase(children: ReactNode): ReactNode {
+  return Children.map(children, (child) => {
+    if (typeof child !== "string" || !TOKEN_CASE.test(child)) return child;
+    return child
+      .split(TOKEN_CASE)
+      .map((part, i) =>
+        TOKEN_CASE.test(part) ? <span key={i} className="normal-case">{part}</span> : part,
+      );
+  });
+}
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -12,7 +26,7 @@ export function Eyebrow({ children, className }: { children: ReactNode; classNam
         className,
       )}
     >
-      {children}
+      {keepTokenCase(children)}
     </div>
   );
 }
@@ -107,6 +121,28 @@ export function TxLink({ hash }: { hash: string }) {
       {shortHash(hash)}
       <ArrowUpRight className="size-3" />
     </a>
+  );
+}
+
+/** Legend key for a chart line: a short solid or dashed rule in the line's colour. */
+export function LineSwatch({
+  tone,
+  dashed = false,
+}: {
+  tone: "spendle" | "vependle" | "boost";
+  dashed?: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-block w-4 border-t-2 align-middle",
+        dashed && "border-dashed",
+        tone === "spendle" && "border-spendle",
+        tone === "vependle" && "border-vependle",
+        tone === "boost" && "border-boost",
+      )}
+    />
   );
 }
 

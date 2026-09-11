@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SectionHeading, TxLink } from "./primitives";
+import { SectionHeading, TxLink, keepTokenCase } from "./primitives";
 
 export function Ledger({ data }: { data: TrackerData }) {
   const rows = [...data.distributions].reverse();
@@ -18,7 +18,7 @@ export function Ledger({ data }: { data: TrackerData }) {
       <SectionHeading
         index="05"
         title="Distribution ledger"
-        lede="Every reward epoch found onchain: the PENDLE the buyback contract staked and forwarded to the Merkle distributor, the eligible balances the block before, and the APR each side saw for that epoch."
+        lede="Every distribution found onchain, with the sPENDLE the buyback contract sent to the Merkle distributor, the eligible and virtual balances the block before, and the plain and boosted APR for that epoch."
       />
       <Card className="rise rise-1 border-0 bg-card/80">
         <CardContent className="px-0">
@@ -27,9 +27,9 @@ export function Ledger({ data }: { data: TrackerData }) {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">#</TableHead>
                 <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Distributed</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">sPENDLE paid</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Eligible sPENDLE</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Virtual sPENDLE</TableHead>
+                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("sPENDLE paid")}</TableHead>
+                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("Eligible sPENDLE")}</TableHead>
+                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("Virtual sPENDLE")}</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Avg mult.</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">Plain APR</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-boost">Boosted APR</TableHead>

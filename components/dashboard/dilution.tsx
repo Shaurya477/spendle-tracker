@@ -14,13 +14,13 @@ export function Dilution({ data }: { data: TrackerData }) {
     <section className="flex flex-col gap-8">
       <SectionHeading
         index="03"
-        title="The dilution, and how it decays"
+        title="Boost dilution"
         lede={
           <>
-            Virtual sPENDLE sits in the same reward denominator as real sPENDLE. The 1× part of it
-            is fair — that PENDLE is genuinely committed. The premium above 1× is the loyalty boost,
-            and it is paid for by everyone else. Each locker&apos;s multiplier falls linearly to 1× at
-            their unlock, so the premium shrinks every second and hits zero on{" "}
+            Virtual sPENDLE shares the reward denominator with real sPENDLE. Locked PENDLE counts 1×,
+            like sPENDLE; the part above 1× is the loyalty boost, and it is taken from every 1× unit
+            in the pool, sPENDLE and locked PENDLE alike. Each locker&apos;s multiplier falls linearly
+            to 1× at unlock, so the premium shrinks continuously and reaches zero on{" "}
             <span className="font-mono text-foreground">{fmtDate(loyalty.expiresAt)}</span>.
           </>
         }
@@ -34,18 +34,18 @@ export function Dilution({ data }: { data: TrackerData }) {
               value={fmtPct(dilution.premiumShare, 1)}
               tone="boost"
               size="lg"
-              sub="share of every epoch's rewards that the boost premium captures; equivalently, the haircut on a plain staker's APR versus a 1× world"
+              sub="share of each distribution taken by the boost premium; equal to the haircut on plain APR vs everyone at 1×"
             />
           </CardContent>
         </Card>
         <Card size="sm" className="rise rise-2 border-0 bg-card/80">
           <CardContent>
             <Stat
-              label="Lockers' total reward share"
+              label="Lockers' reward share"
               value={fmtPct(dilution.lockerShare, 1)}
               tone="vependle"
               size="lg"
-              sub={`vs ${fmtPct(dilution.stakerShare, 1)} to plain sPENDLE stakers, who hold ${fmtCompact(sPendle.eligible)} eligible sPENDLE`}
+              sub={`vs ${fmtPct(dilution.stakerShare, 1)} to plain stakers, who hold ${fmtCompact(sPendle.eligible)} eligible sPENDLE`}
             />
           </CardContent>
         </Card>
@@ -56,7 +56,7 @@ export function Dilution({ data }: { data: TrackerData }) {
               value={oneYear ? fmtPct(oneYear.aprPlainFlat) : "—"}
               tone="spendle"
               size="lg"
-              sub={`from ${fmtPct(y.latest.aprPlain)} today, if payouts stayed at the latest epoch's ${fmtCompact(y.latest.amount)} sPENDLE and supply stayed flat`}
+              sub={`from ${fmtPct(y.latest.aprPlain)} today, if each distribution stayed at the latest ${fmtCompact(y.latest.amount)} sPENDLE and sPENDLE supply stayed flat`}
             />
           </CardContent>
         </Card>
@@ -105,8 +105,8 @@ export function Dilution({ data }: { data: TrackerData }) {
               <div>
                 <Eyebrow>Projected dilution &amp; plain APR</Eyebrow>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Solid: sPENDLE supply held flat. Dashed: every unlocked PENDLE restaked as sPENDLE
-                  the day it frees up. Right axis: plain APR if payouts stay at the latest epoch.
+                  Solid: sPENDLE supply held flat. Dashed: PENDLE restaked as sPENDLE the day its lock
+                  expires. Right axis: plain APR if distributions stay at the latest amount.
                 </p>
               </div>
               <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">

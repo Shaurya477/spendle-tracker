@@ -52,9 +52,9 @@ export function Methodology({ data }: { data: TrackerData }) {
               <Step title="Virtual sPENDLE">
                 The same slope buckets are read at the snapshot block and replayed: every lock gets
                 <code>1 + 3 × remaining / 2y</code>, which is 4× for a full two-year lock, 2.5× for one
-                year, and 1× at unlock. Summed, that is simply{" "}
-                <code>locked + 3 × vePENDLE balance</code> of the snapshot positions. It matches
-                Pendle&apos;s API figure to within its cache delay.
+                year, and 1× at unlock. Summed over the snapshot positions, that equals{" "}
+                <code>locked + 3 × vePENDLE balance</code>. It matches Pendle&apos;s API figure to
+                within its cache delay.
               </Step>
               <Step title="Rewards">
                 Distribution events are the PENDLE <code>Transfer</code>s from the buyback contract
@@ -65,28 +65,28 @@ export function Methodology({ data }: { data: TrackerData }) {
               </Step>
               <Step title="USD">
                 Live PENDLE/USD is Pendle&apos;s <code>/v1/prices/assets</code> quote for the PENDLE
-                token. Token quantities that are actually held — protocol sPENDLE and locked PENDLE,
-                a wallet&apos;s sPENDLE, lock, cooldown, and wallet PENDLE — are multiplied by that
-                price. Virtual sPENDLE and APR stay unpriced: one is reward weight, the other is a
-                token-for-token ratio.
+                token. Held quantities (protocol sPENDLE and locked PENDLE; a wallet&apos;s sPENDLE,
+                lock, cooldown, and wallet PENDLE) are multiplied by that price. Virtual sPENDLE is
+                reward weight and APR is a token-for-token ratio, so neither is priced.
               </Step>
               <Step title="Fees">
                 Daily USD is DefiLlama <code>summary/fees/pendle</code>, summing the Pendle V2
-                label and dropping Boros, from the 29 Jan 2026 snapshot onward — vePENDLE gauge-voting
+                label and dropping Boros, from the 29 Jan 2026 snapshot onward; vePENDLE gauge-voting
                 fees are excluded. Gross swap = supply-side revenue ÷ 0.20; YT fees =
-                protocol revenue − 0.80 × swap. Those days are summed into the same Tuesday 00:00
-                UTC 14-day windows as sPENDLE. Protocol take is split 80/10/10 into buybacks,
-                treasury, and operations — the documented cut, not wallet balances. PENDLE supply
-                is unchanged; LP incentives are PENDLE leaving the Ethereum gauge controller
-                (start balance + top-ups − end balance over each epoch). This week&apos;s AIM split is Pendle&apos;s{" "}
+                protocol revenue − 0.80 × swap. Days are summed into the same Tuesday 00:00 UTC
+                14-day epochs as sPENDLE. Protocol take is split 80/10/10 into buybacks, treasury,
+                and operations per the documented policy, not wallet balances. PENDLE supply is
+                unchanged; LP incentives are PENDLE leaving the Ethereum gauge controller (start
+                balance + top-ups − end balance per epoch). This week&apos;s AIM split is Pendle&apos;s{" "}
                 <code>/pendle-emission</code> assignment across every chain.
               </Step>
               <Step title="Assumptions">
                 Every holder is treated as &ldquo;active&rdquo; (no one forfeited an epoch by skipping a
-                PPP vote), so APRs are a floor for active holders. Only PENDLE buybacks count; in-kind
-                airdrops of other tokens are not priced. Projections hold sPENDLE supply and the latest
-                payout flat. Locks changed after the snapshot are ignored for the boost, matching how the
-                bonus was granted.
+                PPP vote), so APRs are a floor for active holders. Protocol-level APRs count PENDLE
+                buybacks only; in-kind airdrops are priced only in the position section, at each
+                epoch&apos;s buyback price. Projections hold sPENDLE supply and the latest distribution
+                flat. Locks changed after the snapshot are ignored for the boost, matching how it was
+                granted.
               </Step>
             </ol>
           </CardContent>

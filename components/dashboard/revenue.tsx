@@ -77,12 +77,10 @@ export function Revenue({ data }: { data: TrackerData }) {
         title="Fees, revenue, and incentives"
         lede={
           <>
-            Pendle V2 earns from two sources: a 5% cut of yield (and points) accrued by active YT,
-            plus a maturity-scaled fee on PT/YT swaps. 20% of swap fees stay with LPs. Everything
-            else — the remaining 80% of swap fees and all YT fees — is protocol take, split 80%
-            buybacks, 10% treasury, 10% operations. LP PENDLE is not minted; it is streamed from
-            the gauge controller&apos;s inventory. Numbers start at the 29 Jan 2026 snapshot,
-            when sPENDLE buybacks replaced vePENDLE gauge voting. Boros is excluded.
+            Pendle V2 charges 5% of the yield and points accrued by YT, plus a fee on PT/YT swaps.
+            LPs keep 20% of swap fees; the rest, with all YT fees, is protocol take, split 80%
+            buybacks, 10% treasury, 10% operations. LP incentives are paid in PENDLE the gauge
+            controller already holds; nothing is minted.
           </>
         }
       />
@@ -91,24 +89,24 @@ export function Revenue({ data }: { data: TrackerData }) {
         <div className="flex flex-col gap-1.5">
           <Eyebrow>Latest complete epoch</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {fmtDate(e.start)} → {fmtDate(ends(e))}. The window starting {fmtDate(current.start)}{" "}
-            {current.complete ? "is complete." : `is still collecting (${current.days} days in).`}
+            {fmtDate(e.start)} → {fmtDate(ends(e))}. The epoch starting {fmtDate(current.start)}{" "}
+            {current.complete ? "is complete." : `is in progress (${current.days} days in).`}
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Eyebrow>Documented cut, not wallets</Eyebrow>
+          <Eyebrow>Documented split</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Treasury and operations are the 10% + 10% of protocol take, not live balances.
-            Buybacks are the 80% holders cut. How that PENDLE is later staked into sPENDLE is
-            the yield section.
+            Buybacks, treasury, and operations are the documented 80/10/10 split of protocol take,
+            not observed wallet balances. How bought-back PENDLE becomes sPENDLE is in the yield
+            section.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
           <Eyebrow>Pendle V2 only</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Daily USD from DefiLlama, summing the Pendle V2 label across chains, from 29 Jan 2026.
-            YT vs swap is recovered from the identities: LP = 20% of gross swap, protocol revenue = YT + 80%
-            of swap. vePENDLE-era fees are excluded.
+            Daily USD from DefiLlama&apos;s Pendle V2 label, summed across chains, from 29 Jan 2026;
+            Boros and vePENDLE-era fees are excluded. YT and swap are backed out from two identities:
+            LP fees = 20% of gross swap, protocol revenue = YT + 80% of swap.
           </p>
         </div>
       </div>
@@ -152,7 +150,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               label="Gross fees"
               value={fmtUsd(gross)}
               size="lg"
-              sub={`YT + swap · LP keep ${fmtPct(share(e.lp, gross), 1)} of this epoch`}
+              sub={`YT + swap · LPs keep ${fmtPct(share(e.lp, gross), 1)} of this epoch`}
             />
           </CardContent>
         </Card>
@@ -178,7 +176,7 @@ export function Revenue({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow>Protocol take · 80 / 10 / 10</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">100% = remaining swap + all YT</span>
+              <span className="font-mono text-[10px] text-muted-foreground">100% = YT + 80% of swap</span>
             </div>
             <Split
               parts={[
@@ -211,7 +209,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="rise rise-4 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Accrued cut vs ETH gauge spend</Eyebrow>
+              <Eyebrow>Cumulative fees vs ETH gauge</Eyebrow>
               <div className="flex flex-wrap gap-3 font-mono text-[10px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-block size-2 rounded-sm bg-spendle" /> Buybacks
@@ -232,10 +230,11 @@ export function Revenue({ data }: { data: TrackerData }) {
             </div>
             <AccrualChart points={r.cumulative} />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Stacked USD is the documented fee split, cumulative from 29 Jan 2026. The dashed line is
-              PENDLE leaving the Ethereum gauge (markets plus unused AIM returned to treasury) over the
-              same window (right axis). That is inventory, not new issuance: PENDLE supply has been flat.
-              Other chains&apos; AIM is in the weekly assignment card.
+              Stacked USD is the documented fee split, cumulative from 29 Jan 2026. The dashed line
+              (right axis) is PENDLE leaving the Ethereum gauge controller over the same period, paid
+              to markets plus unused AIM returned to treasury. It is drawn from inventory the
+              controller already held; PENDLE supply has been flat. Other chains&apos; AIM is in the
+              weekly card.
             </p>
           </CardContent>
         </Card>
@@ -277,7 +276,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               usd={usdOf(r.aim.pendle, pendleUsd)}
               tone="boost"
               size="lg"
-              sub="Pendle's current weekly AIM assignment across every chain, not Ethereum-only"
+              sub="this week's AIM assignment across all chains, from Pendle's API"
             />
             <Split
               format={(n) => `${fmtCompact(n)} PENDLE`}
