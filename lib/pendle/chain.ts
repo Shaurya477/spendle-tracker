@@ -19,10 +19,37 @@ import type { LockBucket } from "./model";
 
 const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt } = ADDRESSES;
 
+/**
+ * Memoised immutable chain reads. Kept on globalThis because Next bundles the page and
+ * /api/position separately, and a module-level cache would be fetched once per bundle.
+ */
+type ChainCache = {
+  snapshotSchedule?: Promise<LockBucket[]>;
+  distributions: Map<Hex, Promise<RawDistribution>>;
+  windows: Map<string, Promise<BuybackWindow>>;
+};
+const cache: ChainCache = ((globalThis as typeof globalThis & { __spendleChainCache?: ChainCache }).__spendleChainCache ??= {
+  distributions: new Map(),
+  windows: new Map(),
+});
+
+/** Cache a pending read under `key`; a rejected read is dropped again so the next load re-reads instead of replaying the failure. */
+function memo<K, V>(map: Map<K, Promise<V>>, key: K, read: () => Promise<V>): Promise<V> {
+  let entry = map.get(key);
+  if (!entry) {
+    entry = read();
+    map.set(key, entry);
+    entry.catch(() => map.delete(key));
+  }
+  return entry;
+}
+
 async function readSchedule(firstWeek: bigint, weeks: number, blockNumber?: bigint) {
   const expiries = Array.from({ length: weeks }, (_, i) => firstWeek + BigInt(i) * WEEK);
+  // batchSize 0: all ~110 slopeChanges in one eth_call (~50 KB) instead of viem's default four 1 KB chunks.
   const slopes = await client.multicall({
     allowFailure: false,
+    batchSize: 0,
     blockNumber,
     contracts: expiries.map((w) => ({
       address: vePendle,
@@ -38,11 +65,15 @@ async function readSchedule(firstWeek: bigint, weeks: number, blockNumber?: bigi
   return schedule;
 }
 
-let snapshotSchedule: Promise<LockBucket[]> | undefined;
 /** vePENDLE expiry schedule as it stood at the loyalty-bonus snapshot block. Immutable, so memoised for the process lifetime. */
 export function fetchSnapshotSchedule() {
-  snapshotSchedule ??= readSchedule(SNAPSHOT_TS + WEEK, SNAPSHOT_WEEKS, SNAPSHOT_BLOCK);
-  return snapshotSchedule;
+  if (!cache.snapshotSchedule) {
+    cache.snapshotSchedule = readSchedule(SNAPSHOT_TS + WEEK, SNAPSHOT_WEEKS, SNAPSHOT_BLOCK);
+    cache.snapshotSchedule.catch(() => {
+      cache.snapshotSchedule = undefined;
+    });
+  }
+  return cache.snapshotSchedule;
 }
 
 export type LiveState = {
@@ -112,8 +143,6 @@ export type RawDistribution = {
   distributorBefore: bigint;
 };
 
-const distributionCache = new Map<Hex, Promise<RawDistribution>>();
-
 /**
  * Every bi-weekly reward distribution: the buyback contract stakes its accumulated
  * PENDLE into sPENDLE and hands the minted sPENDLE to the Merkle distributor in one tx.
@@ -128,35 +157,30 @@ export async function fetchDistributions(toBlock: bigint): Promise<RawDistributi
     toBlock,
   });
   return Promise.all(
-    logs.map((log) => {
-      let entry = distributionCache.get(log.transactionHash);
-      if (!entry) {
-        entry = (async () => {
-          const before = log.blockNumber - 1n;
-          const [block, [supplyBefore, distributorBefore]] = await Promise.all([
-            client.getBlock({ blockNumber: log.blockNumber }),
-            client.multicall({
-              allowFailure: false,
-              blockNumber: before,
-              contracts: [
-                { address: sPendle, abi: stakedPendleAbi, functionName: "totalSupply" },
-                { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [merkleDistributor] },
-              ],
-            }),
-          ]);
-          return {
-            blockNumber: log.blockNumber,
-            timestamp: block.timestamp,
-            txHash: log.transactionHash,
-            amount: log.args.value!,
-            supplyBefore,
-            distributorBefore,
-          };
-        })();
-        distributionCache.set(log.transactionHash, entry);
-      }
-      return entry;
-    }),
+    logs.map((log) =>
+      memo(cache.distributions, log.transactionHash, async () => {
+        const before = log.blockNumber - 1n;
+        const [block, [supplyBefore, distributorBefore]] = await Promise.all([
+          client.getBlock({ blockNumber: log.blockNumber }),
+          client.multicall({
+            allowFailure: false,
+            blockNumber: before,
+            contracts: [
+              { address: sPendle, abi: stakedPendleAbi, functionName: "totalSupply" },
+              { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [merkleDistributor] },
+            ],
+          }),
+        ]);
+        return {
+          blockNumber: log.blockNumber,
+          timestamp: block.timestamp,
+          txHash: log.transactionHash,
+          amount: log.args.value!,
+          supplyBefore,
+          distributorBefore,
+        };
+      }),
+    ),
   );
 }
 
@@ -167,31 +191,37 @@ export type BuybackWindow = {
   pendleBought: bigint;
 };
 
-const windowCache = new Map<string, Promise<BuybackWindow>>();
-
 /**
- * Buyback execution in the block window (`after`, `upTo`]: hourly USDT → PENDLE TWAP swaps
- * through Pendle's router. `usdtSpent / pendleBought` is the realised PENDLE price for the
- * epoch whose rewards were distributed at `upTo`. Closed windows never change, so they are memoised.
+ * Buyback execution per block window (`bounds[k]`, `bounds[k+1]`]: hourly USDT → PENDLE TWAP swaps
+ * through Pendle's router. `usdtSpent / pendleBought` is the realised PENDLE price for the epoch
+ * whose rewards were distributed at the window's upper bound. Closed windows never change, so each
+ * is memoised; the windows not yet cached are read with two `eth_getLogs` spanning all of them
+ * (one per token) and split by block number, rather than two per window.
  */
-export function fetchBuybackWindow(after: bigint, upTo: bigint): Promise<BuybackWindow> {
-  const key = `${after}-${upTo}`;
-  let entry = windowCache.get(key);
-  if (!entry) {
-    entry = (async () => {
-      const range = { fromBlock: after + 1n, toBlock: upTo };
-      const [usdtOut, pendleIn] = await Promise.all([
-        client.getLogs({ address: usdt, event: transferEvent, args: { from: buyback }, ...range }),
-        client.getLogs({ address: pendle, event: transferEvent, args: { to: buyback }, ...range }),
-      ]);
-      return {
-        usdtSpent: usdtOut.reduce((s, l) => s + l.args.value!, 0n),
-        pendleBought: pendleIn.reduce((s, l) => s + l.args.value!, 0n),
-      };
-    })();
-    windowCache.set(key, entry);
+export function fetchBuybackWindows(bounds: bigint[]): Promise<BuybackWindow[]> {
+  const keys = bounds.slice(1).map((upTo, i) => `${bounds[i]}-${upTo}`);
+  const missing = keys.flatMap((k, i) => (cache.windows.has(k) ? [] : [i]));
+  if (missing.length > 0) {
+    const range = { fromBlock: bounds[missing[0]] + 1n, toBlock: bounds[missing[missing.length - 1] + 1] };
+    const logs = Promise.all([
+      client.getLogs({ address: usdt, event: transferEvent, args: { from: buyback }, ...range }),
+      client.getLogs({ address: pendle, event: transferEvent, args: { to: buyback }, ...range }),
+    ]);
+    for (const i of missing) {
+      const after = bounds[i];
+      const upTo = bounds[i + 1];
+      memo(cache.windows, keys[i], () =>
+        logs.then(([usdtOut, pendleIn]) => {
+          const inWindow = (l: { blockNumber: bigint }) => l.blockNumber > after && l.blockNumber <= upTo;
+          return {
+            usdtSpent: usdtOut.filter(inWindow).reduce((s, l) => s + l.args.value!, 0n),
+            pendleBought: pendleIn.filter(inWindow).reduce((s, l) => s + l.args.value!, 0n),
+          };
+        }),
+      );
+    }
   }
-  return entry;
+  return Promise.all(keys.map((k) => cache.windows.get(k)!));
 }
 
 export type UserState = {

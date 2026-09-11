@@ -1,6 +1,6 @@
 import { getAddress, type Address } from "viem";
 import {
-  fetchBuybackWindow,
+  fetchBuybackWindows,
   fetchDistributions,
   fetchLiveState,
   fetchSnapshotSchedule,
@@ -120,7 +120,7 @@ export async function getPosition(input: string): Promise<PositionData> {
   const blocks = distributions.map((d) => BigInt(d.blockNumber));
   const [balances, windows] = await Promise.all([
     fetchUserEpochBalances(address, blocks),
-    Promise.all(blocks.map((b, i) => fetchBuybackWindow(i === 0 ? SNAPSHOT_BLOCK : blocks[i - 1], b))),
+    fetchBuybackWindows([SNAPSHOT_BLOCK, ...blocks]),
   ]);
 
   const now = live.timestamp;

@@ -18,7 +18,9 @@ npm run dev          # http://localhost:4783
 
 `npm run build && npm start` serves the production build on the same port.
 
-Optional: `ETH_RPC_URL=<url>` overrides the RPC. The node must be **archive-capable** (state reads at block 24,336,785) and accept **wide `eth_getLogs` ranges** (~1.6M blocks in one call). The default, Tenderly's public gateway (`https://mainnet.gateway.tenderly.co`), does both; most other free public RPCs fail one or the other.
+Optional: `ETH_RPC_URL=<url>` overrides the RPC. The node must be **archive-capable** (state reads at block 24,336,785) and accept **wide `eth_getLogs` ranges** (~1.6M blocks in one call). The default, Tenderly's public gateway (`https://mainnet.gateway.tenderly.co`), does both; most other free public RPCs fail one or the other (checked 11 Sep 2026: PublicNode and 1rpc refuse archive reads without a key, dRPC's free plan caps `eth_getLogs` at 10K blocks, merkle.io and LlamaRPC were rejecting everything).
+
+Tenderly's public gateway is rate-limited per client IP: 20 weighted units per ~1 s window, where `eth_call` and `eth_getLogs` cost 4 units and `eth_getBlockByNumber` costs 1 (response headers `x-tdly-limit` / `x-tdly-remaining`), answered with 429 `rate limit exceeded` beyond that. Payload size is not limited. `lib/pendle/client.ts` therefore paces every request through one process-wide budget of 16 units/s instead of firing them in parallel, so a cold page load (~92 units) takes about 6–7 s and a cold address lookup about 8 s; warm loads are ~2 s because the immutable reads (snapshot schedule, per-distribution state, buyback windows) are memoised for the process lifetime. A request the gateway still rejects fails the page immediately; nothing is retried or substituted.
 
 Stack: Next.js 16 (App Router, server components), TypeScript, Tailwind v4, shadcn/ui, viem, Recharts.
 
