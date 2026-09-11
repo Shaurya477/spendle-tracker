@@ -43,6 +43,12 @@ Sources: [Introducing sPENDLE](https://medium.com/pendle/introducing-spendle-847
 | Distributions | PENDLE `Transfer(from = buyback, to = sPENDLE)` logs since the snapshot block. In each such tx the buyback contract stakes and forwards the sPENDLE to the distributor |
 | Plain APR per epoch | `distributed ÷ (eligible sPENDLE + virtual sPENDLE, both at the block before the distribution) × 26.09` (365.25 / 14 epochs a year) |
 | Boosted APR | plain APR × multiplier. "Average locker" uses `virtual ÷ snapshot-eligible locked`; "longest lock" uses the multiplier of a lock expiring on the last snapshot unlock date |
+
+### APR denomination
+
+Every APR in the app is **token-denominated**: sPENDLE distributed divided by reward-eligible stake (sPENDLE + virtual sPENDLE), with no price feed involved. Rewards are paid in sPENDLE, which is 1:1 with the PENDLE that is staked or locked, so PENDLE's dollar price cancels out; a plain-staker APR of 1.14% means 1.14 sPENDLE earned per 100 sPENDLE held per year, whatever PENDLE trades at. The boosted APR is the same ratio per PENDLE locked. Pendle's hub reports the USD value of buybacks per epoch; this app does not convert to or from USD anywhere.
+
+Annualisation is simple, not compounded: each epoch's ratio is multiplied by `365.25 / 14 = 26.09`. "Latest epoch" is the most recent distribution on its own. "Trailing 6 epochs" is the arithmetic mean of the last six per-epoch APRs, each computed against its own denominator at that block (so it is not `Σ distributed ÷ current stake`). In-kind airdrops of other tokens are excluded because pricing them would break the token-only denomination.
 | Dilution | boost premium share = `(virtual − locked) ÷ (eligible sPENDLE + virtual)`. This is both the share of each epoch's rewards captured by the boost *above* a 1× count of the locked PENDLE, and the haircut on a plain staker's APR compared with a world where lockers counted 1× |
 | Projection | The snapshot schedule replayed daily to 20 Jan 2028 (+1 week). Two scenarios for the sPENDLE side: supply held flat, or every unlocked PENDLE restaked as sPENDLE on its unlock day. The APR line holds the latest epoch's payout flat |
 
