@@ -2,6 +2,7 @@ import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtDateTime, fmtInt, fmtUsdPrice } from "@/lib/format";
 import { Eyebrow } from "./primitives";
 import { RefreshButton } from "./refresh-button";
+import { GitHubLink } from "./github-link";
 
 export function Header({ data }: { data: TrackerData }) {
   return (
@@ -22,7 +23,10 @@ export function Header({ data }: { data: TrackerData }) {
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <RefreshButton />
+          <div className="flex items-center gap-2">
+            <GitHubLink />
+            <RefreshButton />
+          </div>
           <div className="text-right">
             <Eyebrow className="text-spendle">PENDLE · USD</Eyebrow>
             <div className="tabular mt-1 font-mono text-4xl leading-none tracking-tight text-spendle">

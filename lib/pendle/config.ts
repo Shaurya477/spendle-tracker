@@ -43,3 +43,5 @@ export const FEE_EPOCH_ORIGIN = 1_775_520_000;
 export const BOOST_SPAN = 3n;
 
 export const ETHERSCAN = "https://etherscan.io";
+
+export const REPO_URL = "https://github.com/Shaurya477/spendle-tracker";

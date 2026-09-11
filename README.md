@@ -1,4 +1,6 @@
-# sPENDLE Tracker
+# Penconomics
+
+**Live: [penconomics.vercel.app](https://penconomics.vercel.app)** · deployed from `main` on every push.
 
 A dashboard for Pendle Protocol's transition from **vePENDLE** (locked PENDLE, deprecated Jan 2026) to **sPENDLE** (staked PENDLE). Everything is read directly from Ethereum mainnet contracts on every page load; there is no database, no cached snapshot file, and no fallback data.
 
