@@ -1,4 +1,4 @@
-import type { TrackerData } from "@/lib/pendle/tracker";
+import { TRACKER_MAX_AGE_SECONDS, type TrackerData } from "@/lib/pendle/tracker";
 import { fmtDateTime, fmtInt, fmtUsdPrice } from "@/lib/format";
 import { Eyebrow } from "./primitives";
 import { RefreshButton } from "./refresh-button";
@@ -33,9 +33,10 @@ export function Header({ data }: { data: TrackerData }) {
               {fmtUsdPrice(data.pendleUsd)}
             </div>
             <div className="mt-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-              <div>Pendle asset price · live</div>
+              <div>Pendle asset price</div>
               <div>block {fmtInt(data.block.number)}</div>
               <div>{fmtDateTime(data.block.timestamp)}</div>
+              <div>recomputed every {TRACKER_MAX_AGE_SECONDS / 60} min</div>
             </div>
           </div>
         </div>

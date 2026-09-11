@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import {
   fetchDistributions,
   fetchLiveState,
@@ -147,7 +148,24 @@ export function buildDistributions(raw: RawDistribution[], snapshot: LockBucket[
     });
 }
 
-export async function getTrackerData(): Promise<TrackerData> {
+/** Cache tag for the dashboard dataset; `updateTag(TRACKER_TAG)` forces the next read to hit the chain. */
+export const TRACKER_TAG = "tracker";
+/** How long a computed dataset is served before it is recomputed in the background. */
+export const TRACKER_MAX_AGE_SECONDS = 300;
+
+/**
+ * A cold computation is ~170 weighted RPC units through the 14-unit/s pacer plus six HTTP fetches,
+ * so 15–25 s. Vercel starts most requests on a fresh instance, where the in-process memo in
+ * `chain.ts` is empty, so the finished dataset is kept in Next's data cache instead: it survives
+ * across instances, is served in milliseconds, and once older than `TRACKER_MAX_AGE_SECONDS` the
+ * stale copy is still returned while one recomputation runs in the background.
+ */
+export const getTrackerData = unstable_cache(computeTrackerData, ["tracker-data"], {
+  revalidate: TRACKER_MAX_AGE_SECONDS,
+  tags: [TRACKER_TAG],
+});
+
+async function computeTrackerData(): Promise<TrackerData> {
   const [live, snapshot, pendleUsd, revenue] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),

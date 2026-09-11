@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { refreshTracker } from "@/app/actions";
 
 export function RefreshButton() {
   const router = useRouter();
@@ -12,7 +13,12 @@ export function RefreshButton() {
     <Button
       variant="outline"
       size="sm"
-      onClick={() => start(() => router.refresh())}
+      onClick={() =>
+        start(async () => {
+          await refreshTracker();
+          router.refresh();
+        })
+      }
       disabled={pending}
       className="font-mono text-xs"
     >

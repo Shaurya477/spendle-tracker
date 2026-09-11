@@ -2,7 +2,7 @@
 
 **Live: [penconomics.vercel.app](https://penconomics.vercel.app)** · deployed from `main` on every push.
 
-A dashboard for Pendle Protocol's transition from **vePENDLE** (locked PENDLE, deprecated Jan 2026) to **sPENDLE** (staked PENDLE). Everything is read directly from Ethereum mainnet contracts on every page load; there is no database, no cached snapshot file, and no fallback data.
+A dashboard for Pendle Protocol's transition from **vePENDLE** (locked PENDLE, deprecated Jan 2026) to **sPENDLE** (staked PENDLE). Everything is computed directly from Ethereum mainnet contracts and public APIs; there is no database and no fallback data. The finished dataset is kept in Next's data cache for five minutes and recomputed in the background once stale, so a page load is ~300 ms instead of the 15–25 s a cold read takes; the Refresh button drops the cache and reads the chain again.
 
 It answers three questions Pendle's own staking hub does not, and then lets you point all of it at a single wallet:
 
@@ -22,7 +22,7 @@ npm run dev          # http://localhost:4783
 
 Optional: `ETH_RPC_URL=<url>` overrides the RPC. The node must be **archive-capable** (state reads at block 24,336,785) and accept **wide `eth_getLogs` ranges** (~1.6M blocks in one call). The default, Tenderly's public gateway (`https://mainnet.gateway.tenderly.co`), does both; most other free public RPCs fail one or the other (checked 11 Sep 2026: PublicNode and 1rpc refuse archive reads without a key, dRPC's free plan caps `eth_getLogs` at 10K blocks, merkle.io and LlamaRPC were rejecting everything).
 
-Tenderly's public gateway is rate-limited per client IP: 20 weighted units per ~1 s window, where `eth_call` and `eth_getLogs` cost 4 units and `eth_getBlockByNumber` costs 1 (response headers `x-tdly-limit` / `x-tdly-remaining`), answered with 429 `rate limit exceeded` beyond that. Payload size is not limited. `lib/pendle/client.ts` therefore paces every request through one process-wide budget of 16 units/s instead of firing them in parallel, so a cold page load (~92 units) takes about 6–7 s and a cold address lookup about 8 s; warm loads are ~2 s because the immutable reads (snapshot schedule, per-distribution state, buyback windows) are memoised for the process lifetime. A request the gateway still rejects fails the page immediately; nothing is retried or substituted.
+Tenderly's public gateway is rate-limited per client IP: 20 weighted units per ~1 s window, where `eth_call` and `eth_getLogs` cost 4 units and `eth_getBlockByNumber` costs 1 (response headers `x-tdly-limit` / `x-tdly-remaining`), answered with 429 `rate limit exceeded` beyond that. Payload size is not limited. `lib/pendle/client.ts` therefore paces every request through one process-wide budget of 14 units/s with at most two in flight instead of firing them in parallel, so a cold recompute of the dashboard dataset (~170 units) takes 15–25 s and a cold address lookup about 8 s; the immutable reads (snapshot schedule, per-distribution state, buyback windows) are memoised for the process lifetime, and the dataset itself is served from Next's data cache (`lib/pendle/tracker.ts`) so visitors do not wait on the recompute. A request the gateway still rejects fails the page immediately; nothing is retried or substituted.
 
 Stack: Next.js 16 (App Router, server components), TypeScript, Tailwind v4, shadcn/ui, viem, Recharts.
 
