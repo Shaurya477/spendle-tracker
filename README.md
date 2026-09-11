@@ -2,11 +2,12 @@
 
 A dashboard for Pendle Protocol's transition from **vePENDLE** (locked PENDLE, deprecated Jan 2026) to **sPENDLE** (staked PENDLE). Everything is read directly from Ethereum mainnet contracts on every page load; there is no database, no cached snapshot file, and no fallback data.
 
-It answers three questions Pendle's own staking hub does not:
+It answers three questions Pendle's own staking hub does not, and then lets you point all of it at a single wallet:
 
 1. **How much is sPENDLE, and how much is still vePENDLE?** The hub adds both into one "total staked" figure. This shows them separately, plus the loyalty-boost *virtual sPENDLE* the old lockers carry.
 2. **What does a plain sPENDLE staker earn versus a boosted vePENDLE locker?** Per-epoch APR for both, from the actual bi-weekly buyback distributions.
 3. **How much do vePENDLE lockers dilute sPENDLE stakers, and how fast does that fade?** Current dilution plus a day-by-day projection of the boost decaying to zero on 20 Jan 2028.
+4. **What does this mean for one address?** Balances, lock and virtual sPENDLE, an epoch-by-epoch reward breakdown with in-kind airdrops folded in, personal APR, what the boost has cost or paid that wallet, and its APR path to the end of the boost.
 
 ## Run it
 
@@ -52,6 +53,24 @@ Annualisation is simple, not compounded: each epoch's ratio is multiplied by `36
 | Dilution | boost premium share = `(virtual − locked) ÷ (eligible sPENDLE + virtual)`. This is both the share of each epoch's rewards captured by the boost *above* a 1× count of the locked PENDLE, and the haircut on a plain staker's APR compared with a world where lockers counted 1× |
 | Projection | The snapshot schedule replayed daily to 20 Jan 2028 (+1 week). Two scenarios for the sPENDLE side: supply held flat, or every unlocked PENDLE restaked as sPENDLE on its unlock day. The APR line holds the latest epoch's payout flat |
 
+## Your position (address lookup)
+
+Section 05 takes a wallet (fixed `0x` prefix; paste a full address and the prefix is stripped) and shows that address's slice of everything above. A preset works too: `/?address=0x…` renders the result server-side. Bad input fails visibly; a failed read fails the lookup, nothing is substituted.
+
+| Figure | Source |
+| --- | --- |
+| sPENDLE held, cooldown, wallet PENDLE | `sPENDLE.balanceOf`, `sPENDLE.userCooldown`, `PENDLE.balanceOf` at the latest block |
+| vePENDLE lock | `vePENDLE.positionData(user)` now, and at the snapshot block for the boost terms. Virtual sPENDLE = `snapshotAmount × (1 + 3 × remaining / 2y)` |
+| Reward weight / share | `(sPENDLE + virtual) ÷ reward-eligible total`; "pending" applies that share to the PENDLE the buyback contract has bought since the last distribution |
+| sPENDLE earned per epoch | `share_k × distributed_k`, with the user's sPENDLE read at the block before each distribution and their virtual sPENDLE at that timestamp. A pro-rata estimate that assumes the address was active every epoch |
+| Pendle's record | `GET /v1/spendle/:address` → `allTimeRewards["1-<sPENDLE>"]`; a 404 means the address has never been paid. Unclaimed = that minus `merkleDistributor.claimed(sPENDLE, user)` onchain |
+| In-kind airdrops | `GET /v1/spendle/data` → `airdropInUSDs` and `airdropBreakdowns` per fee epoch. A distribution at time *t* belongs to the fee epoch starting at *T* when `T + 14d ≤ t < T + 28d` (fees are collected for two weeks, then bought back over the next two). The user's share of the epoch's airdrop USD is converted to PENDLE at that epoch's **realised buyback price**: USDT the buyback contract spent ÷ PENDLE it received, from its own swap `Transfer`s in the window between distributions. The API covers 12 fee epochs, so distributions 1–5 (Feb–Apr 2026) have no airdrop data and are excluded from the airdrop-inclusive mean |
+| Personal APR | `(sPENDLE earned [+ airdrop PENDLE]) ÷ (user sPENDLE + user locked PENDLE) × 26.09`, per epoch; "mean" is the arithmetic mean over epochs where the address had a position. Same token-terms denomination as the protocol APR; the airdrop leg is the only place a USD figure enters, and it is Pendle's distribution-time valuation, not a live price |
+| Boost effect | Dilution on the user's sPENDLE = `sPENDLE_k × D_k × (1/(S_k + L_k) − 1/(S_k + V_k))` summed over epochs (what a 1× world would have paid minus what they got). Premium on their lock = `(virtual_k − locked_k) ÷ eligibleTotal_k × D_k`. Both are projected forward daily to 20 Jan 2028 at the latest payout |
+| Outlook | Daily personal APR with the position held as-is, protocol sPENDLE flat, latest payout flat; when the user's lock expires the PENDLE is assumed restaked at 1× |
+
+Validation of the pro-rata estimate against Pendle's own accrual record (three real addresses, 11 Sep 2026): 462.78 vs 466.64, 689.50 vs 686.38, and 8,266 vs 8,705 sPENDLE. The first two are within 1%; the third address unlocked in April and restaked in May, and the gap is the timing difference between Pendle's balance snapshot and the block before the distribution.
+
 ## Cross-check against Pendle's hub
 
 Pendle's public API (`GET https://api-v2.pendle.finance/core/v1/spendle/data`) backs the staking hub. At the time of writing, block 25,952,337:
@@ -96,7 +115,8 @@ The hub's "Yield Distributed Every 2 Saturdays" corresponds to the Friday-UTC tr
 
 ```
 app/                 page (server component), loading and error states, theme
-components/dashboard sections: header, balances, yield, dilution (+charts), ledger, methodology
-lib/pendle/          config, ABIs, viem client, chain reads, loyalty math, tracker assembly
+app/api/position     GET ?address= → PositionData JSON (used by the lookup form)
+components/dashboard sections: header, balances, yield, dilution (+charts), ledger, position, methodology
+lib/pendle/          config, ABIs, viem client, chain reads, loyalty math, tracker and position assembly, Pendle API client
 lib/format.ts        number and date formatting
 ```

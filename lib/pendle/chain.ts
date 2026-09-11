@@ -1,5 +1,11 @@
-import type { Hex } from "viem";
-import { erc20Abi, stakedPendleAbi, transferEvent, votingEscrowAbi } from "./abis";
+import type { Address, Hex } from "viem";
+import {
+  erc20Abi,
+  merkleDistributorAbi,
+  stakedPendleAbi,
+  transferEvent,
+  votingEscrowAbi,
+} from "./abis";
 import { client } from "./client";
 import {
   ADDRESSES,
@@ -11,7 +17,7 @@ import {
 } from "./config";
 import type { LockBucket } from "./model";
 
-const { pendle, sPendle, vePendle, buyback, merkleDistributor } = ADDRESSES;
+const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt } = ADDRESSES;
 
 async function readSchedule(firstWeek: bigint, weeks: number, blockNumber?: bigint) {
   const expiries = Array.from({ length: weeks }, (_, i) => firstWeek + BigInt(i) * WEEK);
@@ -151,5 +157,99 @@ export async function fetchDistributions(toBlock: bigint): Promise<RawDistributi
       }
       return entry;
     }),
+  );
+}
+
+export type BuybackWindow = {
+  /** USDT the buyback contract spent on swaps in the window (6 decimals). */
+  usdtSpent: bigint;
+  /** PENDLE it received from those swaps (wei). */
+  pendleBought: bigint;
+};
+
+const windowCache = new Map<string, Promise<BuybackWindow>>();
+
+/**
+ * Buyback execution in the block window (`after`, `upTo`]: hourly USDT → PENDLE TWAP swaps
+ * through Pendle's router. `usdtSpent / pendleBought` is the realised PENDLE price for the
+ * epoch whose rewards were distributed at `upTo`. Closed windows never change, so they are memoised.
+ */
+export function fetchBuybackWindow(after: bigint, upTo: bigint): Promise<BuybackWindow> {
+  const key = `${after}-${upTo}`;
+  let entry = windowCache.get(key);
+  if (!entry) {
+    entry = (async () => {
+      const range = { fromBlock: after + 1n, toBlock: upTo };
+      const [usdtOut, pendleIn] = await Promise.all([
+        client.getLogs({ address: usdt, event: transferEvent, args: { from: buyback }, ...range }),
+        client.getLogs({ address: pendle, event: transferEvent, args: { to: buyback }, ...range }),
+      ]);
+      return {
+        usdtSpent: usdtOut.reduce((s, l) => s + l.args.value!, 0n),
+        pendleBought: pendleIn.reduce((s, l) => s + l.args.value!, 0n),
+      };
+    })();
+    windowCache.set(key, entry);
+  }
+  return entry;
+}
+
+export type UserState = {
+  sPendleBalance: bigint;
+  cooldownStart: bigint;
+  cooldownAmount: bigint;
+  pendleBalance: bigint;
+  lockAmount: bigint;
+  lockExpiry: bigint;
+  snapshotLockAmount: bigint;
+  snapshotLockExpiry: bigint;
+  claimedSPendle: bigint;
+};
+
+export async function fetchUserState(user: Address, blockNumber: bigint): Promise<UserState> {
+  const [live, [snapshotLock]] = await Promise.all([
+    client.multicall({
+      allowFailure: false,
+      blockNumber,
+      contracts: [
+        { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [user] },
+        { address: sPendle, abi: stakedPendleAbi, functionName: "userCooldown", args: [user] },
+        { address: pendle, abi: erc20Abi, functionName: "balanceOf", args: [user] },
+        { address: vePendle, abi: votingEscrowAbi, functionName: "positionData", args: [user] },
+        { address: merkleDistributor, abi: merkleDistributorAbi, functionName: "claimed", args: [sPendle, user] },
+      ],
+    }),
+    client.multicall({
+      allowFailure: false,
+      blockNumber: SNAPSHOT_BLOCK,
+      contracts: [{ address: vePendle, abi: votingEscrowAbi, functionName: "positionData", args: [user] }],
+    }),
+  ]);
+  const [sPendleBalance, [cooldownStart, cooldownAmount], pendleBalance, [lockAmount, lockExpiry], claimedSPendle] = live;
+  return {
+    sPendleBalance,
+    cooldownStart: BigInt(cooldownStart),
+    cooldownAmount: BigInt(cooldownAmount),
+    pendleBalance,
+    lockAmount,
+    lockExpiry,
+    snapshotLockAmount: snapshotLock[0],
+    snapshotLockExpiry: snapshotLock[1],
+    claimedSPendle,
+  };
+}
+
+/** The user's sPENDLE balance the block before each distribution landed. */
+export function fetchUserEpochBalances(user: Address, blocks: bigint[]): Promise<bigint[]> {
+  return Promise.all(
+    blocks.map((b) =>
+      client.readContract({
+        address: sPendle,
+        abi: stakedPendleAbi,
+        functionName: "balanceOf",
+        args: [user],
+        blockNumber: b - 1n,
+      }),
+    ),
   );
 }

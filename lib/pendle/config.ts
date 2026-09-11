@@ -9,7 +9,10 @@ export const ADDRESSES = {
   vePendle: "0x4f30A9D41B80ecC5B94306AB4364951AE3170210" as Address,
   buyback: "0x9e08C5499f953C6297A7755BcBcEd383b606896b" as Address,
   merkleDistributor: "0x3942f7b55094250644cffda7160226caa349a38e" as Address,
+  usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7" as Address,
 } as const;
+
+export const PENDLE_API = "https://api-v2.pendle.finance/core/v1/spendle";
 
 export const WEEK = 604_800n;
 /** VotingEscrowTokenBase.MAX_LOCK_TIME = 104 weeks */

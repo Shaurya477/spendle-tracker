@@ -7,7 +7,7 @@ export function Methodology({ data }: { data: TrackerData }) {
   const a = data.addresses;
   return (
     <section className="flex flex-col gap-8">
-      <SectionHeading index="05" title="How the numbers are made" />
+      <SectionHeading index="06" title="How the numbers are made" />
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card className="rise rise-1 border-0 bg-card/60">
           <CardContent className="flex flex-col gap-4">

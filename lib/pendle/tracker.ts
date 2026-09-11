@@ -1,4 +1,9 @@
-import { fetchDistributions, fetchLiveState, fetchSnapshotSchedule } from "./chain";
+import {
+  fetchDistributions,
+  fetchLiveState,
+  fetchSnapshotSchedule,
+  type RawDistribution,
+} from "./chain";
 import {
   ADDRESSES,
   EPOCHS_PER_YEAR,
@@ -21,6 +26,8 @@ export type Distribution = {
   /** Reward-eligible sPENDLE the block before: supply minus unclaimed rewards parked in the distributor. */
   eligibleSPendle: number;
   virtualSPendle: number;
+  /** Snapshot-eligible PENDLE still locked at that block (the 1× part of virtual sPENDLE). */
+  lockedSnapshot: number;
   eligibleTotal: number;
   aprPlain: number;
   avgMultiplier: number;
@@ -102,8 +109,37 @@ export type TrackerData = {
 
 const TRAILING_EPOCHS = 6;
 
-function annualise(amount: number, base: number) {
+export function annualise(amount: number, base: number) {
   return (amount / base) * EPOCHS_PER_YEAR;
+}
+
+export function buildDistributions(raw: RawDistribution[], snapshot: LockBucket[]): Distribution[] {
+  return raw
+    .sort((a, b) => Number(a.blockNumber - b.blockNumber))
+    .map((d, i) => {
+      const v = loyaltyAt(snapshot, d.timestamp);
+      const amount = toTokens(d.amount);
+      const eligible = toTokens(d.supplyBefore - d.distributorBefore);
+      const virtualThen = toTokens(v.virtual);
+      const lockedThen = toTokens(v.locked);
+      const total = eligible + virtualThen;
+      const aprPlain = annualise(amount, total);
+      const avgMultiplier = virtualThen / lockedThen;
+      return {
+        epoch: i + 1,
+        timestamp: Number(d.timestamp),
+        blockNumber: Number(d.blockNumber),
+        txHash: d.txHash,
+        amount,
+        eligibleSPendle: eligible,
+        virtualSPendle: virtualThen,
+        lockedSnapshot: lockedThen,
+        eligibleTotal: total,
+        aprPlain,
+        avgMultiplier,
+        aprBoostedAvg: aprPlain * avgMultiplier,
+      };
+    });
 }
 
 export async function getTrackerData(): Promise<TrackerData> {
@@ -125,30 +161,7 @@ export async function getTrackerData(): Promise<TrackerData> {
   const premium = virtual - locked;
   const eligibleTotal = eligibleSPendle + virtual;
 
-  const distributions: Distribution[] = raw
-    .sort((a, b) => Number(a.blockNumber - b.blockNumber))
-    .map((d, i) => {
-      const v = loyaltyAt(snapshot, d.timestamp);
-      const amount = toTokens(d.amount);
-      const eligible = toTokens(d.supplyBefore - d.distributorBefore);
-      const virtualThen = toTokens(v.virtual);
-      const total = eligible + virtualThen;
-      const aprPlain = annualise(amount, total);
-      const avgMultiplier = virtualThen / toTokens(v.locked);
-      return {
-        epoch: i + 1,
-        timestamp: Number(d.timestamp),
-        blockNumber: Number(d.blockNumber),
-        txHash: d.txHash,
-        amount,
-        eligibleSPendle: eligible,
-        virtualSPendle: virtualThen,
-        eligibleTotal: total,
-        aprPlain,
-        avgMultiplier,
-        aprBoostedAvg: aprPlain * avgMultiplier,
-      };
-    });
+  const distributions = buildDistributions(raw, snapshot);
 
   const latest = distributions[distributions.length - 1];
   const trailingSet = distributions.slice(-TRAILING_EPOCHS);

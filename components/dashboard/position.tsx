@@ -1,0 +1,455 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { isAddress } from "viem";
+import { Search } from "lucide-react";
+import { cn } from "cn";
+import type { PositionData } from "@/lib/pendle/position";
+import { EPOCHS_PER_YEAR } from "@/lib/pendle/config";
+import {
+  fmtCompact,
+  fmtDate,
+  fmtDays,
+  fmtInt,
+  fmtMult,
+  fmtNum,
+  fmtPct,
+  fmtUsd,
+} from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PersonalAprChart } from "./charts";
+import { Eyebrow, SectionHeading, Stat, TxLink } from "./primitives";
+
+const EPY = EPOCHS_PER_YEAR.toFixed(2);
+const HEX40 = /^[0-9a-fA-F]{40}$/;
+
+type State =
+  | { kind: "idle" }
+  | { kind: "loading"; address: string }
+  | { kind: "error"; message: string }
+  | { kind: "result"; data: PositionData };
+
+export function Position({
+  initialHex,
+  initial,
+}: {
+  initialHex: string;
+  initial: PositionData | null;
+}) {
+  const [hex, setHex] = useState(initialHex);
+  const [inputError, setInputError] = useState<string | null>(null);
+  const [state, setState] = useState<State>(initial ? { kind: "result", data: initial } : { kind: "idle" });
+
+  async function lookup(candidate: string) {
+    const address = `0x${candidate}`;
+    if (!HEX40.test(candidate) || !isAddress(address, { strict: false })) {
+      setInputError(
+        candidate.length === 0
+          ? "Enter the 40 hex characters after 0x."
+          : `Not an Ethereum address: ${candidate.length}/40 hex characters${/[^0-9a-fA-F]/.test(candidate) ? ", contains non-hex characters" : ""}.`,
+      );
+      return;
+    }
+    setInputError(null);
+    setState({ kind: "loading", address });
+    const res = await fetch(`/api/position?address=${address}`);
+    const body = (await res.json()) as PositionData | { error: string };
+    if (!res.ok || "error" in body) {
+      setState({ kind: "error", message: "error" in body ? body.error : `HTTP ${res.status}` });
+      return;
+    }
+    setState({ kind: "result", data: body });
+    const url = new URL(window.location.href);
+    url.searchParams.set("address", body.address);
+    window.history.replaceState(null, "", url);
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    void lookup(hex.trim());
+  }
+
+  return (
+    <section id="position" className="flex flex-col gap-8">
+      <SectionHeading
+        index="05"
+        title="Your position"
+        lede="Paste a wallet. Everything below is that address's own share of the numbers above: what it holds, what it has been paid epoch by epoch, its personal APR with in-kind airdrops folded in, and what the boost is doing to it — for and against — until January 2028."
+      />
+
+      <form onSubmit={onSubmit} className="rise rise-1 flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div
+            className={cn(
+              "flex flex-1 items-stretch overflow-hidden rounded-lg border bg-background/60 font-mono text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring/50",
+              inputError ? "border-destructive" : "border-input",
+            )}
+          >
+            <span className="flex select-none items-center border-r border-input bg-muted/60 px-3 text-muted-foreground">
+              0x
+            </span>
+            <input
+              value={hex}
+              onChange={(e) => {
+                setHex(e.target.value.replace(/^0x/i, "").trim());
+                setInputError(null);
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                setHex(e.clipboardData.getData("text").trim().replace(/^0x/i, ""));
+                setInputError(null);
+              }}
+              placeholder="40 hex characters"
+              spellCheck={false}
+              autoComplete="off"
+              maxLength={42}
+              aria-label="Wallet address without 0x prefix"
+              aria-invalid={inputError ? true : undefined}
+              className="w-full bg-transparent px-3 py-2.5 tracking-wide outline-none placeholder:text-muted-foreground/60"
+            />
+            <span className="flex items-center px-3 text-[11px] text-muted-foreground">{hex.length}/40</span>
+          </div>
+          <Button type="submit" size="lg" className="font-mono" disabled={state.kind === "loading"}>
+            <Search />
+            {state.kind === "loading" ? "Reading chain…" : "Look up"}
+          </Button>
+        </div>
+        {inputError && <p className="font-mono text-xs text-destructive">{inputError}</p>}
+      </form>
+
+      {state.kind === "idle" && (
+        <p className="text-sm text-muted-foreground">
+          Nothing is fetched until you look an address up. Reads are the same contracts as the rest of
+          the page plus Pendle&apos;s API for in-kind airdrops and its own record of what the address
+          has accrued.
+        </p>
+      )}
+      {state.kind === "loading" && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-36 bg-muted/40" />
+          ))}
+        </div>
+      )}
+      {state.kind === "error" && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+          <Eyebrow className="text-destructive">Lookup failed</Eyebrow>
+          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-destructive/90">{state.message}</pre>
+        </div>
+      )}
+      {state.kind === "result" && <Result data={state.data} />}
+    </section>
+  );
+}
+
+function Result({ data }: { data: PositionData }) {
+  const { sPendle, lock, weight, rewards, apr, outlook, epochs } = data;
+  const rows = [...epochs].reverse();
+  const hasStake = sPendle.balance > 0;
+  const hasBoost = lock?.boostActive ?? false;
+
+  if (data.empty) {
+    return (
+      <div className="rounded-lg border border-border bg-card/60 p-6">
+        <Eyebrow>{data.address}</Eyebrow>
+        <p className="mt-2 text-sm text-muted-foreground">
+          No sPENDLE, no unstake in progress, no vePENDLE lock at the snapshot or now, and no sPENDLE
+          rewards on Pendle&apos;s books. There is nothing to break down for this address.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-mono text-xs text-muted-foreground">
+          <span className="text-foreground">{data.address}</span> · block {fmtInt(data.block.number)}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {hasStake && (
+            <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
+              sPENDLE staker
+            </Badge>
+          )}
+          {lock && (
+            <Badge variant="outline" className="font-mono text-[10px] text-vependle ring-vependle/30">
+              {hasBoost ? "boosted vePENDLE locker" : "former vePENDLE locker"}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-spendle/20">
+          <CardContent>
+            <Stat
+              label="sPENDLE held"
+              value={fmtInt(sPendle.balance)}
+              tone="spendle"
+              size="lg"
+              sub={
+                sPendle.cooldownAmount > 0
+                  ? `plus ${fmtInt(sPendle.cooldownAmount)} PENDLE in cooldown, withdrawable ${fmtDate(sPendle.cooldownReadyAt!)}`
+                  : "no unstake in progress"
+              }
+            />
+          </CardContent>
+        </Card>
+        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-vependle/20">
+          <CardContent>
+            {lock ? (
+              <Stat
+                label="PENDLE locked in vePENDLE"
+                value={fmtInt(lock.amount)}
+                tone="vependle"
+                size="lg"
+                sub={
+                  lock.amount > 0
+                    ? `unlocks ${fmtDate(lock.expiry)} · snapshot lock ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
+                    : `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}; withdrawn`
+                }
+              />
+            ) : (
+              <Stat label="PENDLE locked in vePENDLE" value="0" size="lg" sub="no lock at the snapshot, none now" />
+            )}
+          </CardContent>
+        </Card>
+        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-boost/25">
+          <CardContent>
+            <Stat
+              label="Virtual sPENDLE"
+              value={fmtInt(lock?.virtualNow ?? 0)}
+              tone="boost"
+              size="lg"
+              sub={
+                hasBoost && lock
+                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, sliding to 1× on ${fmtDate(lock.snapshotExpiry)}`
+                  : "no active loyalty boost"
+              }
+            />
+          </CardContent>
+        </Card>
+        <Card size="sm" className="border-0 bg-card/80">
+          <CardContent>
+            <Stat
+              label="Reward weight · share"
+              value={fmtPct(weight.share, 4)}
+              size="lg"
+              sub={`${fmtInt(weight.now)} of the reward-eligible total · ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} PENDLE bought back so far this epoch`}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="border-0 bg-card/80">
+          <CardContent className="flex flex-col gap-5">
+            <Eyebrow>Paid so far</Eyebrow>
+            <Stat
+              label="sPENDLE earned · pro-rata estimate"
+              value={fmtNum(rewards.earnedEstimate)}
+              unit="sPENDLE"
+              size="lg"
+              sub={`${rewards.epochsWithPosition} epochs with a position · your weight ÷ eligible total × each distribution`}
+            />
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+              <Stat
+                label="Pendle's record"
+                value={fmtNum(rewards.apiAccrued)}
+                sub={`accrued per the Pendle API · ${fmtNum(rewards.claimed)} claimed onchain · ${fmtNum(rewards.unclaimed)} unclaimed`}
+              />
+              <Stat
+                label="In-kind airdrops"
+                value={fmtUsd(rewards.airdropUsd)}
+                sub={`≈ ${fmtNum(rewards.airdropPendle)} PENDLE at each epoch's buyback price · ${rewards.airdropEpochsCovered} epochs covered`}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 bg-card/80 ring-1 ring-spendle/20">
+          <CardContent className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Eyebrow className="text-spendle">Your APR</Eyebrow>
+              <span className="font-mono text-[10px] text-muted-foreground">on sPENDLE + locked PENDLE, per year</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Stat
+                label="Latest epoch · buybacks"
+                value={apr.latestBuyback === null ? "—" : fmtPct(apr.latestBuyback)}
+                tone="spendle"
+                size="lg"
+                sub={`protocol plain ${fmtPct(apr.protocolPlainLatest)} · avg locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
+              />
+              <Stat
+                label="Latest epoch · incl. airdrops"
+                value={apr.latestTotal === null ? "—" : fmtPct(apr.latestTotal)}
+                size="lg"
+                sub="airdrops converted to PENDLE at that epoch's buyback price"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+              <Stat
+                label={`Mean · ${apr.epochsAveraged} epochs`}
+                value={apr.meanBuyback === null ? "—" : fmtPct(apr.meanBuyback)}
+                sub="buybacks only, every epoch you held a position"
+              />
+              <Stat
+                label={`Mean · ${apr.epochsAveragedTotal} epochs`}
+                value={apr.meanTotal === null ? "—" : fmtPct(apr.meanTotal)}
+                sub="incl. airdrops, epochs with airdrop data"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 bg-card/80 ring-1 ring-boost/25">
+          <CardContent className="flex flex-col gap-5">
+            <Eyebrow className="text-boost">What the boost does to you</Eyebrow>
+            {hasStake && (
+              <Stat
+                label="Dilution on your sPENDLE"
+                value={`−${fmtNum(rewards.dilutionCost)}`}
+                unit="sPENDLE so far"
+                tone="boost"
+                size="lg"
+                sub={`what a 1× world would have paid you, minus what you got · another ≈ ${fmtNum(outlook.remainingDilutionCost)} by ${fmtDate(outlook.boostEndsAt)} at the latest payout`}
+              />
+            )}
+            {lock && (rewards.premiumEarned > 0 || hasBoost) && (
+              <Stat
+                label="Premium on your lock"
+                value={`+${fmtNum(rewards.premiumEarned)}`}
+                unit="sPENDLE so far"
+                tone="vependle"
+                size="lg"
+                sub={`rewards above a 1× count of your locked PENDLE · another ≈ ${fmtNum(outlook.remainingPremium)} before your boost ends`}
+              />
+            )}
+            {hasStake && lock && hasBoost && (
+              <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+                Net so far: {rewards.premiumEarned - rewards.dilutionCost >= 0 ? "+" : "−"}
+                {fmtNum(Math.abs(rewards.premiumEarned - rewards.dilutionCost))} sPENDLE. Your lock&apos;s
+                premium is paid by everyone&apos;s sPENDLE, including yours.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {outlook.aprNow !== null && (
+        <Card className="border-0 bg-card/80">
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <Eyebrow>Your APR from here to the end of the boost</Eyebrow>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+                  Position held as-is, protocol sPENDLE flat, every epoch paying the latest{" "}
+                  {fmtInt(outlook.latestDistribution)} sPENDLE. When your lock expires the PENDLE is
+                  assumed restaked as sPENDLE at 1×. Buybacks only.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-6">
+                <Stat label="Today" value={fmtPct(outlook.aprNow)} />
+                {outlook.aprAtUnlockRestaked !== null && (
+                  <Stat label={`At your unlock · ${fmtDate(outlook.unlockAt!)}`} value={fmtPct(outlook.aprAtUnlockRestaked)} />
+                )}
+                <Stat label={`Boost gone · ${fmtDate(outlook.boostEndsAt)}`} value={fmtPct(outlook.aprAfterBoost!)} tone="spendle" />
+              </div>
+            </div>
+            <PersonalAprChart points={data.projection} unlockAt={outlook.unlockAt} boostEndsAt={outlook.boostEndsAt} />
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-0 bg-card/80">
+        <CardContent className="flex flex-col gap-3 px-0">
+          <div className="px-4">
+            <Eyebrow>Epoch by epoch</Eyebrow>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <Th className="pl-4">#</Th>
+                <Th>Distributed</Th>
+                <Th right>Your sPENDLE</Th>
+                <Th right>Your lock</Th>
+                <Th right>Mult.</Th>
+                <Th right>Share</Th>
+                <Th right className="text-spendle">sPENDLE earned</Th>
+                <Th right>Airdrop → PENDLE</Th>
+                <Th right>Buyback px</Th>
+                <Th right className="text-spendle">APR</Th>
+                <Th right>APR incl. airdrops</Th>
+                <Th right className="pr-4">Tx</Th>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((e) => (
+                <TableRow key={e.txHash} className={cn("tabular font-mono text-xs", e.principal === 0 && "text-muted-foreground/60")}>
+                  <TableCell className="pl-4 text-muted-foreground">{e.epoch}</TableCell>
+                  <TableCell>{fmtDate(e.timestamp)}</TableCell>
+                  <TableCell className="text-right">{fmtInt(e.sPendleBalance)}</TableCell>
+                  <TableCell className="text-right">{e.locked > 0 ? fmtInt(e.locked) : "—"}</TableCell>
+                  <TableCell className="text-right">{e.locked > 0 ? fmtMult(e.multiplier) : "—"}</TableCell>
+                  <TableCell className="text-right">{fmtPct(e.share, 4)}</TableCell>
+                  <TableCell className="text-right text-spendle">{fmtNum(e.sPendleEarned)}</TableCell>
+                  <TableCell className="text-right">
+                    {e.airdropUsd === null
+                      ? <span className="text-muted-foreground/60">no data</span>
+                      : e.airdropUsd === 0
+                        ? "—"
+                        : `${fmtUsd(e.userAirdropUsd!)} → ${fmtNum(e.userAirdropPendle!)} ${e.airdropTokens.length ? `(${e.airdropTokens.join(", ")})` : ""}`}
+                  </TableCell>
+                  <TableCell className="text-right">${fmtNum(e.execPrice, 3)}</TableCell>
+                  <TableCell className="text-right text-spendle">{e.aprBuyback === null ? "—" : fmtPct(e.aprBuyback)}</TableCell>
+                  <TableCell className="text-right">{e.aprTotal === null ? "—" : fmtPct(e.aprTotal)}</TableCell>
+                  <TableCell className="pr-4 text-right"><TxLink hash={e.txHash} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <p className="px-4 pt-2 text-xs leading-relaxed text-muted-foreground">
+            Same denomination as the yield section: sPENDLE earned ÷ (your sPENDLE + your locked PENDLE) × {EPY}.
+            Airdrops are the one place a dollar figure enters: Pendle reports each epoch&apos;s in-kind
+            airdrops in USD at distribution time; your share of that is converted to PENDLE at the same
+            epoch&apos;s realised buyback price (USDT spent ÷ PENDLE bought by the buyback contract, read
+            from its swap transfers) and added to the sPENDLE you earned. Pendle&apos;s API only covers the
+            last 12 epochs, so earlier rows show &ldquo;no data&rdquo; and are left out of the
+            airdrop-inclusive mean. &ldquo;Your sPENDLE&rdquo; is the balance the block before each
+            distribution; the estimate assumes you were active in every epoch.
+          </p>
+        </CardContent>
+      </Card>
+      <p className="text-xs text-muted-foreground">
+        Boost ends {fmtDate(outlook.boostEndsAt)} · {fmtDays((outlook.boostEndsAt - data.block.timestamp) / 86_400)} away.
+      </p>
+    </div>
+  );
+}
+
+function Th({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
+  return (
+    <TableHead
+      className={cn(
+        "font-mono text-[11px] uppercase tracking-wider text-muted-foreground",
+        right && "text-right",
+        className,
+      )}
+    >
+      {children}
+    </TableHead>
+  );
+}

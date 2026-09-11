@@ -141,6 +141,66 @@ export function DecayChart({
   );
 }
 
+export function PersonalAprChart({
+  points,
+  unlockAt,
+  boostEndsAt,
+}: {
+  points: { t: number; apr: number }[];
+  unlockAt: number | null;
+  boostEndsAt: number;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart data={points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="t"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          tickFormatter={(v: number) => fmtPct(v, 1)}
+          domain={[0, (max: number) => Math.ceil(max * 100) / 100]}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <Tooltip
+          cursor={{ stroke: "oklch(1 0 0 / 25%)" }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0].payload as { t: number; apr: number };
+            return <TipFrame title={fmtDate(p.t)} rows={[{ label: "Your APR, buybacks only", value: fmtPct(p.apr), color: SPENDLE }]} />;
+          }}
+        />
+        <Line type="linear" dataKey="apr" stroke={SPENDLE} strokeWidth={2} dot={false} isAnimationActive={false} />
+        {unlockAt !== null && unlockAt < boostEndsAt && (
+          <ReferenceLine
+            x={unlockAt}
+            stroke={VEPENDLE}
+            strokeDasharray="4 4"
+            label={{ value: "your unlock", position: "insideBottomLeft", fill: VEPENDLE, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          />
+        )}
+        <ReferenceLine
+          x={boostEndsAt}
+          stroke={AXIS}
+          strokeDasharray="2 4"
+          label={{ value: "boost gone", position: "insideTopRight", fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
 export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={340}>
