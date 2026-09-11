@@ -4,7 +4,7 @@ import {
   fetchDistributions,
   fetchLiveState,
   fetchSnapshotSchedule,
-  fetchUserEpochBalances,
+  fetchUserEpochStates,
   fetchUserState,
 } from "./chain";
 import { EPOCHS_PER_YEAR, EPOCH_SECONDS, MAX_LOCK_TIME, SNAPSHOT_BLOCK, WEEK } from "./config";
@@ -17,7 +17,10 @@ export type EpochRow = {
   timestamp: number;
   txHash: string;
   distributed: number;
+  /** Wallet sPENDLE just before the distribution. */
   sPendleBalance: number;
+  /** Rewards accrued but not yet claimed at that point; they earn like wallet sPENDLE. */
+  sPendleUnclaimed: number;
   locked: number;
   virtual: number;
   multiplier: number;
@@ -44,7 +47,10 @@ export type PositionData = {
   /** Live PENDLE/USD from Pendle's asset-price feed. */
   pendleUsd: number;
   sPendle: {
+    /** sPENDLE in the wallet. */
     balance: number;
+    /** Rewards accrued (per Pendle) and not yet claimed; they earn like wallet sPENDLE. */
+    unclaimed: number;
     cooldownAmount: number;
     cooldownReadyAt: number | null;
     walletPendle: number;
@@ -121,16 +127,21 @@ export async function getPosition(input: string): Promise<PositionData> {
   ]);
   raw.sort((a, b) => Number(a.blockNumber - b.blockNumber));
   const blocks = raw.map((d) => d.blockNumber);
-  const [balances, windows] = await Promise.all([
-    fetchUserEpochBalances(address, blocks),
+  const [states, windows] = await Promise.all([
+    fetchUserEpochStates(address, blocks),
     fetchBuybackWindows([SNAPSHOT_BLOCK, ...blocks]),
   ]);
   const distributions = buildDistributions(raw, windows, snapshot);
 
   const now = live.timestamp;
+  // Unclaimed rewards keep earning, so a holder's eligible sPENDLE is wallet balance plus rewards
+  // accrued so far and not yet claimed. Accrued-so-far is this estimate's own running total.
+  let accruedSoFar = 0;
   const epochs = distributions.map((d, k): EpochRow => {
     const t = BigInt(d.timestamp);
-    const bal = toTokens(balances[k]);
+    const wallet = toTokens(states[k].balance);
+    const unclaimed = Math.max(0, accruedSoFar - toTokens(states[k].claimed));
+    const bal = wallet + unclaimed;
     const lockedAtEpoch = user.snapshotLockExpiry > t ? toTokens(user.snapshotLockAmount) : 0;
     const virtual = toTokens(userVirtualAt(user.snapshotLockAmount, user.snapshotLockExpiry, t));
     const share = (bal + virtual) / d.eligibleTotal;
@@ -149,12 +160,14 @@ export async function getPosition(input: string): Promise<PositionData> {
       principal > 0 && userAirdropPendle !== null
         ? annualise(sPendleEarned + userAirdropPendle, principal)
         : null;
+    accruedSoFar += sPendleEarned;
     return {
       epoch: d.epoch,
       timestamp: d.timestamp,
       txHash: d.txHash,
       distributed: d.amount,
-      sPendleBalance: bal,
+      sPendleBalance: wallet,
+      sPendleUnclaimed: unclaimed,
       locked: lockedAtEpoch,
       virtual,
       multiplier: lockedAtEpoch > 0 ? virtual / lockedAtEpoch : 0,
@@ -179,12 +192,17 @@ export async function getPosition(input: string): Promise<PositionData> {
   const withTotal = epochs.filter((e) => e.aprTotal !== null);
   const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 
-  const balance = toTokens(user.sPendleBalance);
+  const walletBalance = toTokens(user.sPendleBalance);
+  const claimed = toTokens(user.claimedSPendle);
+  const accrued = toTokens(apiAccrued);
+  const unclaimedNow = Math.max(0, accrued - claimed);
+  // Eligible sPENDLE for this wallet: what it holds plus what it has earned and not yet claimed.
+  const balance = walletBalance + unclaimedNow;
   const lockedNow = user.lockExpiry > now ? toTokens(user.lockAmount) : 0;
   const virtualNow = toTokens(userVirtualAt(user.snapshotLockAmount, user.snapshotLockExpiry, now));
   const hasLock = user.snapshotLockAmount > 0n || user.lockAmount > 0n;
 
-  const eligibleSPendle = toTokens(live.sPendleSupply - live.sPendleInDistributor);
+  const eligibleSPendle = toTokens(live.sPendleSupply);
   const protocolNow = loyaltyAt(snapshot, now);
   const rewardEligible = eligibleSPendle + toTokens(protocolNow.virtual);
   const weightNow = balance + virtualNow;
@@ -205,16 +223,14 @@ export async function getPosition(input: string): Promise<PositionData> {
     snapExpiry: user.snapshotLockExpiry,
   });
 
-  const claimed = toTokens(user.claimedSPendle);
-  const accrued = toTokens(apiAccrued);
-
   return {
     address,
     block: { number: Number(live.blockNumber), timestamp: Number(now) },
-    empty: balance === 0 && user.cooldownAmount === 0n && !hasLock && accrued === 0,
+    empty: walletBalance === 0 && user.cooldownAmount === 0n && !hasLock && accrued === 0,
     pendleUsd,
     sPendle: {
-      balance,
+      balance: walletBalance,
+      unclaimed: unclaimedNow,
       cooldownAmount: toTokens(user.cooldownAmount),
       cooldownReadyAt:
         user.cooldownAmount > 0n ? Number(user.cooldownStart) + live.cooldownDuration : null,

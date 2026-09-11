@@ -86,7 +86,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">80% share</dt>
         <dd>0.8 × DefiLlama Revenue. Policy, not a flow: the gap to Funded is in-kind airdrops and lag.</dd>
         <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Source</dt>
-        <dd>DefiLlama, Pendle V2 label, all chains, since 29 Jan 2026. Fees book on treasury receipt, so epochs are lumpy.</dd>
+        <dd>DefiLlama, Pendle V2 only, all chains, since 29 Jan 2026. A fee counts on the day it reaches Pendle&apos;s treasury, so single epochs are lumpy.</dd>
       </dl>
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -237,7 +237,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               line (right axis) is LP emissions: PENDLE paid to Ethereum markets from the gauge
               controller over the same period, new supply for LPs to hold or sell. It is the
               Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere and is
-              not counted. The controller pays from inventory it already held, so PENDLE total supply
+              not counted. The gauge pays from PENDLE it already held, so PENDLE total supply
               is flat; these are emissions into circulation, not minting. Other chains&apos; AIM is in
               the AIM card.
             </p>
@@ -307,7 +307,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               usd={usdOf(r.aim.pendle, pendleUsd)}
               tone="boost"
               size="lg"
-              sub="PENDLE per week as Pendle's /pendle-emission reports it, all chains; not all of it goes to LPs"
+              sub="PENDLE per week as reported by Pendle's incentives API, all chains; not all of it goes to LPs"
             />
             <p className="text-xs leading-relaxed text-muted-foreground">
               {fmtCompact(r.aim.tvl + r.aim.fee)} PENDLE is the Performance stream (TVL + fee), paid to
@@ -334,7 +334,7 @@ export function Revenue({ data }: { data: TrackerData }) {
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
             <Eyebrow>Every fee epoch</Eyebrow>
             <span className="font-mono text-[10px] text-muted-foreground">
-              USD from DefiLlama and USDT Transfer logs; since 29 Jan 2026
+              USD from DefiLlama and the buyback contract&apos;s USDT transfers; since 29 Jan 2026
             </span>
           </div>
           <ExpandableTable

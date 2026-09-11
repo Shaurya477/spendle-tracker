@@ -33,8 +33,10 @@ export type Distribution = {
   usdtSpent: number;
   /** PENDLE the buyback contract received in that window; every inflow, not only swap output. */
   pendleBought: number;
-  /** Reward-eligible sPENDLE the block before: supply minus unclaimed rewards parked in the distributor. */
+  /** Reward-eligible sPENDLE the block before: every sPENDLE, wallet-held or unclaimed in the distributor. */
   eligibleSPendle: number;
+  /** Of which rewards not yet claimed, sitting in the distributor. */
+  unclaimedSPendle: number;
   virtualSPendle: number;
   /** Snapshot-eligible PENDLE still locked at that block (the 1× part of virtual sPENDLE). */
   lockedSnapshot: number;
@@ -73,7 +75,9 @@ export type TrackerData = {
     supply: number;
     pendleHeld: number;
     cooldownQueue: number;
+    /** Rewards distributed but not yet claimed, held by the distributor; they keep earning for their owners. */
     unclaimedInDistributor: number;
+    /** Reward-eligible sPENDLE: every sPENDLE, wallet-held or unclaimed. Equals supply. */
     eligible: number;
     cooldownDays: number;
     instantFeePct: number;
@@ -142,7 +146,7 @@ export function buildDistributions(
       const w = windows[i];
       const v = loyaltyAt(snapshot, d.timestamp);
       const amount = toTokens(d.amount);
-      const eligible = toTokens(d.supplyBefore - d.distributorBefore);
+      const eligible = toTokens(d.supplyBefore);
       const virtualThen = toTokens(v.virtual);
       const lockedThen = toTokens(v.locked);
       const total = eligible + virtualThen;
@@ -157,6 +161,7 @@ export function buildDistributions(
         usdtSpent: Number(w.usdtSpent) / 1e6,
         pendleBought: toTokens(w.pendleBought),
         eligibleSPendle: eligible,
+        unclaimedSPendle: toTokens(d.distributorBefore),
         virtualSPendle: virtualThen,
         lockedSnapshot: lockedThen,
         eligibleTotal: total,
@@ -205,7 +210,8 @@ async function computeTrackerData(): Promise<TrackerData> {
 
   const supply = toTokens(live.sPendleSupply);
   const unclaimed = toTokens(live.sPendleInDistributor);
-  const eligibleSPendle = supply - unclaimed;
+  // Unclaimed rewards keep earning for their owners, so every sPENDLE is reward-eligible.
+  const eligibleSPendle = supply;
   const virtual = toTokens(loyaltyNow.virtual);
   const locked = toTokens(loyaltyNow.locked);
   const premium = virtual - locked;

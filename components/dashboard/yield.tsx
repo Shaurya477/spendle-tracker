@@ -20,7 +20,7 @@ export function Yield({ data }: { data: TrackerData }) {
         lede={
           <>
             About every 14 days the buyback contract stakes the PENDLE it bought with protocol fees
-            and sends the minted sPENDLE to the Merkle distributor. That sPENDLE is split pro-rata
+            and hands the new sPENDLE to the rewards distributor for stakers to claim. It is split pro-rata
             over eligible sPENDLE plus virtual sPENDLE. A staker gets a 1× share; a locker gets
             their multiplier times that.
           </>
@@ -36,9 +36,10 @@ export function Yield({ data }: { data: TrackerData }) {
             </Badge>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            APR = sPENDLE distributed ÷ (eligible sPENDLE + virtual sPENDLE). Rewards are paid in
-            the asset that is staked, so PENDLE&apos;s dollar price cancels out of the ratio. Holdings
-            elsewhere on this page use the live USD quote; APR does not.
+            APR = sPENDLE distributed ÷ (all sPENDLE + virtual sPENDLE). Unclaimed rewards keep
+            earning, so they count. Rewards are paid in the asset that is staked, so PENDLE&apos;s
+            dollar price cancels out of the ratio; holdings elsewhere on this page use the live USD
+            quote, APR does not.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -53,7 +54,7 @@ export function Yield({ data }: { data: TrackerData }) {
           <p className="text-xs leading-relaxed text-muted-foreground">
             &ldquo;Latest&rdquo; is the most recent distribution alone. &ldquo;Trailing&rdquo; is the
             arithmetic mean of the last {y.trailing.epochs} per-epoch APRs, each with its own
-            denominator at that block.
+            eligible total at the time.
           </p>
         </div>
       </div>
@@ -106,7 +107,7 @@ export function Yield({ data }: { data: TrackerData }) {
               value={fmtPct(latest.aprBoostedAvg)}
               tone="boost"
               size="lg"
-              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at that block, in token terms`}
+              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at the time, in token terms`}
             />
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
               <Stat

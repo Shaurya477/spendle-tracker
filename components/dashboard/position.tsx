@@ -162,7 +162,7 @@ function Result({ data }: { data: PositionData }) {
   const hasStake = sPendle.balance > 0;
   const hasBoost = lock?.boostActive ?? false;
   const locked = lock && lock.amount > 0 ? lock.amount : 0;
-  const held = sPendle.balance + sPendle.cooldownAmount + locked + sPendle.walletPendle;
+  const held = sPendle.balance + sPendle.unclaimed + sPendle.cooldownAmount + locked + sPendle.walletPendle;
   const usd = (qty: number) => usdOf(qty, pendleUsd, 2);
 
   if (data.empty) {
@@ -207,16 +207,16 @@ function Result({ data }: { data: PositionData }) {
               value={usd(held)}
               tone="spendle"
               size="lg"
-              sub={`(sPENDLE + locked + cooldown + wallet PENDLE) × ${fmtUsdPrice(pendleUsd)}`}
+              sub={`(sPENDLE incl. unclaimed rewards + locked + cooldown + wallet PENDLE) × ${fmtUsdPrice(pendleUsd)}`}
             />
           </div>
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
               label="sPENDLE"
-              value={fmtInt(sPendle.balance)}
-              usd={usd(sPendle.balance)}
+              value={fmtInt(sPendle.balance + sPendle.unclaimed)}
+              usd={usd(sPendle.balance + sPendle.unclaimed)}
               tone="spendle"
-              sub={sPendle.cooldownAmount > 0 ? "staked, 1:1 with PENDLE" : "staked, no cooldown in progress"}
+              sub={`${fmtInt(sPendle.balance)} in the wallet + ${fmtNum(sPendle.unclaimed)} unclaimed rewards, which keep earning${sPendle.cooldownAmount > 0 ? "" : "; no cooldown in progress"}`}
             />
             <Stat
               label="Locked"
@@ -261,8 +261,8 @@ function Result({ data }: { data: PositionData }) {
               size="lg"
               sub={
                 hasBoost && lock
-                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, falling to 1× on ${fmtDate(lock.snapshotExpiry)}; reward weight, not a held balance`
-                  : "no active loyalty boost; not a held balance"
+                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, falling to 1× on ${fmtDate(lock.snapshotExpiry)}; counts toward rewards, not a balance you hold`
+                  : "no active loyalty boost; counts toward rewards, not a balance you hold"
               }
             />
           </CardContent>
@@ -273,7 +273,7 @@ function Result({ data }: { data: PositionData }) {
               label="Reward weight and share"
               value={fmtPct(weight.share, 4)}
               size="lg"
-              sub={`${fmtInt(weight.now)} of the reward-eligible total, worth ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} PENDLE bought back so far this epoch`}
+              sub={`sPENDLE incl. unclaimed rewards + virtual sPENDLE, ${fmtInt(weight.now)} of the eligible total, worth ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} PENDLE bought back so far this epoch`}
             />
           </CardContent>
         </Card>
@@ -454,7 +454,7 @@ function Result({ data }: { data: PositionData }) {
                 <TableRow key={e.txHash} className={cn("tabular font-mono text-xs", e.principal === 0 && "text-muted-foreground/60")}>
                   <TableCell className="pl-4 text-muted-foreground">{e.epoch}</TableCell>
                   <TableCell>{fmtDate(e.timestamp)}</TableCell>
-                  <TableCell className="text-right">{fmtInt(e.sPendleBalance)}</TableCell>
+                  <TableCell className="text-right">{fmtInt(e.sPendleBalance + e.sPendleUnclaimed)}</TableCell>
                   <TableCell className="text-right">{e.locked > 0 ? fmtInt(e.locked) : "—"}</TableCell>
                   <TableCell className="text-right">{e.locked > 0 ? fmtMult(e.multiplier) : "—"}</TableCell>
                   <TableCell className="text-right">{fmtPct(e.share, 4)}</TableCell>
@@ -479,12 +479,13 @@ function Result({ data }: { data: PositionData }) {
             Airdrops are the one place a dollar figure enters: Pendle&apos;s API reports each epoch&apos;s
             in-kind airdrops in USD, with no valuation timestamp; your share of that is converted to PENDLE
             at the same epoch&apos;s realised buyback price (USDT the buyback contract sent out ÷ PENDLE it
-            received between distributions, from its Transfer logs; every PENDLE inflow counts, not only
-            swap output) and added to the sPENDLE you earned. Held balances above are marked
+            received between distributions, from the contract&apos;s token transfers; every PENDLE inflow
+            counts, not only swap output) and added to the sPENDLE you earned. Held balances above are marked
             to the live PENDLE/USD quote ({fmtUsdPrice(pendleUsd)}); APR stays in token terms. Pendle&apos;s API only covers the
             last 12 epochs, so earlier rows show &ldquo;no data&rdquo; and are left out of the
-            airdrop-inclusive mean. &ldquo;Your sPENDLE&rdquo; is the balance the block before each
-            distribution; the estimate assumes you were active in every epoch.
+            airdrop-inclusive mean. &ldquo;Your sPENDLE&rdquo; is your wallet balance plus rewards accrued and not yet claimed, just
+            before each distribution; unclaimed rewards keep earning, so they count. The estimate
+            assumes you were active in every epoch.
           </p>
         </CardContent>
       </Card>

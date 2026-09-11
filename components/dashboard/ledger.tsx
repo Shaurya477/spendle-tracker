@@ -12,7 +12,7 @@ export function Ledger({ data }: { data: TrackerData }) {
       <SectionHeading
         index="05"
         title="Distribution ledger"
-        lede="Every distribution found onchain: the PENDLE the buyback contract bought, what it spent in USDT, the sPENDLE it sent to the Merkle distributor, the eligible and virtual balances the block before, and the plain and boosted APR for that epoch."
+        lede="Every reward distribution so far: the PENDLE the buyback contract bought and what it paid in USDT, the sPENDLE handed to stakers, the eligible sPENDLE (all of it, unclaimed rewards included) and virtual sPENDLE just before the payout, and the plain and boosted APR for that epoch."
       />
       <Card className="rise rise-1 border-0 bg-card/80">
         <CardContent className="px-0">

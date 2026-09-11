@@ -33,7 +33,7 @@ Name the problem, quote the text, propose the replacement. Patterns that count a
 - Fees: 5% of YT yield (including points) goes to the protocol; swap fees split 20% to LPs, 80% to the protocol. Protocol take is split by policy up to 80% buybacks, 10% treasury, 10% operations; the app's 80/10/10 figures are a policy share of DefiLlama Revenue, and "Funded" is the USDT actually received by the buyback contract. DefiLlama's Revenue minus 80% of swap is "YT and other fees" (YT, limit-order, points fees, airdrop tokens booked at the treasury), not YT fees alone.
 - AIM incentives are paid weekly from PENDLE already held by the gauge controller. PENDLE supply is flat since the snapshot; nothing is minted.
 - Fee epochs start Tuesday 00:00 UTC and last 14 days. Fee data is DefiLlama's Pendle V2 label only, Boros excluded, from 29 Jan 2026.
-- APR is token-denominated: sPENDLE paid ÷ (eligible sPENDLE + virtual sPENDLE), annualised simply by ×26.09. "Trailing" is the mean of the last six per-epoch APRs.
+- APR is token-denominated: sPENDLE paid ÷ (eligible sPENDLE + virtual sPENDLE), annualised simply by ×26.09. Eligible sPENDLE is every sPENDLE, including rewards not yet claimed; unclaimed rewards keep earning. "Trailing" is the mean of the last six per-epoch APRs.
 - The dataset is cached five minutes. The site is independent and not affiliated with Pendle.
 
 ## Output

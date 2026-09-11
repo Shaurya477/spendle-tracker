@@ -59,7 +59,7 @@ export function buildThesis(data: TrackerData): Thesis {
     passing: ratio > 1,
   };
 
-  // 2. Reward-eligible sPENDLE trend.
+  // 2. Eligible sPENDLE trend (all sPENDLE, unclaimed rewards included).
   const first = distributions[0];
   const prev = distributions[distributions.length - 1];
   const stakedGrowth = change(sPendle.eligible, first.eligibleSPendle);
@@ -68,7 +68,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "staking-rising",
     title: "Eligible sPENDLE growth",
     value: signedPct(stakedGrowth),
-    detail: `Reward-eligible sPENDLE is ${fmtCompact(sPendle.eligible)}, from ${fmtCompact(first.eligibleSPendle)} at the first distribution (${fmtDate(first.timestamp)}) and ${fmtCompact(prev.eligibleSPendle)} at the latest. ${fmtPct(exitShare, 1)} of sPENDLE is in the 14-day cooldown queue.`,
+    detail: `Eligible sPENDLE, every sPENDLE including unclaimed rewards, is ${fmtCompact(sPendle.eligible)}, from ${fmtCompact(first.eligibleSPendle)} at the first distribution (${fmtDate(first.timestamp)}) and ${fmtCompact(prev.eligibleSPendle)} at the latest. ${fmtPct(exitShare, 1)} of sPENDLE is in the 14-day cooldown queue.`,
     test: "eligible sPENDLE today > eligible sPENDLE at the latest distribution",
     passing: sPendle.eligible > prev.eligibleSPendle,
   };
@@ -79,7 +79,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "illiquid-share",
     title: "Supply staked or locked",
     value: fmtPct(illiquid, 1),
-    detail: `${fmtCompact(sPendle.supply)} sPENDLE plus ${fmtCompact(vePendle.pendleHeld)} PENDLE in the vePENDLE escrow, of ${fmtCompact(pendleSupply.now)} total supply. sPENDLE leaves through a 14-day cooldown or a 5% fee; ${fmtCompact(vePendle.activeLocked)} of the escrow is still under lock, most of it until January 2028.`,
+    detail: `${fmtCompact(sPendle.supply)} sPENDLE plus ${fmtCompact(vePendle.pendleHeld)} PENDLE still in the old vePENDLE lock contract, of ${fmtCompact(pendleSupply.now)} total supply. sPENDLE leaves through a 14-day cooldown or a 5% fee; ${fmtCompact(vePendle.activeLocked)} of the locked PENDLE is still under an active lock, most of it until January 2028.`,
     test: "> 25% of PENDLE supply is staked or locked",
     passing: illiquid > 0.25,
   };

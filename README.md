@@ -39,7 +39,7 @@ Sources: [Introducing sPENDLE](https://medium.com/pendle/introducing-spendle-847
 | Figure | Source |
 | --- | --- |
 | sPENDLE staked | `sPENDLE.totalSupply()` |
-| Reward-eligible sPENDLE | supply − `sPENDLE.balanceOf(merkleDistributor)` (unclaimed rewards belong to no active holder yet) |
+| Reward-eligible sPENDLE | `sPENDLE.totalSupply()`: every sPENDLE earns, including rewards distributed but not yet claimed, which sit in the distributor (`sPENDLE.balanceOf(merkleDistributor)`, shown as "Unclaimed rewards"). A wallet's eligible balance is its wallet sPENDLE plus rewards accrued and not yet claimed. The distributor holds ~0.3% of the eligible total (virtual sPENDLE included), so this choice moves every APR by under 0.3% relative; a check of five wallets against Pendle's per-address accruals could not separate it from the exclude-unclaimed model |
 | PENDLE in unstake queue | `PENDLE.balanceOf(sPENDLE) − sPENDLE.totalSupply()` |
 | PENDLE locked in vePENDLE | `PENDLE.balanceOf(vePENDLE)` — this is what the hub counts |
 | Active vs expired locks | `vePENDLE.slopeChanges(week)` for the next 110 weeks. Each bucket's `slope × MAX_LOCK_TIME (104 weeks)` is the PENDLE unlocking that week; the sum is PENDLE under a live lock, the remainder of the contract balance is expired-but-unwithdrawn |
@@ -74,10 +74,10 @@ Section 07 takes a wallet (fixed `0x` prefix; paste a full address and the prefi
 
 | Figure | Source |
 | --- | --- |
-| sPENDLE held, cooldown, wallet PENDLE | `sPENDLE.balanceOf`, `sPENDLE.userCooldown`, `PENDLE.balanceOf` at the latest block |
+| sPENDLE held, cooldown, wallet PENDLE | `sPENDLE.balanceOf`, `sPENDLE.userCooldown`, `PENDLE.balanceOf` at the latest block. The sPENDLE figure adds the wallet's unclaimed rewards (Pendle's accrued total minus `merkleDistributor.claimed`), since unclaimed sPENDLE keeps earning |
 | vePENDLE lock | `vePENDLE.positionData(user)` now, and at the snapshot block for the boost terms. Virtual sPENDLE = `snapshotAmount × (1 + 3 × remaining / 2y)` |
-| Reward weight / share | `(sPENDLE + virtual) ÷ reward-eligible total`; "pending" applies that share to the PENDLE the buyback contract has bought since the last distribution |
-| sPENDLE earned per epoch | `share_k × distributed_k`, with the user's sPENDLE read at the block before each distribution and their virtual sPENDLE at that timestamp. A pro-rata estimate that assumes the address was active every epoch |
+| Reward weight / share | `(sPENDLE incl. unclaimed rewards + virtual) ÷ reward-eligible total`; "pending" applies that share to the PENDLE the buyback contract has bought since the last distribution |
+| sPENDLE earned per epoch | `share_k × distributed_k`, with the user's sPENDLE read at the block before each distribution, plus rewards accrued so far and not yet claimed (this estimate's own running total minus `merkleDistributor.claimed` at that block), and their virtual sPENDLE at that timestamp. A pro-rata estimate that assumes the address was active every epoch |
 | Pendle's record | `GET /v1/spendle/:address` → `allTimeRewards["1-<sPENDLE>"]`; a 404 means the address has never been paid. Unclaimed = that minus `merkleDistributor.claimed(sPENDLE, user)` onchain |
 | In-kind airdrops | `GET /v1/spendle/data` → `airdropInUSDs` and `airdropBreakdowns` per fee epoch. A distribution at time *t* belongs to the fee epoch starting at *T* when `T + 14d ≤ t < T + 28d` (fees are collected for two weeks, then bought back over the next two). The user's share of the epoch's airdrop USD is converted to PENDLE at that epoch's **realised buyback price**: USDT out of ÷ PENDLE into the buyback contract, from its `Transfer` logs in the window between distributions (every PENDLE inflow counts, not only swap output). The API covers 12 fee epochs, so distributions 1–5 (Feb–Apr 2026) have no airdrop data and are excluded from the airdrop-inclusive mean |
 | Personal APR | `(sPENDLE earned [+ airdrop PENDLE]) ÷ (user sPENDLE + user locked PENDLE) × 26.09`, per epoch; "mean" is the arithmetic mean over epochs where the address had a position. Same token-terms denomination as the protocol APR; the airdrop leg is the only place a USD figure enters, and it is the USD value Pendle's API reports (it carries no valuation timestamp), not a live price |
@@ -114,7 +114,7 @@ The hub's "Yield Distributed Every 2 Saturdays" corresponds to the Friday-UTC tr
 - **Everyone is active.** Holders who skip a vote while a PPP is open forfeit 14 days of rewards. That set is offchain, so the APRs here are a floor for an active holder and slightly understate the payout each active holder actually received.
 - **Only PENDLE buybacks are counted.** Pendle also passes through in-kind airdrops (other tokens) received on points-bearing assets. They are not priced or included.
 - **Eligible balance timing.** Pendle snapshots active balances every 14 days on its own schedule. The app uses balances at the block before each distribution landed; eligible sPENDLE has moved between 0% and 6% per epoch since March 2026, so the timing choice shifts an epoch's APR by at most a few percent relative.
-- **Unclaimed rewards in the Merkle distributor are excluded** from eligible sPENDLE. Including them would lower every APR by ~0.3% relative (606K out of a 211M denominator).
+- **Unclaimed rewards keep earning.** sPENDLE paid out but not yet claimed sits in the Merkle distributor and still counts toward its owner's balance, so eligible sPENDLE is the full supply and a wallet's eligible balance includes its unclaimed rewards. Excluding them instead would raise every APR by ~0.3% relative (604K out of a 212M denominator).
 - **Projections** hold sPENDLE supply (or restake unlocks 1:1) and hold the latest payout flat. They are a schedule of the boost, not a forecast of fees.
 - **Locks changed after the snapshot** keep their snapshot boost terms. This matches the API's virtual-sPENDLE figure; a live-schedule computation would be ~2.3M higher.
 

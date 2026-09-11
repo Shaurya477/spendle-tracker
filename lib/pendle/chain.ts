@@ -386,17 +386,30 @@ export async function fetchGaugePendleOutflow(): Promise<{
   return { spent, gaugePendle: Number(bals[bals.length - 1]) / 1e18 };
 }
 
-/** The user's sPENDLE balance the block before each distribution landed. */
-export function fetchUserEpochBalances(user: Address, blocks: bigint[]): Promise<bigint[]> {
+export type UserEpochState = {
+  /** sPENDLE in the wallet the block before the distribution landed. */
+  balance: bigint;
+  /** Cumulative sPENDLE rewards the user had claimed from the distributor by that block. */
+  claimed: bigint;
+};
+
+/**
+ * The user's sPENDLE balance and cumulative claims the block before each distribution. Unclaimed
+ * rewards keep earning, so a holder's eligible sPENDLE is wallet balance plus rewards accrued but
+ * not yet claimed; the claimed figure lets the caller reconstruct the unclaimed part per epoch.
+ */
+export function fetchUserEpochStates(user: Address, blocks: bigint[]): Promise<UserEpochState[]> {
   return Promise.all(
-    blocks.map((b) =>
-      client.readContract({
-        address: sPendle,
-        abi: stakedPendleAbi,
-        functionName: "balanceOf",
-        args: [user],
+    blocks.map(async (b) => {
+      const [balance, claimed] = await client.multicall({
+        allowFailure: false,
         blockNumber: b - 1n,
-      }),
-    ),
+        contracts: [
+          { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [user] },
+          { address: merkleDistributor, abi: merkleDistributorAbi, functionName: "claimed", args: [sPendle, user] },
+        ],
+      });
+      return { balance, claimed };
+    }),
   );
 }

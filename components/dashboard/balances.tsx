@@ -21,8 +21,8 @@ export function Balances({ data }: { data: TrackerData }) {
             Pendle&apos;s staking hub reports one &ldquo;total staked&rdquo; figure,{" "}
             <span className="tabular font-mono text-foreground">{fmtInt(total)}</span>{" "}
             <span className="tabular font-mono text-foreground/70">({usdOf(total, pendleUsd)})</span>.
-            Onchain that is two balances: liquid sPENDLE, and PENDLE still in the deprecated vePENDLE
-            escrow.
+            Onchain that is two balances: liquid sPENDLE, and PENDLE still sitting in the old vePENDLE lock
+            contract.
           </>
         }
       />
@@ -45,16 +45,16 @@ export function Balances({ data }: { data: TrackerData }) {
                 {usdOf(sPendle.supply, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
-                sPENDLE supply, <code className="font-mono">totalSupply()</code> on the StakedPendle
-                contract, 1:1 with PENDLE
+                All sPENDLE in existence, read from the staking contract. Each one is backed by one
+                PENDLE, and every one earns rewards, claimed or not.
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-3">
               <Stat
-                label="Reward-eligible"
-                value={fmtCompact(sPendle.eligible)}
-                usd={usdOf(sPendle.eligible, pendleUsd)}
-                sub={`supply minus ${fmtCompact(sPendle.unclaimedInDistributor)} unclaimed rewards held in the Merkle distributor`}
+                label="Unclaimed rewards"
+                value={fmtCompact(sPendle.unclaimedInDistributor)}
+                usd={usdOf(sPendle.unclaimedInDistributor, pendleUsd)}
+                sub="distributed sPENDLE not yet claimed; it keeps earning for its owners, so it counts in the supply above"
               />
               <Stat
                 label="In cooldown"
@@ -90,8 +90,8 @@ export function Balances({ data }: { data: TrackerData }) {
                 {usdOf(vePendle.pendleHeld, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
-                PENDLE held by the VotingEscrow contract,{" "}
-                <code className="font-mono">PENDLE.balanceOf(vePENDLE)</code>
+                PENDLE sitting in the old vePENDLE lock contract, whether the lock is still running or
+                has ended
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-3">
@@ -99,13 +99,13 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Under active lock"
                 value={fmtCompact(vePendle.activeLocked)}
                 usd={usdOf(vePendle.activeLocked, pendleUsd)}
-                sub={`slope schedule; last unlock ${fmtDate(vePendle.lastLiveExpiry)}${vePendle.lastLiveExpiry > loyalty.expiresAt ? ", after the boost ends: a lock extended post-snapshot, boost terms fixed" : ""}`}
+                sub={`from the contract's unlock schedule; last unlock ${fmtDate(vePendle.lastLiveExpiry)}${vePendle.lastLiveExpiry > loyalty.expiresAt ? ", after the boost ends: one lock was extended after the snapshot, its boost terms stay fixed" : ""}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
                 value={fmtCompact(vePendle.expiredUnwithdrawn)}
                 usd={usdOf(vePendle.expiredUnwithdrawn, pendleUsd)}
-                sub="lock ended, owner has not called withdraw()"
+                sub="lock has ended but the owner has not withdrawn the PENDLE yet"
               />
               <Stat
                 label="vePENDLE balance"
@@ -167,7 +167,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Reward-eligible total"
               value={fmtCompact(combined.rewardEligible)}
               size="lg"
-              sub="eligible sPENDLE + virtual sPENDLE; the denominator every epoch's rewards are split over"
+              sub="all sPENDLE, unclaimed rewards included, + virtual sPENDLE; the denominator every epoch's rewards are split over"
             />
           </CardContent>
         </Card>
