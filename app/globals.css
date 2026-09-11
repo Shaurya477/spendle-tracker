@@ -137,6 +137,12 @@
 .rise-5 { animation-delay: 380ms; }
 .rise-6 { animation-delay: 460ms; }
 
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
+
 .recharts-tooltip-cursor {
   stroke: oklch(1 0 0 / 25%);
 }

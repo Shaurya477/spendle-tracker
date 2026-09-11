@@ -21,8 +21,11 @@ const BOOST = "var(--boost)";
 const GRID = "oklch(1 0 0 / 6%)";
 const AXIS = "oklch(0.68 0.015 80)";
 
-const monthTick = (t: number) =>
-  new Date(t * 1000).toLocaleDateString("en-GB", { month: "short", year: "2-digit", timeZone: "UTC" });
+const monthTick = (t: number) => {
+  const d = new Date(t * 1000);
+  const month = d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  return `${month} ’${String(d.getUTCFullYear()).slice(-2)}`;
+};
 
 function TipFrame({ title, rows }: { title: string; rows: { label: string; value: string; color?: string }[] }) {
   return (
