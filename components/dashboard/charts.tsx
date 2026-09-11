@@ -245,8 +245,8 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
               <TipFrame
                 title={fmtDate(p.t)}
                 rows={[
-                  { label: "Dilution · sPENDLE flat", value: fmtPct(p.dilutionFlat, 1), color: BOOST },
-                  { label: "Dilution · unlocks restaked", value: fmtPct(p.dilutionRestake, 1), color: VEPENDLE },
+                  { label: "Dilution, sPENDLE flat", value: fmtPct(p.dilutionFlat, 1), color: BOOST },
+                  { label: "Dilution, unlocks restaked", value: fmtPct(p.dilutionRestake, 1), color: VEPENDLE },
                   { label: "Plain APR at latest distribution", value: fmtPct(p.aprPlainFlat), color: SPENDLE },
                   { label: "Stakers' reward share (flat)", value: fmtPct(p.stakerShareFlat, 1) },
                   { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
@@ -328,7 +328,7 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
             const e = payload[0].payload as FeeEpoch;
             return (
               <TipFrame
-                title={`${fmtDate(e.start)}${e.complete ? "" : " · in progress"}`}
+                title={`${fmtDate(e.start)}${e.complete ? "" : " (in progress)"}`}
                 rows={[
                   { label: "YT fees", value: fmtUsd(e.yt), color: SPENDLE },
                   { label: "Swap fees", value: fmtUsd(e.swap), color: VEPENDLE },

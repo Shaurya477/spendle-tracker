@@ -31,10 +31,10 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card className="rise rise-1 relative overflow-hidden border-0 bg-card/80 ring-1 ring-spendle/20">
           <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-spendle/10 blur-3xl" />
           <CardContent className="flex flex-col gap-6 py-2">
-            <div className="flex items-center justify-between">
-              <Eyebrow className="text-spendle">sPENDLE · staked</Eyebrow>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Eyebrow className="text-spendle">sPENDLE staked</Eyebrow>
               <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
-                live · liquid
+                live, liquid
               </Badge>
             </div>
             <div className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 {usdOf(sPendle.supply, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
-                sPENDLE supply · <code className="font-mono">totalSupply()</code> on the StakedPendle
+                sPENDLE supply, <code className="font-mono">totalSupply()</code> on the StakedPendle
                 contract, 1:1 with PENDLE
               </div>
             </div>
@@ -67,7 +67,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="PENDLE in contract"
                 value={fmtCompact(sPendle.pendleHeld)}
                 usd={usdOf(sPendle.pendleHeld, pendleUsd)}
-                sub={`sPENDLE supply + cooldown queue · instant unstake fee ${sPendle.instantFeePct}%`}
+                sub={`sPENDLE supply + cooldown queue; instant unstake fee ${sPendle.instantFeePct}%`}
               />
             </div>
           </CardContent>
@@ -76,10 +76,10 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card className="rise rise-2 relative overflow-hidden border-0 bg-card/80 ring-1 ring-vependle/20">
           <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-vependle/10 blur-3xl" />
           <CardContent className="flex flex-col gap-6 py-2">
-            <div className="flex items-center justify-between">
-              <Eyebrow className="text-vependle">vePENDLE · locked PENDLE</Eyebrow>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Eyebrow className="text-vependle">Locked in vePENDLE</Eyebrow>
               <Badge variant="outline" className="font-mono text-[10px] text-vependle ring-vependle/30">
-                deprecated · depleting
+                deprecated, depleting
               </Badge>
             </div>
             <div className="flex flex-col gap-1">
@@ -90,7 +90,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 {usdOf(vePendle.pendleHeld, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
-                PENDLE held by the VotingEscrow contract ·{" "}
+                PENDLE held by the VotingEscrow contract,{" "}
                 <code className="font-mono">PENDLE.balanceOf(vePENDLE)</code>
               </div>
             </div>
@@ -99,7 +99,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Under active lock"
                 value={fmtCompact(vePendle.activeLocked)}
                 usd={usdOf(vePendle.activeLocked, pendleUsd)}
-                sub={`from the weekly slope schedule · last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
+                sub={`from the weekly slope schedule; last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
@@ -110,7 +110,7 @@ export function Balances({ data }: { data: TrackerData }) {
               <Stat
                 label="vePENDLE balance"
                 value={fmtCompact(vePendle.veBalance)}
-                sub="time-decayed voting weight of all live locks · not a PENDLE quantity"
+                sub="time-decayed voting weight of all live locks, not a PENDLE quantity"
               />
             </div>
           </CardContent>
@@ -119,7 +119,7 @@ export function Balances({ data }: { data: TrackerData }) {
 
       <div className="rise rise-3 flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Eyebrow>Total staked · split</Eyebrow>
+          <Eyebrow>How total staked splits</Eyebrow>
           <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Swatch tone="spendle" /> sPENDLE {fmtPct(pctS, 1)}
@@ -147,7 +147,7 @@ export function Balances({ data }: { data: TrackerData }) {
               value={fmtCompact(loyalty.virtual)}
               tone="boost"
               size="lg"
-              sub={`loyalty boost · ${fmtCompact(vePendle.snapshotLocked)} snapshot-eligible PENDLE still locked × ${fmtMult(loyalty.avgMultiplier)} average multiplier`}
+              sub={`loyalty boost: ${fmtCompact(vePendle.snapshotLocked)} snapshot-eligible PENDLE still locked × ${fmtMult(loyalty.avgMultiplier)} average multiplier`}
             />
           </CardContent>
         </Card>
@@ -177,7 +177,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Boost ends"
               value={fmtDate(loyalty.expiresAt)}
               size="lg"
-              sub={`${fmtDays(loyalty.maxRemainingDays)} left · virtual balance falls ~${fmtCompact(loyalty.decayPerDay)} per day between unlocks`}
+              sub={`${fmtDays(loyalty.maxRemainingDays)} left; virtual balance falls ~${fmtCompact(loyalty.decayPerDay)} per day between unlocks`}
             />
           </CardContent>
         </Card>

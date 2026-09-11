@@ -40,7 +40,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
           className="inline-flex items-center gap-1.5 hover:text-foreground"
         >
           <GitHubMark className="size-3.5" />
-          Penconomics · source on GitHub
+          Penconomics on GitHub
         </a>
       </footer>
     </main>

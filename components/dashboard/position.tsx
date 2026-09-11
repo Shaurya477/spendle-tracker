@@ -180,7 +180,7 @@ function Result({ data }: { data: PositionData }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-mono text-xs text-muted-foreground">
-          <span className="text-foreground">{data.address}</span> · block {fmtInt(data.block.number)}
+          <span className="text-foreground">{data.address}</span> at block {fmtInt(data.block.number)}
         </div>
         <div className="flex flex-wrap gap-2">
           {hasStake && (
@@ -222,7 +222,7 @@ function Result({ data }: { data: PositionData }) {
               tone="vependle"
               sub={
                 lock && lock.amount > 0
-                  ? `unlocks ${fmtDate(lock.expiry)} · snapshot ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
+                  ? `unlocks ${fmtDate(lock.expiry)}; at the snapshot, ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
                   : lock
                     ? `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}; withdrawn`
                     : "no lock at the snapshot, none now"
@@ -258,8 +258,8 @@ function Result({ data }: { data: PositionData }) {
               size="lg"
               sub={
                 hasBoost && lock
-                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, falling to 1× on ${fmtDate(lock.snapshotExpiry)} · reward weight, not a held balance`
-                  : "no active loyalty boost · not a held balance"
+                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, falling to 1× on ${fmtDate(lock.snapshotExpiry)}; reward weight, not a held balance`
+                  : "no active loyalty boost; not a held balance"
               }
             />
           </CardContent>
@@ -267,10 +267,10 @@ function Result({ data }: { data: PositionData }) {
         <Card size="sm" className="border-0 bg-card/80">
           <CardContent>
             <Stat
-              label="Reward weight · share"
+              label="Reward weight and share"
               value={fmtPct(weight.share, 4)}
               size="lg"
-              sub={`${fmtInt(weight.now)} of the reward-eligible total · ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} PENDLE bought back so far this epoch`}
+              sub={`${fmtInt(weight.now)} of the reward-eligible total, worth ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} PENDLE bought back so far this epoch`}
             />
           </CardContent>
         </Card>
@@ -281,24 +281,24 @@ function Result({ data }: { data: PositionData }) {
           <CardContent className="flex flex-col gap-5">
             <Eyebrow>Paid so far</Eyebrow>
             <Stat
-              label="Earned · estimate"
+              label="Earned (estimate)"
               value={fmtNum(rewards.earnedEstimate)}
               unit="sPENDLE"
               usd={usd(rewards.earnedEstimate)}
               size="lg"
-              sub={`${rewards.epochsWithPosition} epochs with a position · your weight ÷ eligible total × each distribution`}
+              sub={`${rewards.epochsWithPosition} epochs with a position; your weight ÷ eligible total × each distribution`}
             />
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <Stat
                 label="Pendle's record"
                 value={fmtNum(rewards.apiAccrued)}
                 usd={usd(rewards.apiAccrued)}
-                sub={`accrued per the Pendle API · ${fmtNum(rewards.claimed)} claimed onchain · ${fmtNum(rewards.unclaimed)} unclaimed (${usd(rewards.unclaimed)})`}
+                sub={`accrued per the Pendle API: ${fmtNum(rewards.claimed)} claimed onchain, ${fmtNum(rewards.unclaimed)} unclaimed (${usd(rewards.unclaimed)})`}
               />
               <Stat
                 label="In-kind airdrops"
                 value={fmtUsd(rewards.airdropUsd)}
-                sub={`≈ ${fmtNum(rewards.airdropPendle)} PENDLE at each epoch's buyback price · ${rewards.airdropEpochsCovered} epochs covered`}
+                sub={`≈ ${fmtNum(rewards.airdropPendle)} PENDLE at each epoch's buyback price, over ${rewards.airdropEpochsCovered} epochs with data`}
               />
             </div>
           </CardContent>
@@ -312,14 +312,14 @@ function Result({ data }: { data: PositionData }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Stat
-                label="Latest · buybacks"
+                label="Latest, buybacks only"
                 value={apr.latestBuyback === null ? "—" : fmtPct(apr.latestBuyback)}
                 tone="spendle"
                 size="lg"
-                sub={`protocol plain ${fmtPct(apr.protocolPlainLatest)} · avg locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
+                sub={`protocol plain ${fmtPct(apr.protocolPlainLatest)}, average locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
               />
               <Stat
-                label="Latest · incl. airdrops"
+                label="Latest incl. airdrops"
                 value={apr.latestTotal === null ? "—" : fmtPct(apr.latestTotal)}
                 size="lg"
                 sub="airdrops converted to PENDLE at that epoch's buyback price"
@@ -327,12 +327,12 @@ function Result({ data }: { data: PositionData }) {
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <Stat
-                label="Mean · buybacks"
+                label="Mean, buybacks only"
                 value={apr.meanBuyback === null ? "—" : fmtPct(apr.meanBuyback)}
                 sub={`${apr.epochsAveraged} epochs you held a position, buybacks only`}
               />
               <Stat
-                label="Mean · incl. airdrops"
+                label="Mean incl. airdrops"
                 value={apr.meanTotal === null ? "—" : fmtPct(apr.meanTotal)}
                 sub={`${apr.epochsAveragedTotal} of those epochs with airdrop data`}
               />
@@ -350,7 +350,7 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="boost"
                 size="lg"
-                sub={`shortfall vs everyone at 1× · ≈ ${fmtNum(outlook.remainingDilutionCost)} more by ${fmtDate(outlook.boostEndsAt)} at the latest distribution`}
+                sub={`shortfall vs everyone at 1×; ≈ ${fmtNum(outlook.remainingDilutionCost)} more by ${fmtDate(outlook.boostEndsAt)} at the latest distribution`}
               />
             )}
             {lock && (rewards.premiumEarned > 0 || hasBoost) && (
@@ -360,7 +360,7 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="vependle"
                 size="lg"
-                sub={`rewards above a 1× count of your locked PENDLE · ≈ ${fmtNum(outlook.remainingPremium)} more before your boost ends`}
+                sub={`rewards above a 1× count of your locked PENDLE; ≈ ${fmtNum(outlook.remainingPremium)} more before your boost ends`}
               />
             )}
             {hasStake && lock && hasBoost && (
@@ -386,7 +386,7 @@ function Result({ data }: { data: PositionData }) {
                   assumed restaked as sPENDLE at 1×. Buybacks only.
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
                 <Stat
                   label={
                     <span className="inline-flex items-center gap-1.5">
@@ -401,7 +401,7 @@ function Result({ data }: { data: PositionData }) {
                     label={
                       <span className="inline-flex items-center gap-1.5">
                         <LineSwatch tone="vependle" dashed />
-                        Your unlock · {fmtDate(outlook.unlockAt!)}
+                        Your unlock, {fmtDate(outlook.unlockAt!)}
                       </span>
                     }
                     value={fmtPct(outlook.aprAtUnlockRestaked)}
@@ -411,7 +411,7 @@ function Result({ data }: { data: PositionData }) {
                   label={
                     <span className="inline-flex items-center gap-1.5">
                       <LineSwatch tone="boost" dashed />
-                      Boost ends · {fmtDate(outlook.boostEndsAt)}
+                      Boost ends, {fmtDate(outlook.boostEndsAt)}
                     </span>
                   }
                   value={fmtPct(outlook.aprAfterBoost!)}
@@ -485,7 +485,7 @@ function Result({ data }: { data: PositionData }) {
         </CardContent>
       </Card>
       <p className="text-xs text-muted-foreground">
-        Boost ends {fmtDate(outlook.boostEndsAt)} · {fmtDays((outlook.boostEndsAt - data.block.timestamp) / 86_400)} away.
+        Boost ends {fmtDate(outlook.boostEndsAt)}, {fmtDays((outlook.boostEndsAt - data.block.timestamp) / 86_400)} away.
       </p>
     </div>
   );

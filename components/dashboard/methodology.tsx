@@ -11,7 +11,7 @@ export function Methodology({ data }: { data: TrackerData }) {
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card className="rise rise-1 border-0 bg-card/60">
           <CardContent className="flex flex-col gap-4">
-            <Eyebrow>Contracts · Ethereum mainnet</Eyebrow>
+            <Eyebrow>Contracts on Ethereum mainnet</Eyebrow>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <dt className="text-muted-foreground">PENDLE</dt>
               <dd className="min-w-0"><AddressLink address={a.pendle} label={a.pendle} /></dd>
@@ -33,8 +33,8 @@ export function Methodology({ data }: { data: TrackerData }) {
               </div>
               <div>
                 Snapshot block{" "}
-                <span className="font-mono text-foreground/80">{fmtInt(data.loyalty.snapshot.block)}</span> ·
-                last block before 29 Jan 2026 00:00 UTC
+                <span className="font-mono text-foreground/80">{fmtInt(data.loyalty.snapshot.block)}</span>,
+                the last block before 29 Jan 2026 00:00 UTC
               </div>
             </div>
           </CardContent>

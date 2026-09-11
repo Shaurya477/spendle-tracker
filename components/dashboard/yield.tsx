@@ -71,13 +71,13 @@ export function Yield({ data }: { data: TrackerData }) {
                 value={fmtPct(latest.aprPlain)}
                 tone="spendle"
                 size="lg"
-                sub={`${fmtInt(latest.amount)} sPENDLE ÷ ${fmtCompact(latest.eligibleTotal)} eligible × ${EPY} · epoch ${latest.epoch}, ${fmtDate(latest.timestamp)}`}
+                sub={`${fmtInt(latest.amount)} sPENDLE ÷ ${fmtCompact(latest.eligibleTotal)} eligible × ${EPY}; epoch ${latest.epoch}, ${fmtDate(latest.timestamp)}`}
               />
               <Stat
                 label={`Trailing ${y.trailing.epochs} epochs`}
                 value={fmtPct(y.trailing.aprPlain)}
                 size="lg"
-                sub={`mean of ${y.trailing.epochs} per-epoch APRs, ${fmtDate(y.trailing.from)} → ${fmtDate(y.trailing.to)} · token terms`}
+                sub={`mean of ${y.trailing.epochs} per-epoch APRs, ${fmtDate(y.trailing.from)} → ${fmtDate(y.trailing.to)}, in token terms`}
               />
             </div>
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
@@ -89,7 +89,7 @@ export function Yield({ data }: { data: TrackerData }) {
               <Stat
                 label="If only sPENDLE existed"
                 value={fmtPct(y.aprSolo)}
-                sub={`latest distribution ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY} · plain APR once the last lock expires`}
+                sub={`latest distribution ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY}; plain APR once the last lock expires`}
               />
             </div>
           </CardContent>
@@ -102,11 +102,11 @@ export function Yield({ data }: { data: TrackerData }) {
               <span className="font-mono text-[10px] text-muted-foreground">sPENDLE earned per PENDLE locked, per year</span>
             </div>
             <Stat
-              label="Latest · avg locker"
+              label="Latest, average locker"
               value={fmtPct(latest.aprBoostedAvg)}
               tone="boost"
               size="lg"
-              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at that block · token terms`}
+              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at that block, in token terms`}
             />
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
               <Stat
@@ -117,7 +117,7 @@ export function Yield({ data }: { data: TrackerData }) {
               <Stat
                 label="Longest lock today"
                 value={fmtPct(y.aprMaxBoosted)}
-                sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(loyalty.maxMultiplier)} · unlocks ${fmtDate(loyalty.expiresAt)}`}
+                sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(loyalty.maxMultiplier)}, unlocking ${fmtDate(loyalty.expiresAt)}`}
               />
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
@@ -130,7 +130,7 @@ export function Yield({ data }: { data: TrackerData }) {
 
         <Card className="rise rise-4 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow>Reward flow · latest</Eyebrow>
+            <Eyebrow>Latest reward flow</Eyebrow>
             <Stat
               label="Distributed"
               value={fmtInt(latest.amount)}
@@ -138,7 +138,7 @@ export function Yield({ data }: { data: TrackerData }) {
               size="lg"
               sub={
                 <>
-                  {fmtDateTime(latest.timestamp)} · tx <TxLink hash={latest.txHash} />
+                  {fmtDateTime(latest.timestamp)}, tx <TxLink hash={latest.txHash} />
                 </>
               }
             />

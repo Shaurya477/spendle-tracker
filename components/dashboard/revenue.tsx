@@ -119,7 +119,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               value={fmtUsd(e.yt)}
               tone="spendle"
               size="lg"
-              sub={`${fmtPct(share(e.yt, gross), 1)} of gross · 5% of YT yield, all protocol take`}
+              sub={`${fmtPct(share(e.yt, gross), 1)} of gross; 5% of YT yield, all of it protocol take`}
             />
           </CardContent>
         </Card>
@@ -130,7 +130,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               value={fmtUsd(e.swap)}
               tone="vependle"
               size="lg"
-              sub={`${fmtPct(share(e.swap, gross), 1)} of gross · ${fmtUsd(e.lp)} to LPs, ${fmtUsd(e.swapToProtocol)} to protocol`}
+              sub={`${fmtPct(share(e.swap, gross), 1)} of gross: ${fmtUsd(e.lp)} to LPs, ${fmtUsd(e.swapToProtocol)} to protocol`}
             />
           </CardContent>
         </Card>
@@ -140,7 +140,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               label="Protocol take"
               value={fmtUsd(e.revenue)}
               size="lg"
-              sub={`${fmtUsd(e.buyback)} buybacks · ${fmtUsd(e.treasury)} treasury · ${fmtUsd(e.ops)} ops`}
+              sub={`${fmtUsd(e.buyback)} buybacks, ${fmtUsd(e.treasury)} treasury, ${fmtUsd(e.ops)} ops`}
             />
           </CardContent>
         </Card>
@@ -150,7 +150,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               label="Gross fees"
               value={fmtUsd(gross)}
               size="lg"
-              sub={`YT + swap · LPs keep ${fmtPct(share(e.lp, gross), 1)} of this epoch`}
+              sub={`YT + swap; LPs keep ${fmtPct(share(e.lp, gross), 1)} of it`}
             />
           </CardContent>
         </Card>
@@ -160,7 +160,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="rise rise-2 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Gross fees · latest complete epoch</Eyebrow>
+              <Eyebrow>Gross fees, latest complete epoch</Eyebrow>
               <span className="font-mono text-[10px] text-muted-foreground">100% = YT + swap</span>
             </div>
             <Split
@@ -175,7 +175,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="rise rise-3 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Protocol take · 80 / 10 / 10</Eyebrow>
+              <Eyebrow>Protocol take split 80 / 10 / 10</Eyebrow>
               <span className="font-mono text-[10px] text-muted-foreground">100% = YT + 80% of swap</span>
             </div>
             <Split
@@ -243,9 +243,9 @@ export function Revenue({ data }: { data: TrackerData }) {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
         <Card className="rise rise-4 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow>Since 29 Jan 2026 · sPENDLE era</Eyebrow>
+            <Eyebrow>sPENDLE era, since 29 Jan 2026</Eyebrow>
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-              <Stat label="Gross fees" value={fmtUsd(r.totals.yt + r.totals.swap)} sub={`YT ${fmtUsd(r.totals.yt)} · swap ${fmtUsd(r.totals.swap)}`} />
+              <Stat label="Gross fees" value={fmtUsd(r.totals.yt + r.totals.swap)} sub={`YT ${fmtUsd(r.totals.yt)}, swap ${fmtUsd(r.totals.swap)}`} />
               <Stat label="Buybacks" value={fmtUsd(r.totals.buyback)} tone="spendle" sub="80% of protocol take" />
               <Stat label="Treasury" value={fmtUsd(r.totals.treasury)} sub="10% of protocol take" />
               <Stat label="Operations" value={fmtUsd(r.totals.ops)} sub="10% of protocol take" />
@@ -257,7 +257,7 @@ export function Revenue({ data }: { data: TrackerData }) {
                 value={fmtInt(r.totals.emittedPendle)}
                 unit="PENDLE"
                 usd={usdOf(r.totals.emittedPendle, pendleUsd)}
-                sub={`inventory remaining ${fmtInt(r.gaugePendle)} · live USD`}
+                sub={`${fmtInt(r.gaugePendle)} PENDLE still in the gauge; USD at the live quote`}
               />
             </div>
           </CardContent>
@@ -266,7 +266,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="rise rise-5 border-0 bg-card/80 ring-1 ring-boost/20">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow className="text-boost">AIM · this week</Eyebrow>
+              <Eyebrow className="text-boost">AIM this week</Eyebrow>
               <span className="font-mono text-[10px] text-muted-foreground">{r.aim.markets} markets</span>
             </div>
             <Stat
@@ -297,7 +297,7 @@ export function Revenue({ data }: { data: TrackerData }) {
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
             <Eyebrow>Every fee epoch</Eyebrow>
             <span className="font-mono text-[10px] text-muted-foreground">
-              USD from DefiLlama · ETH gauge PENDLE since 29 Jan 2026
+              USD from DefiLlama; ETH gauge PENDLE since 29 Jan 2026
             </span>
           </div>
           <Table>
