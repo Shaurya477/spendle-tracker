@@ -85,7 +85,7 @@ export function Position({
   return (
     <section id="position" className="flex flex-col gap-8">
       <SectionHeading
-        index="06"
+        index="07"
         title="Your position"
         lede="Paste a wallet address. Below is that address's share of the numbers above: holdings, sPENDLE paid per epoch, its own APR including in-kind airdrops, and what the boost costs or earns it until January 2028."
       />
@@ -473,10 +473,11 @@ function Result({ data }: { data: PositionData }) {
           </Table>
           <p className="px-4 pt-2 text-xs leading-relaxed text-muted-foreground">
             Same denomination as the yield section: sPENDLE earned ÷ (your sPENDLE + your locked PENDLE) × {EPY}.
-            Airdrops are the one place a historical dollar figure enters: Pendle reports each epoch&apos;s in-kind
-            airdrops in USD at distribution time; your share of that is converted to PENDLE at the same
-            epoch&apos;s realised buyback price (USDT spent ÷ PENDLE bought by the buyback contract, read
-            from its swap transfers) and added to the sPENDLE you earned. Held balances above are marked
+            Airdrops are the one place a dollar figure enters: Pendle&apos;s API reports each epoch&apos;s
+            in-kind airdrops in USD, with no valuation timestamp; your share of that is converted to PENDLE
+            at the same epoch&apos;s realised buyback price (USDT the buyback contract sent out ÷ PENDLE it
+            received between distributions, from its Transfer logs; every PENDLE inflow counts, not only
+            swap output) and added to the sPENDLE you earned. Held balances above are marked
             to the live PENDLE/USD quote ({fmtUsdPrice(pendleUsd)}); APR stays in token terms. Pendle&apos;s API only covers the
             last 12 epochs, so earlier rows show &ldquo;no data&rdquo; and are left out of the
             airdrop-inclusive mean. &ldquo;Your sPENDLE&rdquo; is the balance the block before each

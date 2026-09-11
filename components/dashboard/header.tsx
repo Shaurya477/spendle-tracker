@@ -23,13 +23,13 @@ export function Header({ data }: { data: TrackerData }) {
             that dilutes stakers until it ends in January 2028.
           </p>
         </div>
-        <div className="flex items-start justify-between gap-4 sm:flex-col sm:items-end sm:gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4 sm:flex-col sm:items-end sm:gap-3">
           <div className="order-2 flex shrink-0 items-center gap-2 sm:order-1">
             <ThemeToggle />
             <GitHubLink />
             <RefreshButton />
           </div>
-          <div className="order-1 sm:order-2 sm:text-right">
+          <div className="order-1 shrink-0 sm:order-2 sm:text-right">
             <Eyebrow className="text-spendle">$PENDLE</Eyebrow>
             <div className="tabular mt-1 font-mono text-4xl leading-none tracking-tight text-spendle">
               {fmtUsdPrice(data.pendleUsd)}

@@ -99,7 +99,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Under active lock"
                 value={fmtCompact(vePendle.activeLocked)}
                 usd={usdOf(vePendle.activeLocked, pendleUsd)}
-                sub={`from the weekly slope schedule; last unlock ${fmtDate(vePendle.lastLiveExpiry)}`}
+                sub={`slope schedule; last unlock ${fmtDate(vePendle.lastLiveExpiry)}${vePendle.lastLiveExpiry > loyalty.expiresAt ? ", after the boost ends: a lock extended post-snapshot, boost terms fixed" : ""}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
@@ -177,7 +177,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Boost ends"
               value={fmtDate(loyalty.expiresAt)}
               size="lg"
-              sub={`${fmtDays(loyalty.maxRemainingDays)} left; virtual balance falls ~${fmtCompact(loyalty.decayPerDay)} per day between unlocks`}
+              sub={`${fmtDays(loyalty.maxRemainingDays)} left, fixed by the snapshot schedule; virtual balance falls ~${fmtCompact(loyalty.decayPerDay)} per day between unlocks`}
             />
           </CardContent>
         </Card>

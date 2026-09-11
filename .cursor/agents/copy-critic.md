@@ -28,9 +28,9 @@ Name the problem, quote the text, propose the replacement. Patterns that count a
 ## Facts you must not let a rewrite change
 
 - sPENDLE is PENDLE staked 1:1. Exit is a 14-day cooldown or instant with a 5% fee.
-- Rewards: 80% of protocol fees buy PENDLE, which is staked and the minted sPENDLE sent to the Merkle distributor about every 14 days; split pro-rata over eligible sPENDLE plus virtual sPENDLE.
+- Rewards: USDT sent to the buyback contract (by policy up to 80% of protocol take; realised funding runs below that) buys PENDLE, which is staked and the minted sPENDLE sent to the Merkle distributor about every 14 days; split pro-rata over eligible sPENDLE plus virtual sPENDLE.
 - Loyalty boost: vePENDLE locks snapshotted 29 Jan 2026 00:00 UTC; virtual sPENDLE = locked × (1 + 3 × remaining ÷ 2 years); 4× for a full two-year lock, falling linearly to 1× at unlock, then gone. Most snapshot locks unlock 20 Jan 2028.
-- Fees: 5% of YT yield (including points) goes to the protocol; swap fees split 20% to LPs, 80% to the protocol. Protocol take splits 80% buybacks, 10% treasury, 10% operations.
+- Fees: 5% of YT yield (including points) goes to the protocol; swap fees split 20% to LPs, 80% to the protocol. Protocol take is split by policy up to 80% buybacks, 10% treasury, 10% operations; the app's 80/10/10 figures are a policy share of DefiLlama Revenue, and "Funded" is the USDT actually received by the buyback contract. DefiLlama's Revenue minus 80% of swap is "YT and other fees" (YT, limit-order, points fees, airdrop tokens booked at the treasury), not YT fees alone.
 - AIM incentives are paid weekly from PENDLE already held by the gauge controller. PENDLE supply is flat since the snapshot; nothing is minted.
 - Fee epochs start Tuesday 00:00 UTC and last 14 days. Fee data is DefiLlama's Pendle V2 label only, Boros excluded, from 29 Jan 2026.
 - APR is token-denominated: sPENDLE paid ÷ (eligible sPENDLE + virtual sPENDLE), annualised simply by ×26.09. "Trailing" is the mean of the last six per-epoch APRs.

@@ -1,4 +1,4 @@
-import { fetchGaugePendleOutflow } from "./chain";
+import { fetchBuybackFunding, fetchGaugePendleOutflow } from "./chain";
 import {
   EPOCH_SECONDS,
   FEE_EPOCH_ORIGIN,
@@ -21,6 +21,7 @@ export type FeeDay = {
 
 export type FeeEpoch = {
   start: number;
+  /** Days elapsed since `start` by wall clock, capped at 14. */
   days: number;
   complete: boolean;
   fees: number;
@@ -28,11 +29,17 @@ export type FeeEpoch = {
   lp: number;
   swap: number;
   swapToProtocol: number;
+  /** DefiLlama Revenue minus 80% of gross swap: YT, limit-order and points fees, airdrop tokens booked at the treasury. */
   yt: number;
+  /** 80% policy share of DefiLlama Revenue; a policy figure, not a flow. */
   buyback: number;
   treasury: number;
   ops: number;
   emittedPendle: number;
+  /** USDT actually sent to the buyback contract for this epoch (USD). */
+  buybackFunded: number;
+  /** No further funding can be attributed to this epoch: `start + 21d ≤ now`. */
+  buybackWindowClosed: boolean;
 };
 
 export type CumPoint = {
@@ -40,6 +47,7 @@ export type CumPoint = {
   yt: number;
   swap: number;
   buyback: number;
+  buybackFunded: number;
   treasury: number;
   ops: number;
   lp: number;
@@ -63,6 +71,7 @@ export type RevenueTotals = {
   swap: number;
   lp: number;
   buyback: number;
+  buybackFunded: number;
   treasury: number;
   ops: number;
   emittedPendle: number;
@@ -115,7 +124,18 @@ function epochStart(ts: number) {
   return FEE_EPOCH_ORIGIN + Math.floor((ts - FEE_EPOCH_ORIGIN) / EPOCH_SECONDS) * EPOCH_SECONDS;
 }
 
-/** Gross swap from the 20% LP cut; YT is whatever protocol revenue is not the 80% swap take. */
+/**
+ * Buyback funding lands around a fee epoch's end: observed 0.3 days before to 3.3 days after `start
+ * + 14d`. A transfer at `t` belongs to the epoch whose end is nearest, `T + 7d ≤ t < T + 21d`; this
+ * reproduces Pendle's hub `fees[]` per epoch, which the `T + 14d ≤ t < T + 28d` distribution
+ * mapping does not (it puts Monday-evening funding in the previous epoch).
+ */
+const FUNDING_HALF_WINDOW = EPOCH_SECONDS / 2;
+function fundedEpochStart(t: number) {
+  return epochStart(t - FUNDING_HALF_WINDOW);
+}
+
+/** Gross swap from the 20% LP cut; YT is whatever DefiLlama Revenue is not the 80% swap take. */
 function derive(revenue: number, lp: number) {
   const swap = lp / 0.2;
   return { swap: Math.max(swap, 0), yt: Math.max(revenue - 0.8 * swap, 0) };
@@ -129,6 +149,7 @@ function zeroTotals(): RevenueTotals {
     swap: 0,
     lp: 0,
     buyback: 0,
+    buybackFunded: 0,
     treasury: 0,
     ops: 0,
     emittedPendle: 0,
@@ -143,19 +164,26 @@ function addEpoch(s: RevenueTotals, e: FeeEpoch): RevenueTotals {
     swap: s.swap + e.swap,
     lp: s.lp + e.lp,
     buyback: s.buyback + e.buyback,
+    buybackFunded: s.buybackFunded + e.buybackFunded,
     treasury: s.treasury + e.treasury,
     ops: s.ops + e.ops,
     emittedPendle: s.emittedPendle + e.emittedPendle,
   };
 }
 
-function toEpoch(start: number, bucket: FeeDay[], emittedPendle: number, now: number): FeeEpoch {
+function toEpoch(
+  start: number,
+  bucket: FeeDay[],
+  emittedPendle: number,
+  buybackFunded: number,
+  now: number,
+): FeeEpoch {
   const sum = (k: keyof FeeDay) => bucket.reduce((s, d) => s + d[k], 0);
   const protocol = sum("protocol");
   const swap = sum("swap");
   return {
     start,
-    days: bucket.length,
+    days: Math.floor(Math.min(now - start, EPOCH_SECONDS) / 86_400),
     complete: start + EPOCH_SECONDS <= now,
     fees: sum("fees"),
     revenue: sum("revenue"),
@@ -167,11 +195,13 @@ function toEpoch(start: number, bucket: FeeDay[], emittedPendle: number, now: nu
     treasury: protocol / 2,
     ops: protocol / 2,
     emittedPendle,
+    buybackFunded,
+    buybackWindowClosed: start + EPOCH_SECONDS + FUNDING_HALF_WINDOW <= now,
   };
 }
 
 export async function getRevenueData(): Promise<RevenueData> {
-  const [feesS, revenueS, lpS, holdersS, protocolS, emission, outflow] = await Promise.all([
+  const [feesS, revenueS, lpS, holdersS, protocolS, emission, outflow, funding] = await Promise.all([
     llama("dailyFees"),
     llama("dailyRevenue"),
     llama("dailySupplySideRevenue"),
@@ -179,6 +209,7 @@ export async function getRevenueData(): Promise<RevenueData> {
     llama("dailyProtocolRevenue"),
     getJson<{ markets: EmissionMarket[] }>(PENDLE_EMISSION_API),
     fetchGaugePendleOutflow(),
+    fetchBuybackFunding(),
   ]);
 
   const feesM = byDay(feesS.totalDataChartBreakdown);
@@ -214,6 +245,7 @@ export async function getRevenueData(): Promise<RevenueData> {
     });
   if (days.length === 0) throw new Error("DefiLlama returned no Pendle V2 fee days in the sPENDLE-era window");
   if (outflow.spent.length === 0) throw new Error("No PENDLE outflow from the Ethereum gauge controller since the snapshot");
+  if (funding.length === 0) throw new Error("No USDT funding of the buyback contract since the snapshot");
 
   const emitByEpoch = new Map<number, number>();
   for (const m of outflow.spent) {
@@ -229,10 +261,23 @@ export async function getRevenueData(): Promise<RevenueData> {
     else grouped.set(start, [d]);
   }
 
+  const fundedByEpoch = new Map<number, number>();
+  for (const f of funding) {
+    const start = fundedEpochStart(f.timestamp);
+    if (!grouped.has(start)) {
+      throw new Error(
+        `Buyback funding at ${new Date(f.timestamp * 1000).toISOString()} maps to fee epoch ${new Date(start * 1000).toISOString()} with no DefiLlama days`,
+      );
+    }
+    fundedByEpoch.set(start, (fundedByEpoch.get(start) ?? 0) + Number(f.usdt) / 1e6);
+  }
+
   const now = Date.now() / 1000;
   const epochs: FeeEpoch[] = [...grouped.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([start, bucket]) => toEpoch(start, bucket, emitByEpoch.get(start) ?? 0, now));
+    .map(([start, bucket]) =>
+      toEpoch(start, bucket, emitByEpoch.get(start) ?? 0, fundedByEpoch.get(start) ?? 0, now),
+    );
 
   const complete = epochs.filter((e) => e.complete);
   if (complete.length === 0) throw new Error("No complete fee epoch in the DefiLlama series");
@@ -242,12 +287,13 @@ export async function getRevenueData(): Promise<RevenueData> {
   const totals = epochs.reduce(addEpoch, zeroTotals());
 
   const cumulative: CumPoint[] = [];
-  let c = { yt: 0, swap: 0, buyback: 0, treasury: 0, ops: 0, lp: 0, emittedPendle: 0 };
+  let c = { yt: 0, swap: 0, buyback: 0, buybackFunded: 0, treasury: 0, ops: 0, lp: 0, emittedPendle: 0 };
   for (const e of epochs) {
     c = {
       yt: c.yt + e.yt,
       swap: c.swap + e.swap,
       buyback: c.buyback + e.buyback,
+      buybackFunded: c.buybackFunded + e.buybackFunded,
       treasury: c.treasury + e.treasury,
       ops: c.ops + e.ops,
       lp: c.lp + e.lp,

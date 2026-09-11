@@ -7,6 +7,7 @@ import { Yield } from "@/components/dashboard/yield";
 import { Dilution } from "@/components/dashboard/dilution";
 import { Revenue } from "@/components/dashboard/revenue";
 import { Ledger } from "@/components/dashboard/ledger";
+import { Thesis } from "@/components/dashboard/thesis";
 import { Position } from "@/components/dashboard/position";
 import { Methodology } from "@/components/dashboard/methodology";
 import { GitHubMark } from "@/components/dashboard/github-link";
@@ -29,6 +30,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       <Dilution data={data} />
       <Revenue data={data} />
       <Ledger data={data} />
+      <Thesis data={data} />
       <Position initialHex={preset.replace(/^0x/i, "")} initial={position} />
       <Methodology data={data} />
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-6 font-mono text-[11px] text-muted-foreground">

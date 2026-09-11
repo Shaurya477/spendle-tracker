@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import {
   fetchDistributions,
   fetchLiveState,
+  fetchSnapshotPendleSupply,
   fetchSnapshotSchedule,
   type RawDistribution,
 } from "./chain";
@@ -60,6 +61,8 @@ export type TrackerData = {
   rpcUrl: string;
   block: { number: number; timestamp: number };
   addresses: typeof ADDRESSES;
+  /** PENDLE token supply, now and at the loyalty snapshot block; equal means nothing was minted. */
+  pendleSupply: { now: number; atSnapshot: number };
   sPendle: {
     supply: number;
     pendleHeld: number;
@@ -154,8 +157,8 @@ export const TRACKER_TAG = "tracker";
 export const TRACKER_MAX_AGE_SECONDS = 300;
 
 /**
- * A cold computation is ~170 weighted RPC units through the 14-unit/s pacer plus six HTTP fetches,
- * so 15–25 s. Vercel starts most requests on a fresh instance, where the in-process memo in
+ * A cold computation is ~230 weighted RPC units through the 14-unit/s pacer plus six HTTP fetches,
+ * so 20–30 s. Vercel starts most requests on a fresh instance, where the in-process memo in
  * `chain.ts` is empty, so the finished dataset is kept in Next's data cache instead: it survives
  * across instances, is served in milliseconds, and once older than `TRACKER_MAX_AGE_SECONDS` the
  * stale copy is still returned while one recomputation runs in the background.
@@ -166,9 +169,10 @@ export const getTrackerData = unstable_cache(computeTrackerData, ["tracker-data"
 });
 
 async function computeTrackerData(): Promise<TrackerData> {
-  const [live, snapshot, pendleUsd, revenue] = await Promise.all([
+  const [live, snapshot, snapshotSupply, pendleUsd, revenue] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),
+    fetchSnapshotPendleSupply(),
     fetchPendleUsd(),
     getRevenueData(),
   ]);
@@ -209,6 +213,7 @@ async function computeTrackerData(): Promise<TrackerData> {
     rpcUrl: RPC_URL,
     block: { number: Number(live.blockNumber), timestamp: Number(now) },
     addresses: ADDRESSES,
+    pendleSupply: { now: toTokens(live.pendleTotalSupply), atSnapshot: toTokens(snapshotSupply) },
     sPendle: {
       supply,
       pendleHeld: toTokens(live.pendleInSPendle),

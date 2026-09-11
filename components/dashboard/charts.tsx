@@ -22,6 +22,7 @@ const VEPENDLE = "var(--vependle)";
 const BOOST = "var(--boost)";
 const TREASURY = "var(--chart-4)";
 const LP = "var(--chart-lp)";
+const FUNDED = "var(--foreground)";
 const GRID = "var(--chart-grid)";
 const AXIS = "var(--chart-axis)";
 const CURSOR = "var(--chart-cursor)";
@@ -330,10 +331,10 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
               <TipFrame
                 title={`${fmtDate(e.start)}${e.complete ? "" : " (in progress)"}`}
                 rows={[
-                  { label: "YT fees", value: fmtUsd(e.yt), color: SPENDLE },
+                  { label: "YT and other fees", value: fmtUsd(e.yt), color: SPENDLE },
                   { label: "Swap fees", value: fmtUsd(e.swap), color: VEPENDLE },
-                  { label: "Gross (YT + swap)", value: fmtUsd(e.yt + e.swap) },
-                  { label: "Protocol take", value: fmtUsd(e.revenue) },
+                  { label: "Gross (non-swap + swap)", value: fmtUsd(e.yt + e.swap) },
+                  { label: "Protocol take (DefiLlama Revenue)", value: fmtUsd(e.revenue) },
                   { label: "LP 20% of swap", value: fmtUsd(e.lp), color: LP },
                 ]}
               />
@@ -423,7 +424,8 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
               <TipFrame
                 title={`Cumulative to ${fmtDate(p.t)}`}
                 rows={[
-                  { label: "Buybacks", value: fmtUsd(p.buyback), color: SPENDLE },
+                  { label: "80% policy share", value: fmtUsd(p.buyback), color: SPENDLE },
+                  { label: "Funded (USDT to buyback contract)", value: fmtUsd(p.buybackFunded), color: FUNDED },
                   { label: "Treasury", value: fmtUsd(p.treasury), color: TREASURY },
                   { label: "Operations", value: fmtUsd(p.ops), color: BOOST },
                   { label: "LP swap fees", value: fmtUsd(p.lp), color: LP },
@@ -471,6 +473,15 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           stroke={LP}
           strokeWidth={1.5}
           fill="url(#gLp)"
+          isAnimationActive={false}
+        />
+        <Line
+          yAxisId="usd"
+          type="linear"
+          dataKey="buybackFunded"
+          stroke={FUNDED}
+          strokeWidth={1.5}
+          dot={false}
           isAnimationActive={false}
         />
         <Line

@@ -27,6 +27,7 @@ const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt, gaugeContro
  */
 type ChainCache = {
   snapshotSchedule?: Promise<LockBucket[]>;
+  snapshotPendleSupply?: Promise<bigint>;
   distributions: Map<Hex, Promise<RawDistribution>>;
   windows: Map<string, Promise<BuybackWindow>>;
 };
@@ -78,9 +79,27 @@ export function fetchSnapshotSchedule() {
   return cache.snapshotSchedule;
 }
 
+/** PENDLE `totalSupply()` at the snapshot block. Immutable, memoised for the process lifetime. */
+export function fetchSnapshotPendleSupply() {
+  if (!cache.snapshotPendleSupply) {
+    cache.snapshotPendleSupply = client.readContract({
+      address: pendle,
+      abi: erc20Abi,
+      functionName: "totalSupply",
+      blockNumber: SNAPSHOT_BLOCK,
+    });
+    cache.snapshotPendleSupply.catch(() => {
+      cache.snapshotPendleSupply = undefined;
+    });
+  }
+  return cache.snapshotPendleSupply;
+}
+
 export type LiveState = {
   blockNumber: bigint;
   timestamp: bigint;
+  /** PENDLE `totalSupply()` at the latest block. */
+  pendleTotalSupply: bigint;
   sPendleSupply: bigint;
   pendleInSPendle: bigint;
   sPendleInDistributor: bigint;
@@ -99,6 +118,7 @@ export async function fetchLiveState(): Promise<LiveState> {
       allowFailure: false,
       blockNumber: block.number,
       contracts: [
+        { address: pendle, abi: erc20Abi, functionName: "totalSupply" },
         { address: sPendle, abi: stakedPendleAbi, functionName: "totalSupply" },
         { address: pendle, abi: erc20Abi, functionName: "balanceOf", args: [sPendle] },
         { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [merkleDistributor] },
@@ -111,6 +131,7 @@ export async function fetchLiveState(): Promise<LiveState> {
     readSchedule(currentWeekStart + WEEK, LIVE_WEEKS, block.number),
   ]);
   const [
+    pendleTotalSupply,
     sPendleSupply,
     pendleInSPendle,
     sPendleInDistributor,
@@ -122,6 +143,7 @@ export async function fetchLiveState(): Promise<LiveState> {
   return {
     blockNumber: block.number,
     timestamp: block.timestamp,
+    pendleTotalSupply,
     sPendleSupply,
     pendleInSPendle,
     sPendleInDistributor,
@@ -187,9 +209,9 @@ export async function fetchDistributions(toBlock: bigint): Promise<RawDistributi
 }
 
 export type BuybackWindow = {
-  /** USDT the buyback contract spent on swaps in the window (6 decimals). */
+  /** USDT the buyback contract sent out in the window (6 decimals). */
   usdtSpent: bigint;
-  /** PENDLE it received from those swaps (wei). */
+  /** PENDLE the buyback contract received in the window (wei): every inflow, not only swap output. */
   pendleBought: bigint;
 };
 
@@ -224,6 +246,32 @@ export function fetchBuybackWindows(bounds: bigint[]): Promise<BuybackWindow[]> 
     }
   }
   return Promise.all(keys.map((k) => cache.windows.get(k)!));
+}
+
+export type BuybackFunding = { timestamp: number; usdt: bigint };
+
+/**
+ * Every USDT `Transfer` into the buyback contract since the snapshot: the realised buyback budget,
+ * as opposed to the 80% policy share of DefiLlama revenue. Pendle's fee wallets fund the contract
+ * around each fee epoch's end (observed 0.3 days before to 3.3 days after), then the hourly TWAP
+ * swaps spend it. Each transfer's timestamp is read from its block (one 1-unit `getBlock` per
+ * distinct block, ~56 so far), not interpolated.
+ */
+export async function fetchBuybackFunding(): Promise<BuybackFunding[]> {
+  const logs = await client.getLogs({
+    address: usdt,
+    event: transferEvent,
+    args: { to: buyback },
+    fromBlock: SNAPSHOT_BLOCK,
+    toBlock: "latest",
+  });
+  const blocks = [...new Set(logs.map((l) => l.blockNumber))];
+  const timestamps = new Map(
+    await Promise.all(
+      blocks.map(async (blockNumber) => [blockNumber, (await client.getBlock({ blockNumber })).timestamp] as const),
+    ),
+  );
+  return logs.map((log) => ({ timestamp: Number(timestamps.get(log.blockNumber)!), usdt: log.args.value! }));
 }
 
 export type UserState = {
@@ -272,10 +320,14 @@ export async function fetchUserState(user: Address, blockNumber: bigint): Promis
 }
 
 /**
- * PENDLE leaving the Ethereum gauge controller since the snapshot.
+ * PENDLE leaving the Ethereum gauge controller since the snapshot. The controller carries only
+ * AIM's Performance stream (TVL + fee) to Ethereum markets; the limit-order and co-incentive
+ * streams are paid from other wallets and are not in this figure.
  * AIM does not mint — supply is flat — so spend is inventory: start balance + inflows − end
- * balance over each 14-day fee epoch. Outbound `getLogs` on this range exceed the RPC body
- * limit; inflows are rare (a handful of top-ups) and fit in one call.
+ * balance over each 14-day fee epoch. Epoch boundaries are blocks interpolated linearly between
+ * the snapshot and the latest block, so each boundary can be off by a few hundred blocks; fine
+ * for 14-day sums. Outbound `getLogs` on this range exceed the RPC body limit; inflows are rare
+ * (a handful of top-ups) and fit in one call.
  */
 export async function fetchGaugePendleOutflow(): Promise<{
   spent: { timestamp: number; amount: bigint }[];

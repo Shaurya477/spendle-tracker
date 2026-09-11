@@ -84,12 +84,12 @@ export function Yield({ data }: { data: TrackerData }) {
               <Stat
                 label="If lockers counted 1×"
                 value={fmtPct(y.aprNoBoost)}
-                sub={`latest distribution ÷ (${fmtCompact(sPendle.eligible)} sPENDLE + ${fmtCompact(vePendle.snapshotLocked)} locked PENDLE) × ${EPY}`}
+                sub={`latest distribution ÷ (${fmtCompact(sPendle.eligible)} sPENDLE + ${fmtCompact(vePendle.snapshotLocked)} locked PENDLE, both today) × ${EPY}`}
               />
               <Stat
                 label="If only sPENDLE existed"
                 value={fmtPct(y.aprSolo)}
-                sub={`latest distribution ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY}; plain APR once the last lock expires`}
+                sub={`latest ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY}; assumes no unlocked PENDLE is restaked and the distribution stays flat`}
               />
             </div>
           </CardContent>
@@ -117,7 +117,7 @@ export function Yield({ data }: { data: TrackerData }) {
               <Stat
                 label="Longest lock today"
                 value={fmtPct(y.aprMaxBoosted)}
-                sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(loyalty.maxMultiplier)}, unlocking ${fmtDate(loyalty.expiresAt)}`}
+                sub={`plain ${fmtPct(latest.aprPlain)} at epoch ${latest.epoch}'s block × ${fmtMult(loyalty.maxMultiplier)}, today's multiplier of the lock unlocking ${fmtDate(loyalty.expiresAt)}`}
               />
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
