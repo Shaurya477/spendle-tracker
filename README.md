@@ -57,6 +57,16 @@ Pendle's public API (`GET https://api-v2.pendle.finance/core/v1/spendle/data`) b
 | `virtualSpendleFromVependle` | 177,778,397.73 | 177,778,738.43 | −340 sPENDLE; the virtual balance decays ~2.96/s, so this is the API's ~2-minute cache. Using block 24,336,786 (the first block *after* 00:00 UTC) instead would be 56K off, which is how the snapshot block was pinned |
 | Buyback amounts per epoch | 287,935 / 110,444 / 142,392 / 218,235 / 131,832 / 239,840 / 149,087 / 144,388 / 199,338 | same, listed under the API's epoch start dates | the API had not yet recorded the 28 Aug 2026 distribution (94,065) and reports `aprs` as 0 for every epoch, so APR could not be cross-checked against it |
 
+The hub UI itself (`app.pendle.finance/spendle/stake/in`, read 11 Sep 2026 06:18 UTC) shows three headline figures and no APR:
+
+| Hub label | Hub value | This app |
+| --- | --- | --- |
+| Total PENDLE Staked | 97,869,428 | 97,869,428 (sPENDLE supply + PENDLE in vePENDLE) |
+| Last Epoch Distribution | 199,338 | epoch 14, 14 Aug 2026: 199,338. Onchain there is a later distribution of 94,065 sPENDLE on 28 Aug 2026 that the hub and API had not yet surfaced |
+| Fees Collected Since 08 Sep 2026 | $42,130 | not tracked here (USD fee intake, not an onchain PENDLE quantity); equals the API's `fees` for that epoch |
+
+The hub's "Yield Distributed Every 2 Saturdays" corresponds to the Friday-UTC transactions in the ledger (Saturday in UTC+8). Because the hub publishes no APR, the APR figures here are derived from the onchain distributions alone.
+
 ## Assumptions
 
 - **Everyone is active.** Holders who skip a vote while a PPP is open forfeit 14 days of rewards. That set is offchain, so the APRs here are a floor for an active holder and slightly understate the payout each active holder actually received.
