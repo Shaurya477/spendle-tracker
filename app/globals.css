@@ -246,6 +246,20 @@
   }
 }
 
+/* Hovering a bar reveals its card and guide line and dims the other bars. */
+.ruler-tip {
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+
+.ruler-link:hover + .ruler-tip {
+  opacity: 1;
+}
+
+.ruler:has(.ruler-link:hover) .ruler-link:not(:hover) > span:first-child {
+  opacity: 0.35;
+}
+
 .recharts-tooltip-cursor {
   stroke: var(--chart-cursor);
 }

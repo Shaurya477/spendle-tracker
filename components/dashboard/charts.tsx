@@ -35,7 +35,7 @@ const monthTick = (t: number) => {
 
 function TipFrame({ title, rows }: { title: string; rows: { label: string; value: string; color?: string }[] }) {
   return (
-    <div className="rounded-md border border-border bg-popover/95 px-3 py-2 shadow-xl backdrop-blur">
+    <div className="rounded-md border border-border bg-popover px-3 py-2 shadow-xl">
       <div className="mb-1.5 text-xs font-medium text-muted-foreground">{title}</div>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
