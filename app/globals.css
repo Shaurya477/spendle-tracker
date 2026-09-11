@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-display);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-spendle: var(--spendle);
+  --color-vependle: var(--vependle);
+  --color-boost: var(--boost);
+  --color-ink: var(--ink);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+:root,
+.dark {
+  --ink: oklch(0.15 0.018 255);
+  --background: oklch(0.17 0.018 255);
+  --foreground: oklch(0.94 0.012 80);
+  --card: oklch(0.205 0.02 255);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.23 0.02 255);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.94 0.012 80);
+  --primary-foreground: oklch(0.17 0.018 255);
+  --secondary: oklch(0.26 0.02 255);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.25 0.018 255);
+  --muted-foreground: oklch(0.68 0.015 80);
+  --accent: oklch(0.27 0.022 255);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.68 0.2 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.78 0.12 190);
+  --spendle: oklch(0.82 0.13 190);
+  --vependle: oklch(0.84 0.15 80);
+  --boost: oklch(0.72 0.18 30);
+  --chart-1: var(--spendle);
+  --chart-2: var(--vependle);
+  --chart-3: var(--boost);
+  --chart-4: oklch(0.7 0.1 300);
+  --chart-5: oklch(0.6 0.02 80);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, oklch(0.82 0.13 190 / 0.09), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, oklch(0.84 0.15 80 / 0.08), transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 0;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.rule {
+  background: linear-gradient(90deg, var(--border), transparent);
+  height: 1px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.rise-1 { animation-delay: 60ms; }
+.rise-2 { animation-delay: 140ms; }
+.rise-3 { animation-delay: 220ms; }
+.rise-4 { animation-delay: 300ms; }
+.rise-5 { animation-delay: 380ms; }
+.rise-6 { animation-delay: 460ms; }
+
+.recharts-tooltip-cursor {
+  stroke: oklch(1 0 0 / 25%);
+}
