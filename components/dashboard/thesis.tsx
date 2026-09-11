@@ -7,18 +7,18 @@ import { Eyebrow, SectionHeading } from "./primitives";
 
 function SignalCard({ signal, tone }: { signal: Signal; tone: "spendle" | "vependle" | "boost" }) {
   return (
-    <Card size="sm" className="border-0 bg-card/80">
+    <Card size="sm" className="">
       <CardContent className="flex flex-col gap-2">
         <Eyebrow>{signal.title}</Eyebrow>
         <div
-          className={`tabular font-mono text-2xl leading-none tracking-tight sm:text-3xl ${
+          className={`font-figure text-2xl leading-none tracking-tight sm:text-3xl ${
             tone === "spendle" ? "text-spendle" : tone === "vependle" ? "text-vependle" : "text-boost"
           }`}
         >
           {signal.value}
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground">{signal.detail}</p>
-        <p className="font-mono text-[10px] leading-relaxed text-muted-foreground/70">Test: {signal.test}</p>
+        <p className="text-[11px] leading-relaxed text-muted-foreground/70">Test: {signal.test}</p>
       </CardContent>
     </Card>
   );
@@ -45,7 +45,7 @@ export function Thesis({ data }: { data: TrackerData }) {
       />
 
       <Card
-        className={`rise rise-1 relative overflow-hidden border-0 bg-card/80 ring-1 ${
+        className={`relative overflow-hidden ring-1 ${
           t.headline.passing ? "ring-spendle/30" : "ring-boost/30"
         }`}
       >
@@ -59,7 +59,7 @@ export function Thesis({ data }: { data: TrackerData }) {
             <Eyebrow className={t.headline.passing ? "text-spendle" : "text-boost"}>{t.headline.title}</Eyebrow>
             <Badge
               variant="outline"
-              className={`font-mono text-[10px] ${
+              className={`text-[11px] ${
                 t.headline.passing ? "text-spendle ring-spendle/30" : "text-boost ring-boost/30"
               }`}
             >
@@ -68,7 +68,7 @@ export function Thesis({ data }: { data: TrackerData }) {
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <div
-              className={`tabular font-mono text-5xl leading-none tracking-tight sm:text-6xl ${
+              className={`font-figure text-5xl leading-none tracking-tight sm:text-6xl ${
                 t.headline.passing ? "text-spendle" : "text-boost"
               }`}
             >
@@ -77,12 +77,12 @@ export function Thesis({ data }: { data: TrackerData }) {
             <div className="text-sm text-muted-foreground">PENDLE bought back per PENDLE emitted, per epoch</div>
           </div>
           <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{t.headline.detail}</p>
-          <p className="font-mono text-[10px] leading-relaxed text-muted-foreground/70">Test: {t.headline.test}</p>
+          <p className="text-[11px] leading-relaxed text-muted-foreground/70">Test: {t.headline.test}</p>
         </CardContent>
       </Card>
 
       {t.passing.length > 0 && (
-        <div className="rise rise-2 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {t.passing.map((s, i) => (
             <SignalCard key={s.id} signal={s} tone={tones[i % tones.length]} />
           ))}
@@ -90,14 +90,14 @@ export function Thesis({ data }: { data: TrackerData }) {
       )}
 
       {t.failing.length > 0 && (
-        <div className="rise rise-3 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <Eyebrow>Not in the thesis right now</Eyebrow>
           <ul className="flex flex-col divide-y divide-border rounded-xl border border-border/70 bg-background/40">
             {t.failing.map((s) => (
               <li key={s.id} className="flex flex-col gap-1 px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-baseline sm:gap-4">
-                <span className="w-56 shrink-0 font-mono text-[11px] text-foreground/80">{s.title}</span>
+                <span className="w-56 shrink-0 text-xs font-medium text-foreground/80">{s.title}</span>
                 <span className="leading-relaxed">
-                  {s.detail} <span className="font-mono text-[10px] text-muted-foreground/70">Test: {s.test}</span>
+                  {s.detail} <span className="text-[11px] text-muted-foreground/70">Test: {s.test}</span>
                 </span>
               </li>
             ))}

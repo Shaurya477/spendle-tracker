@@ -21,7 +21,7 @@ export function useRefreshTracker() {
 export function RefreshButton() {
   const [pending, refresh] = useRefreshTracker();
   return (
-    <Button variant="outline" size="sm" onClick={refresh} disabled={pending} className="font-mono text-xs">
+    <Button variant="outline" size="sm" onClick={refresh} disabled={pending} className="text-xs">
       <RefreshCw className={pending ? "animate-spin" : ""} />
       {pending ? "Reading chain…" : "Refresh"}
     </Button>

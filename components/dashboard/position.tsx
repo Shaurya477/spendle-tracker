@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PersonalAprChart } from "./charts";
-import { Eyebrow, LineSwatch, SectionHeading, Stat, TxLink, keepTokenCase } from "./primitives";
+import { Eyebrow, LineSwatch, SectionHeading, Stat, TxLink } from "./primitives";
 import { CopyButton } from "./copy-button";
 
 const EPY = EPOCHS_PER_YEAR.toFixed(2);
@@ -91,7 +91,7 @@ export function Position({
         lede="Paste a wallet address. Below is that address's share of the numbers above: holdings, sPENDLE paid per epoch, its own APR including in-kind airdrops, and what the boost costs or earns it until January 2028."
       />
 
-      <form onSubmit={onSubmit} className="rise rise-1 flex flex-col gap-2">
+      <form onSubmit={onSubmit} className="flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row">
           <div
             className={cn(
@@ -123,12 +123,12 @@ export function Position({
             />
             <span className="flex items-center px-3 text-[11px] text-muted-foreground">{hex.length}/40</span>
           </div>
-          <Button type="submit" size="lg" className="font-mono" disabled={state.kind === "loading"}>
+          <Button type="submit" size="lg" disabled={state.kind === "loading"}>
             <Search />
             {state.kind === "loading" ? "Reading chain…" : "Look up"}
           </Button>
         </div>
-        {inputError && <p className="font-mono text-xs text-destructive">{inputError}</p>}
+        {inputError && <p className="text-xs text-destructive">{inputError}</p>}
       </form>
 
       {state.kind === "idle" && (
@@ -167,7 +167,7 @@ function Result({ data }: { data: PositionData }) {
 
   if (data.empty) {
     return (
-      <div className="rounded-lg border border-border bg-card/60 p-6">
+      <div className="rounded-lg border border-border p-6">
         <Eyebrow>{data.address}</Eyebrow>
         <p className="mt-2 text-sm text-muted-foreground">
           No sPENDLE, no cooldown in progress, no vePENDLE lock at the snapshot or now, and no sPENDLE
@@ -187,19 +187,19 @@ function Result({ data }: { data: PositionData }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {hasStake && (
-            <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
+            <Badge variant="outline" className="text-[11px] text-spendle ring-spendle/30">
               sPENDLE staker
             </Badge>
           )}
           {lock && (
-            <Badge variant="outline" className="font-mono text-[10px] text-vependle ring-vependle/30">
+            <Badge variant="outline" className="text-[11px] text-vependle ring-vependle/30">
               {hasBoost ? "boosted locker" : "former locker"}
             </Badge>
           )}
         </div>
       </div>
 
-      <Card className="border-0 bg-card/80 ring-1 ring-spendle/25">
+      <Card className="">
         <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <Stat
@@ -252,7 +252,7 @@ function Result({ data }: { data: PositionData }) {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card size="sm" className="border-0 bg-card/80 ring-1 ring-boost/25">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Virtual sPENDLE"
@@ -267,7 +267,7 @@ function Result({ data }: { data: PositionData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="border-0 bg-card/80">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Reward weight and share"
@@ -280,7 +280,7 @@ function Result({ data }: { data: PositionData }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-5">
             <Eyebrow>Paid so far</Eyebrow>
             <Stat
@@ -307,11 +307,11 @@ function Result({ data }: { data: PositionData }) {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-card/80 ring-1 ring-spendle/20">
+        <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-spendle">Your APR</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">on sPENDLE + locked PENDLE, per year</span>
+              <span className="text-[11px] text-muted-foreground">on sPENDLE + locked PENDLE, per year</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Stat
@@ -343,7 +343,7 @@ function Result({ data }: { data: PositionData }) {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-card/80 ring-1 ring-boost/25">
+        <Card className="">
           <CardContent className="flex flex-col gap-5">
             <Eyebrow className="text-boost">What the boost does to you</Eyebrow>
             {hasStake && (
@@ -378,7 +378,7 @@ function Result({ data }: { data: PositionData }) {
       </div>
 
       {outlook.aprNow !== null && (
-        <Card className="border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -427,7 +427,7 @@ function Result({ data }: { data: PositionData }) {
         </Card>
       )}
 
-      <Card className="border-0 bg-card/80">
+      <Card className="">
         <CardContent className="flex flex-col gap-3 px-0">
           <div className="px-4">
             <Eyebrow>Epoch by epoch</Eyebrow>
@@ -451,7 +451,7 @@ function Result({ data }: { data: PositionData }) {
             </TableHeader>
             <TableBody>
               {rows.map((e) => (
-                <TableRow key={e.txHash} className={cn("tabular font-mono text-xs", e.principal === 0 && "text-muted-foreground/60")}>
+                <TableRow key={e.txHash} className={cn("tabular text-xs", e.principal === 0 && "text-muted-foreground/60")}>
                   <TableCell className="pl-4 text-muted-foreground">{e.epoch}</TableCell>
                   <TableCell>{fmtDate(e.timestamp)}</TableCell>
                   <TableCell className="text-right">{fmtInt(e.sPendleBalance + e.sPendleUnclaimed)}</TableCell>
@@ -500,12 +500,12 @@ function Th({ children, right, className }: { children: React.ReactNode; right?:
   return (
     <TableHead
       className={cn(
-        "font-mono text-[11px] uppercase tracking-wider text-muted-foreground",
+        "text-xs font-medium text-muted-foreground",
         right && "text-right",
         className,
       )}
     >
-      {keepTokenCase(children)}
+      {children}
     </TableHead>
   );
 }

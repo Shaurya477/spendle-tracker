@@ -36,7 +36,7 @@ export function ExpandableTable({
           <Button
             variant="ghost"
             size="sm"
-            className="font-mono text-xs text-muted-foreground"
+            className="text-xs text-muted-foreground"
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
           >

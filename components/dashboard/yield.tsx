@@ -27,11 +27,11 @@ export function Yield({ data }: { data: TrackerData }) {
         }
       />
 
-      <div className="rise rise-1 grid gap-4 rounded-xl border border-border/70 bg-background/40 p-4 sm:grid-cols-3">
+      <div className="grid gap-4 rounded-xl border border-border/70 bg-background/40 p-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <Eyebrow>Denomination</Eyebrow>
-            <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
+            <Badge variant="outline" className="text-[11px] text-spendle ring-spendle/30">
               token terms
             </Badge>
           </div>
@@ -60,11 +60,11 @@ export function Yield({ data }: { data: TrackerData }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr]">
-        <Card className="rise rise-2 border-0 bg-card/80 ring-1 ring-spendle/20">
+        <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-spendle">Plain sPENDLE staker</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">sPENDLE earned per sPENDLE held, per year</span>
+              <span className="text-[11px] text-muted-foreground">sPENDLE earned per sPENDLE held, per year</span>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <Stat
@@ -96,11 +96,11 @@ export function Yield({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-3 border-0 bg-card/80 ring-1 ring-boost/25">
+        <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-boost">Boosted vePENDLE locker</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">sPENDLE earned per PENDLE locked, per year</span>
+              <span className="text-[11px] text-muted-foreground">sPENDLE earned per PENDLE locked, per year</span>
             </div>
             <Stat
               label="Latest, average locker"
@@ -129,7 +129,7 @@ export function Yield({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-4 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-6">
             <Eyebrow>Latest reward flow</Eyebrow>
             <Stat

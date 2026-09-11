@@ -11,7 +11,7 @@ export function GitHubLink() {
       href={REPO_URL}
       target="_blank"
       rel="noreferrer"
-      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "font-mono text-xs")}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-xs")}
     >
       <GitHubMark />
       Source

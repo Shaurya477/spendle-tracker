@@ -10,7 +10,7 @@ export function Methodology({ data }: { data: TrackerData }) {
     <section id="methodology" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading index="08" title="How the numbers are made" />
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
-        <Card className="rise rise-1 border-0 bg-card/60">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <Eyebrow>Contracts on Ethereum mainnet</Eyebrow>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
@@ -59,7 +59,7 @@ export function Methodology({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-2 border-0 bg-card/60">
+        <Card className="">
           <CardContent>
             <ol className="flex flex-col gap-4 text-sm leading-relaxed text-muted-foreground [counter-reset:step]">
               <Step title="Balances">
@@ -131,7 +131,7 @@ export function Methodology({ data }: { data: TrackerData }) {
 
 function Step({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <li className="grid gap-1 [counter-increment:step] before:font-mono before:text-[11px] before:text-muted-foreground before:content-[counter(step,decimal-leading-zero)]">
+    <li className="grid gap-1 [counter-increment:step] before:text-xs before:text-muted-foreground before:content-[counter(step,decimal-leading-zero)]">
       <div className="font-medium text-foreground">{title}</div>
       <div className="[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[11px] [&_code]:text-foreground/90">
         {children}

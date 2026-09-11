@@ -37,7 +37,7 @@ export function Disclaimer() {
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <div className="relative w-full max-w-md rounded-xl bg-card p-6 ring-1 ring-border sm:p-7">
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="text-xs font-medium text-muted-foreground">
           Terms
         </div>
         <h2 id="tos-title" className="font-display mt-2 text-3xl leading-none tracking-tight">
@@ -52,7 +52,7 @@ export function Disclaimer() {
           </li>
           <li>You use this site at your own risk.</li>
         </ul>
-        <Button type="button" size="lg" className="mt-6 w-full font-mono" onClick={accept}>
+        <Button type="button" size="lg" className="mt-6 w-full" onClick={accept}>
           I understand
         </Button>
       </div>

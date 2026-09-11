@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
+import { Backdrop } from "@/components/dashboard/backdrop";
 import { Disclaimer } from "@/components/dashboard/disclaimer";
 import { THEME_KEY } from "@/lib/theme";
 import "./globals.css";
 
-const display = Fraunces({
-  variable: "--font-display",
+/** One family for display and text; the width and optical-size axes do the differentiation. */
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
-});
-
-const body = IBM_Plex_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  axes: ["opsz", "wdth"],
 });
 
 const mono = IBM_Plex_Mono({
@@ -35,13 +31,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
+      className={`dark ${bricolage.variable} ${mono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body className="min-h-full flex flex-col">
+        <Backdrop />
         <Disclaimer />
         {children}
       </body>

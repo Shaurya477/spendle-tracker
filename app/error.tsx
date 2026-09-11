@@ -18,7 +18,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
         {error.message}
       </pre>
       <div>
-        <Button onClick={reset} variant="outline" className="font-mono text-xs">
+        <Button onClick={reset} variant="outline" className="text-xs">
           Retry
         </Button>
       </div>

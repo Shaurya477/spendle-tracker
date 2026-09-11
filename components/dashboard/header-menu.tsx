@@ -9,7 +9,7 @@ import { useRefreshTracker } from "./refresh-button";
 
 const BAR = "absolute left-0 top-1/2 h-[1.5px] w-full rounded-full bg-current transition-[transform,opacity] duration-200 ease-out";
 const ITEM =
-  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left font-mono text-xs text-foreground hover:bg-muted disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0";
+  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-foreground hover:bg-muted disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0";
 
 /** Phone-width replacement for the three header buttons: one knob that opens a right-aligned menu. */
 export function HeaderMenu({ repoUrl }: { repoUrl: string }) {

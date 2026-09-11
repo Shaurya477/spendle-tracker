@@ -5,17 +5,12 @@ import { cn } from "cn";
 
 export type NavSection = { id: string; index: string; title: string };
 
-/**
- * Sticky jump links for the page's sections. Highlights the section currently in view; scrolls
- * horizontally on phones. Sections carry `scroll-mt` so headings clear this bar when jumped to.
- */
-export function SectionNav({ sections }: { sections: NavSection[] }) {
+/** The section whose top has passed a line ~30% down the viewport; the first one before any has. */
+function useActiveSection(sections: NavSection[]) {
   const [active, setActive] = useState(sections[0]?.id ?? "");
-
   useEffect(() => {
     const els = sections.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => e !== null);
     if (els.length === 0) return;
-    // The active section is the last one whose top has passed a line ~30% down the viewport.
     const pick = () => {
       const line = window.innerHeight * 0.3;
       let current = els[0].id;
@@ -38,8 +33,41 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
       window.removeEventListener("resize", pick);
     };
   }, [sections]);
+  return active;
+}
 
-  // Keep the active pill visible in the horizontally scrolling rail (phones).
+/** Vertical section list for the desktop rail. */
+export function SectionList({ sections }: { sections: NavSection[] }) {
+  const active = useActiveSection(sections);
+  return (
+    <nav aria-label="Sections" className="flex flex-col">
+      {sections.map((s) => {
+        const on = s.id === active;
+        return (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            aria-current={on ? "location" : undefined}
+            className={cn(
+              "group flex items-baseline gap-3 border-l py-1.5 pl-4 text-sm transition-colors",
+              on
+                ? "border-foreground text-foreground"
+                : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+            )}
+          >
+            <span className={cn("tabular text-xs", on ? "text-foreground" : "text-muted-foreground/70")}>{s.index}</span>
+            {s.title}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Sticky horizontal pills for phones and tablets; scrolls sideways and keeps the active one in view. */
+export function SectionBar({ sections }: { sections: NavSection[] }) {
+  const active = useActiveSection(sections);
+
   useEffect(() => {
     const pill = document.querySelector<HTMLElement>(`[data-nav-id="${active}"]`);
     const rail = pill?.parentElement;
@@ -49,10 +77,7 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
   }, [active]);
 
   return (
-    <nav
-      aria-label="Sections"
-      className="sticky top-3 z-30 -mx-4 px-4 sm:-mx-8 sm:px-8"
-    >
+    <nav aria-label="Sections" className="sticky top-3 z-30 -mx-4 px-4 sm:-mx-8 sm:px-8 lg:hidden">
       <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-full border border-border bg-background/85 p-1 backdrop-blur">
         {sections.map((s) => {
           const on = s.id === active;
@@ -63,7 +88,7 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
               data-nav-id={s.id}
               aria-current={on ? "location" : undefined}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[11px] whitespace-nowrap transition-colors",
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs whitespace-nowrap transition-colors",
                 on ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >

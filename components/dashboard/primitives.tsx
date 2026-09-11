@@ -1,34 +1,12 @@
-import { Children, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "cn";
 import { ETHERSCAN } from "@/lib/pendle/config";
 import { shortHash } from "@/lib/format";
 
-const TOKEN_CASE = /(sPENDLE|vePENDLE|\bLPs\b)/;
-
-/** Inside `uppercase` text, keep the casing of sPENDLE, vePENDLE and the plural LPs; never SPENDLE or LPS. */
-export function keepTokenCase(children: ReactNode): ReactNode {
-  return Children.map(children, (child) => {
-    if (typeof child !== "string" || !TOKEN_CASE.test(child)) return child;
-    return child
-      .split(TOKEN_CASE)
-      .map((part, i) =>
-        TOKEN_CASE.test(part) ? <span key={i} className="normal-case">{part}</span> : part,
-      );
-  });
-}
-
+/** Small sentence-case label that names the figure or block under it. */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        "font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground",
-        className,
-      )}
-    >
-      {keepTokenCase(children)}
-    </div>
-  );
+  return <div className={cn("text-xs font-medium text-muted-foreground", className)}>{children}</div>;
 }
 
 export function SectionHeading({
@@ -38,18 +16,17 @@ export function SectionHeading({
   className,
 }: {
   index: string;
-  title: string;
+  title: ReactNode;
   lede?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="flex items-baseline gap-4">
-        <span className="font-mono text-xs text-muted-foreground">{index}</span>
-        <h2 className="font-display text-3xl leading-none tracking-tight sm:text-4xl">{title}</h2>
+      <div className="flex items-baseline gap-3">
+        <span className="tabular text-sm text-muted-foreground">{index}</span>
+        <h2 className="font-display text-[2rem] leading-none sm:text-[2.6rem]">{title}</h2>
       </div>
-      {lede && <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{lede}</p>}
-      <div className="rule" />
+      {lede && <p className="max-w-[68ch] text-[15px] leading-relaxed text-muted-foreground">{lede}</p>}
     </div>
   );
 }
@@ -79,7 +56,7 @@ export function Stat({
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span
           className={cn(
-            "tabular font-mono leading-none tracking-tight",
+            "font-figure leading-none",
             size === "lg" ? "text-3xl sm:text-4xl" : "text-2xl",
             tone === "spendle" && "text-spendle",
             tone === "vependle" && "text-vependle",
@@ -90,7 +67,7 @@ export function Stat({
         </span>
         {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
       </div>
-      {usd != null && <div className="tabular font-mono text-sm text-muted-foreground">{usd}</div>}
+      {usd != null && <div className="tabular text-sm text-muted-foreground">{usd}</div>}
       {sub && <div className="text-xs leading-relaxed text-muted-foreground">{sub}</div>}
     </div>
   );

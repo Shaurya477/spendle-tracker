@@ -21,13 +21,13 @@ export function Dilution({ data }: { data: TrackerData }) {
             like sPENDLE; the part above 1× is the loyalty boost, and it is taken from every 1× unit
             in the pool, sPENDLE and locked PENDLE alike. Each locker&apos;s multiplier falls linearly
             to 1× at unlock, so the premium shrinks continuously and reaches zero on{" "}
-            <span className="font-mono text-foreground">{fmtDate(loyalty.expiresAt)}</span>.
+            <span className="tabular text-foreground">{fmtDate(loyalty.expiresAt)}</span>.
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card size="sm" className="rise rise-1 border-0 bg-card/80 ring-1 ring-boost/25">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Boost dilution today"
@@ -38,7 +38,7 @@ export function Dilution({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="rise rise-2 border-0 bg-card/80">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Lockers' reward share"
@@ -49,7 +49,7 @@ export function Dilution({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="rise rise-3 border-0 bg-card/80">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Plain APR, one year out"
@@ -60,7 +60,7 @@ export function Dilution({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="rise rise-4 border-0 bg-card/80">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Average multiplier"
@@ -73,7 +73,7 @@ export function Dilution({ data }: { data: TrackerData }) {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rise rise-3 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -83,7 +83,7 @@ export function Dilution({ data }: { data: TrackerData }) {
                   batches.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Swatch tone="vependle" /> 1× base
                 </span>
@@ -99,7 +99,7 @@ export function Dilution({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-4 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -109,7 +109,7 @@ export function Dilution({ data }: { data: TrackerData }) {
                   expires. Right axis: plain APR if distributions stay at the latest amount.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Swatch tone="boost" /> dilution, flat
                 </span>
@@ -126,7 +126,7 @@ export function Dilution({ data }: { data: TrackerData }) {
         </Card>
       </div>
 
-      <Card className="rise rise-5 border-0 bg-card/60">
+      <Card className="">
         <CardContent className="grid gap-6 lg:grid-cols-[1fr_2fr]">
           <div className="flex flex-col gap-2">
             <Eyebrow>Largest unlock weeks ahead</Eyebrow>
@@ -142,8 +142,8 @@ export function Dilution({ data }: { data: TrackerData }) {
                 key={u.expiry}
                 className="flex items-baseline justify-between gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2"
               >
-                <span className="font-mono text-xs text-muted-foreground">{fmtDate(u.expiry)}</span>
-                <span className="tabular font-mono text-sm text-vependle">
+                <span className="tabular text-xs text-muted-foreground">{fmtDate(u.expiry)}</span>
+                <span className="tabular text-sm text-vependle">
                   {fmtCompact(u.amount)}{" "}
                   <span className="text-[10px] text-muted-foreground">{fmtPct(u.amount / remainingNow, 0)}</span>
                 </span>

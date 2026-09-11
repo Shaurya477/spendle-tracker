@@ -46,7 +46,7 @@ function Split({
               <span className="inline-block size-2 rounded-sm" style={{ background: p.color }} />
               {p.label}
             </div>
-            <div className="tabular font-mono text-sm">
+            <div className="tabular text-sm">
               {format(p.value)}{" "}
               <span className="text-muted-foreground">{fmtPct(share(p.value, total), 1)}</span>
             </div>
@@ -78,31 +78,31 @@ export function Revenue({ data }: { data: TrackerData }) {
         }
       />
 
-      <dl className="rise rise-1 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-background/40 p-4 text-xs leading-relaxed text-muted-foreground sm:grid-cols-[auto_1fr_auto_1fr] sm:gap-x-6">
-        <dt className="font-mono text-[11px] uppercase tracking-wider text-spendle">Funded</dt>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-background/40 p-4 text-xs leading-relaxed text-muted-foreground sm:grid-cols-[auto_1fr_auto_1fr] sm:gap-x-6">
+        <dt className="text-xs font-medium text-spendle">Funded</dt>
         <dd>USDT sent to the buyback contract for the epoch.</dd>
-        <dt className="font-mono text-[11px] uppercase tracking-wider text-spendle">Bought</dt>
+        <dt className="text-xs font-medium text-spendle">Bought</dt>
         <dd>PENDLE that USDT bought, paid to stakers 14 to 28 days after the epoch starts.</dd>
-        <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">80% share</dt>
+        <dt className="text-xs font-medium text-muted-foreground">80% share</dt>
         <dd>0.8 × DefiLlama Revenue. Policy, not a flow: the gap to Funded is in-kind airdrops and lag.</dd>
-        <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Source</dt>
+        <dt className="text-xs font-medium text-muted-foreground">Source</dt>
         <dd>DefiLlama, Pendle V2 only, all chains, since 29 Jan 2026. A fee counts on the day it reaches Pendle&apos;s treasury, so single epochs are lumpy.</dd>
       </dl>
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <Eyebrow>Latest complete epoch</Eyebrow>
-          <span className="tabular font-mono text-sm">
+          <span className="tabular text-sm">
             {fmtDate(e.start)} → {fmtDate(ends(e))}
           </span>
         </div>
-        <Badge variant="outline" className="font-mono text-[10px] text-boost ring-boost/30">
+        <Badge variant="outline" className="text-[11px] text-boost ring-boost/30">
           {fmtDate(current.start)} epoch{current.complete ? " complete" : `, ${current.days} days in`}
         </Badge>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">
-        <Card className="rise rise-2 border-0 bg-card/80 ring-1 ring-spendle/20">
+        <Card className="">
           <CardContent>
             <Stat
               label="YT and other fees"
@@ -113,7 +113,7 @@ export function Revenue({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card className="rise rise-3 border-0 bg-card/80 ring-1 ring-vependle/20">
+        <Card className="">
           <CardContent>
             <Stat
               label="Swap fees"
@@ -124,7 +124,7 @@ export function Revenue({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card className="rise rise-4 border-0 bg-card/80">
+        <Card className="">
           <CardContent>
             <Stat
               label="Protocol take"
@@ -134,7 +134,7 @@ export function Revenue({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card className="rise rise-5 border-0 bg-card/80">
+        <Card className="">
           <CardContent>
             <Stat
               label="Gross fees"
@@ -147,11 +147,11 @@ export function Revenue({ data }: { data: TrackerData }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rise rise-2 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow>Gross fees, latest complete epoch</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">100% = non-swap + swap</span>
+              <span className="text-[11px] text-muted-foreground">100% = non-swap + swap</span>
             </div>
             <Split
               parts={[
@@ -162,11 +162,11 @@ export function Revenue({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card className="rise rise-3 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow>Policy split 80 / 10 / 10</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">100% = DefiLlama Revenue</span>
+              <span className="text-[11px] text-muted-foreground">100% = DefiLlama Revenue</span>
             </div>
             <Split
               parts={[
@@ -188,11 +188,11 @@ export function Revenue({ data }: { data: TrackerData }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rise rise-3 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow>Non-swap vs swap by epoch</Eyebrow>
-              <div className="flex gap-3 font-mono text-[10px] text-muted-foreground">
+              <div className="flex gap-3 text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-block size-2 rounded-sm bg-spendle" /> YT and other
                 </span>
@@ -204,11 +204,11 @@ export function Revenue({ data }: { data: TrackerData }) {
             <EpochFeeChart epochs={r.epochs} />
           </CardContent>
         </Card>
-        <Card className="rise rise-4 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow>Cumulative fees vs emissions</Eyebrow>
-              <div className="flex flex-wrap gap-3 font-mono text-[10px] text-muted-foreground">
+              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-block size-2 rounded-sm bg-spendle" /> 80% share
                 </span>
@@ -246,7 +246,7 @@ export function Revenue({ data }: { data: TrackerData }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <Card className="rise rise-4 border-0 bg-card/80">
+        <Card className="">
           <CardContent className="flex flex-col gap-6">
             <Eyebrow>sPENDLE era, since 29 Jan 2026</Eyebrow>
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
@@ -294,11 +294,11 @@ export function Revenue({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-5 border-0 bg-card/80 ring-1 ring-boost/20">
+        <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-boost">Current AIM assignment</Eyebrow>
-              <span className="font-mono text-[10px] text-muted-foreground">{r.aim.markets} markets</span>
+              <span className="text-[11px] text-muted-foreground">{r.aim.markets} markets</span>
             </div>
             <Stat
               label="Assigned by AIM"
@@ -329,11 +329,11 @@ export function Revenue({ data }: { data: TrackerData }) {
         </Card>
       </div>
 
-      <Card className="rise rise-5 border-0 bg-card/80">
+      <Card className="">
         <CardContent className="px-0">
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
             <Eyebrow>Every fee epoch</Eyebrow>
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground">
               USD from DefiLlama and the buyback contract&apos;s USDT transfers; since 29 Jan 2026
             </span>
           </div>
@@ -342,24 +342,24 @@ export function Revenue({ data }: { data: TrackerData }) {
             initial={r.current.complete ? 3 : 4}
             head={
               <TableRow className="hover:bg-transparent">
-                <TableHead className="pl-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Epoch</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">YT + other</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-vependle">Swap</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">LP</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">Funded</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">Bought</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Treasury</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-boost">Ops</TableHead>
-                <TableHead className="pr-4 text-right font-mono text-[11px] uppercase tracking-wider text-boost">Emissions</TableHead>
+                <TableHead className="pl-4 text-xs font-medium text-muted-foreground">Epoch</TableHead>
+                <TableHead className="text-right text-xs font-medium text-spendle">YT + other</TableHead>
+                <TableHead className="text-right text-xs font-medium text-vependle">Swap</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">LP</TableHead>
+                <TableHead className="text-right text-xs font-medium text-spendle">Funded</TableHead>
+                <TableHead className="text-right text-xs font-medium text-spendle">Bought</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Treasury</TableHead>
+                <TableHead className="text-right text-xs font-medium text-boost">Ops</TableHead>
+                <TableHead className="pr-4 text-right text-xs font-medium text-boost">Emissions</TableHead>
               </TableRow>
             }
             rows={[...r.epochs].reverse().map((row) => (
-              <TableRow key={row.start} className="tabular font-mono text-xs">
+              <TableRow key={row.start} className="tabular text-xs">
                   <TableCell className="pl-4">
                     <div className="flex items-center gap-2">
                       <span>{fmtDate(row.start)}</span>
                       {!row.complete && (
-                        <Badge variant="outline" className="font-mono text-[10px] text-boost ring-boost/30">
+                        <Badge variant="outline" className="text-[11px] text-boost ring-boost/30">
                           in progress
                         </Badge>
                       )}

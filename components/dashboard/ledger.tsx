@@ -3,7 +3,7 @@ import { fmtCompact, fmtDate, fmtInt, fmtMult, fmtPct, fmtUsd, fmtUsdPrice } fro
 import { Card, CardContent } from "@/components/ui/card";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { ExpandableTable } from "./expandable-table";
-import { SectionHeading, TxLink, keepTokenCase } from "./primitives";
+import { SectionHeading, TxLink } from "./primitives";
 
 export function Ledger({ data }: { data: TrackerData }) {
   const rows = [...data.distributions].reverse();
@@ -14,27 +14,27 @@ export function Ledger({ data }: { data: TrackerData }) {
         title="Distribution ledger"
         lede="Every reward distribution so far: the PENDLE the buyback contract bought and what it paid in USDT, the sPENDLE handed to stakers, the eligible sPENDLE (all of it, unclaimed rewards included) and virtual sPENDLE just before the payout, and the plain and boosted APR for that epoch."
       />
-      <Card className="rise rise-1 border-0 bg-card/80">
+      <Card className="">
         <CardContent className="px-0">
           <ExpandableTable
             noun="distributions"
             head={
               <TableRow className="hover:bg-transparent">
-                <TableHead className="pl-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">#</TableHead>
-                <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Distributed</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("sPENDLE paid")}</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">USDT spent</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Avg price</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("Eligible sPENDLE")}</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{keepTokenCase("Virtual sPENDLE")}</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Avg mult.</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">Plain APR</TableHead>
-                <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-boost">Boosted APR</TableHead>
-                <TableHead className="pr-4 text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Tx</TableHead>
+                <TableHead className="pl-4 text-xs font-medium text-muted-foreground">#</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Distributed</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">sPENDLE paid</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">USDT spent</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Avg price</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Eligible sPENDLE</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Virtual sPENDLE</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Avg mult.</TableHead>
+                <TableHead className="text-right text-xs font-medium text-spendle">Plain APR</TableHead>
+                <TableHead className="text-right text-xs font-medium text-boost">Boosted APR</TableHead>
+                <TableHead className="pr-4 text-right text-xs font-medium text-muted-foreground">Tx</TableHead>
               </TableRow>
             }
             rows={rows.map((d) => (
-              <TableRow key={d.txHash} className="tabular font-mono text-xs">
+              <TableRow key={d.txHash} className="tabular text-xs">
                   <TableCell className="pl-4 text-muted-foreground">{d.epoch}</TableCell>
                   <TableCell>{fmtDate(d.timestamp)}</TableCell>
                   <TableCell className="text-right">{fmtInt(d.amount)}</TableCell>

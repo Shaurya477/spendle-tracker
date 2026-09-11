@@ -19,8 +19,8 @@ export function Balances({ data }: { data: TrackerData }) {
         lede={
           <>
             Pendle&apos;s staking hub reports one &ldquo;total staked&rdquo; figure,{" "}
-            <span className="tabular font-mono text-foreground">{fmtInt(total)}</span>{" "}
-            <span className="tabular font-mono text-foreground/70">({usdOf(total, pendleUsd)})</span>.
+            <span className="tabular text-foreground">{fmtInt(total)}</span>{" "}
+            <span className="tabular text-foreground/70">({usdOf(total, pendleUsd)})</span>.
             Onchain that is two balances: liquid sPENDLE, and PENDLE still sitting in the old vePENDLE lock
             contract.
           </>
@@ -28,20 +28,19 @@ export function Balances({ data }: { data: TrackerData }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rise rise-1 relative overflow-hidden border-0 bg-card/80 ring-1 ring-spendle/20">
-          <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-spendle/10 blur-3xl" />
+        <Card className="relative overflow-hidden">
           <CardContent className="flex flex-col gap-6 py-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-spendle">sPENDLE staked</Eyebrow>
-              <Badge variant="outline" className="font-mono text-[10px] text-spendle ring-spendle/30">
+              <Badge variant="outline" className="text-[11px] text-spendle ring-spendle/30">
                 live, liquid
               </Badge>
             </div>
             <div className="flex flex-col gap-1">
-              <div className="tabular font-mono text-5xl leading-none tracking-tight text-spendle sm:text-6xl">
+              <div className="font-figure text-5xl leading-none tracking-tight text-spendle sm:text-6xl">
                 {fmtInt(sPendle.supply)}
               </div>
-              <div className="tabular font-mono text-lg text-muted-foreground">
+              <div className="tabular text-lg text-muted-foreground">
                 {usdOf(sPendle.supply, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -73,20 +72,19 @@ export function Balances({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
 
-        <Card className="rise rise-2 relative overflow-hidden border-0 bg-card/80 ring-1 ring-vependle/20">
-          <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-vependle/10 blur-3xl" />
+        <Card className="relative overflow-hidden">
           <CardContent className="flex flex-col gap-6 py-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow className="text-vependle">Locked in vePENDLE</Eyebrow>
-              <Badge variant="outline" className="font-mono text-[10px] text-vependle ring-vependle/30">
+              <Badge variant="outline" className="text-[11px] text-vependle ring-vependle/30">
                 deprecated, depleting
               </Badge>
             </div>
             <div className="flex flex-col gap-1">
-              <div className="tabular font-mono text-5xl leading-none tracking-tight text-vependle sm:text-6xl">
+              <div className="font-figure text-5xl leading-none tracking-tight text-vependle sm:text-6xl">
                 {fmtInt(vePendle.pendleHeld)}
               </div>
-              <div className="tabular font-mono text-lg text-muted-foreground">
+              <div className="tabular text-lg text-muted-foreground">
                 {usdOf(vePendle.pendleHeld, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -117,10 +115,10 @@ export function Balances({ data }: { data: TrackerData }) {
         </Card>
       </div>
 
-      <div className="rise rise-3 flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Eyebrow>How total staked splits</Eyebrow>
-          <div className="flex flex-wrap gap-4 font-mono text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Swatch tone="spendle" /> sPENDLE {fmtPct(pctS, 1)}
             </span>
@@ -139,8 +137,8 @@ export function Balances({ data }: { data: TrackerData }) {
         </div>
       </div>
 
-      <div className="rise rise-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card size="sm" className="border-0 bg-card/60 ring-1 ring-boost/25">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Virtual sPENDLE"
@@ -151,7 +149,7 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="border-0 bg-card/60">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Boost premium"
@@ -161,7 +159,7 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="border-0 bg-card/60">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Reward-eligible total"
@@ -171,7 +169,7 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </CardContent>
         </Card>
-        <Card size="sm" className="border-0 bg-card/60">
+        <Card size="sm" className="">
           <CardContent>
             <Stat
               label="Boost ends"

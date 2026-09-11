@@ -36,7 +36,7 @@ const monthTick = (t: number) => {
 function TipFrame({ title, rows }: { title: string; rows: { label: string; value: string; color?: string }[] }) {
   return (
     <div className="rounded-md border border-border bg-popover/95 px-3 py-2 shadow-xl backdrop-blur">
-      <div className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="mb-1.5 text-xs font-medium text-muted-foreground">{title}</div>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between gap-6 text-xs">
@@ -44,7 +44,7 @@ function TipFrame({ title, rows }: { title: string; rows: { label: string; value
               {r.color && <span className="inline-block size-2 rounded-sm" style={{ background: r.color }} />}
               {r.label}
             </span>
-            <span className="tabular font-mono text-foreground">{r.value}</span>
+            <span className="tabular text-foreground">{r.value}</span>
           </div>
         ))}
       </div>
@@ -81,14 +81,14 @@ export function DecayChart({
           scale="time"
           domain={["dataMin", "dataMax"]}
           tickFormatter={monthTick}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
           tickLine={false}
           minTickGap={48}
         />
         <YAxis
           tickFormatter={(v: number) => fmtCompact(v)}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={56}
@@ -134,13 +134,13 @@ export function DecayChart({
           y={sPendle}
           stroke={SPENDLE}
           strokeDasharray="4 4"
-          label={{ value: "eligible sPENDLE today", position: "insideTopLeft", fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          label={{ value: "eligible sPENDLE today", position: "insideTopLeft", fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
         />
         <ReferenceLine
           x={expiresAt}
           stroke={AXIS}
           strokeDasharray="2 4"
-          label={{ value: "last snapshot unlock", position: "insideTopRight", fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          label={{ value: "last snapshot unlock", position: "insideTopRight", fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -172,7 +172,7 @@ export function PersonalAprChart({
           scale="time"
           domain={["dataMin", "dataMax"]}
           tickFormatter={monthTick}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
           tickLine={false}
           minTickGap={48}
@@ -180,7 +180,7 @@ export function PersonalAprChart({
         <YAxis
           tickFormatter={(v: number) => fmtPct(v, 1)}
           domain={[0, (max: number) => Math.ceil(max * 100) / 100]}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={52}
@@ -214,7 +214,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           scale="time"
           domain={["dataMin", "dataMax"]}
           tickFormatter={monthTick}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
           tickLine={false}
           minTickGap={48}
@@ -223,7 +223,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           yAxisId="pct"
           tickFormatter={(v: number) => fmtPct(v, 0)}
           domain={[0, (max: number) => Math.ceil(max * 10) / 10]}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={48}
@@ -232,7 +232,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           yAxisId="apr"
           orientation="right"
           tickFormatter={(v: number) => fmtPct(v, 1)}
-          tick={{ fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={52}
@@ -310,14 +310,14 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
           scale="time"
           domain={["dataMin", "dataMax"]}
           tickFormatter={monthTick}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
           tickLine={false}
           minTickGap={48}
         />
         <YAxis
           tickFormatter={(v: number) => fmtUsdCompact(v)}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={56}
@@ -393,7 +393,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           scale="time"
           domain={["dataMin", "dataMax"]}
           tickFormatter={monthTick}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
           tickLine={false}
           minTickGap={48}
@@ -401,7 +401,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
         <YAxis
           yAxisId="usd"
           tickFormatter={(v: number) => fmtUsdCompact(v)}
-          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={56}
@@ -410,7 +410,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           yAxisId="pendle"
           orientation="right"
           tickFormatter={(v: number) => fmtCompact(v)}
-          tick={{ fill: BOOST, fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: BOOST, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
           width={52}
