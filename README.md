@@ -71,6 +71,8 @@ Section 05 takes a wallet (fixed `0x` prefix; paste a full address and the prefi
 
 Validation of the pro-rata estimate against Pendle's own accrual record (three real addresses, 11 Sep 2026): 462.78 vs 466.64, 689.50 vs 686.38, and 8,266 vs 8,705 sPENDLE. The first two are within 1%; the third address unlocked in April and restaked in May, and the gap is the timing difference between Pendle's balance snapshot and the block before the distribution.
 
+**Why this differs from spendle.pages.dev.** That calculator (unofficial) was checked with the same `0x2526…e4f4` wallet on 11 Sep 2026. Its per-epoch sPENDLE figures run 5–15% above this app's (e.g. 54.51 vs 52.09, 42.02 vs 36.82) and its APR is USD-based: "(sPENDLE rewards + airdrops) ÷ sPENDLE stake value … all USD at distribution-time prices". Two reasons for the gap: it labels epochs by fee-epoch end and divides every epoch's share by *today's* pool size (its own footnote says so), whereas this app reads the eligible total at the block before each distribution, so early epochs here use the larger historical denominator and the totals reconcile with Pendle's accrual record; and it converts everything to USD, whereas this app stays in PENDLE terms and only prices airdrops, at the epoch's realised buyback price.
+
 ## Cross-check against Pendle's hub
 
 Pendle's public API (`GET https://api-v2.pendle.finance/core/v1/spendle/data`) backs the staking hub. At the time of writing, block 25,952,337:
