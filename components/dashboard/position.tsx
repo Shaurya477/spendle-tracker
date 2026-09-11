@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { PersonalAprChart } from "./charts";
 import { Eyebrow, LineSwatch, SectionHeading, Stat, TxLink, keepTokenCase } from "./primitives";
+import { CopyButton } from "./copy-button";
 
 const EPY = EPOCHS_PER_YEAR.toFixed(2);
 const HEX40 = /^[0-9a-fA-F]{40}$/;
@@ -83,7 +84,7 @@ export function Position({
   }
 
   return (
-    <section id="position" className="flex flex-col gap-8">
+    <section id="position" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="07"
         title="Your position"
@@ -179,8 +180,10 @@ function Result({ data }: { data: PositionData }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-mono text-xs text-muted-foreground">
-          <span className="text-foreground">{data.address}</span> at block {fmtInt(data.block.number)}
+        <div className="flex min-w-0 flex-wrap items-center gap-1 font-mono text-xs text-muted-foreground">
+          <span className="break-all text-foreground">{data.address}</span>
+          <CopyButton value={data.address} label="Copy address" />
+          <span>at block {fmtInt(data.block.number)}</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {hasStake && (

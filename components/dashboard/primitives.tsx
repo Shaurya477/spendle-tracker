@@ -4,9 +4,9 @@ import { cn } from "cn";
 import { ETHERSCAN } from "@/lib/pendle/config";
 import { shortHash } from "@/lib/format";
 
-const TOKEN_CASE = /(sPENDLE|vePENDLE)/;
+const TOKEN_CASE = /(sPENDLE|vePENDLE|\bLPs\b)/;
 
-/** Inside `uppercase` text, keep the token names' own casing: sPENDLE and vePENDLE, never SPENDLE. */
+/** Inside `uppercase` text, keep the casing of sPENDLE, vePENDLE and the plural LPs; never SPENDLE or LPS. */
 export function keepTokenCase(children: ReactNode): ReactNode {
   return Children.map(children, (child) => {
     if (typeof child !== "string" || !TOKEN_CASE.test(child)) return child;

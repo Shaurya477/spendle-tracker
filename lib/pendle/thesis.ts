@@ -111,16 +111,16 @@ export function buildThesis(data: TrackerData): Thesis {
     passing: latestClosed.buybackFunded > priorFunded,
   };
 
-  // 6. Ethereum gauge emissions trend.
+  // 6. LP emissions trend (Ethereum gauge controller).
   const emitting = complete.filter((e) => e.emittedPendle > 0);
   const latestEmit = emitting[emitting.length - 1];
   const priorEmit = mean(prior(emitting, 4).map((e) => e.emittedPendle));
   const emissions: Signal = {
     id: "emissions-falling",
-    title: "ETH gauge emissions",
+    title: "LP emissions, Ethereum",
     value: signedPct(change(latestEmit.emittedPendle, priorEmit)),
-    detail: `The Ethereum gauge controller paid ${fmtInt(latestEmit.emittedPendle)} PENDLE to markets in the epoch from ${fmtDate(latestEmit.start)}, against ${fmtInt(priorEmit)} mean over the four before it and ${fmtInt(emitting[0].emittedPendle)} in the first epoch after the snapshot. Performance stream on Ethereum only; limit-order and other chains' PENDLE is not in this figure.`,
-    test: "ETH gauge outflow in the latest complete epoch < mean of the prior four",
+    detail: `Emissions to Ethereum LPs were ${fmtInt(latestEmit.emittedPendle)} PENDLE in the epoch from ${fmtDate(latestEmit.start)}, paid from the gauge controller, against ${fmtInt(priorEmit)} mean over the four before it and ${fmtInt(emitting[0].emittedPendle)} in the first epoch after the snapshot. Performance stream on Ethereum only; limit-order and other chains' PENDLE is not in this figure.`,
+    test: "LP emissions from the Ethereum gauge in the latest complete epoch < mean of the prior four",
     passing: latestEmit.emittedPendle < priorEmit,
   };
 

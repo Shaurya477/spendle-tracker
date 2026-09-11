@@ -11,7 +11,7 @@ export function Dilution({ data }: { data: TrackerData }) {
   const oneYear = projection.find((p) => p.t >= data.block.timestamp + 365.25 * 86_400);
 
   return (
-    <section className="flex flex-col gap-8">
+    <section id="dilution" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="03"
         title="Boost dilution"

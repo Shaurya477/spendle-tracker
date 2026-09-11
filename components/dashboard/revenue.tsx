@@ -4,14 +4,8 @@ import { EPOCH_SECONDS } from "@/lib/pendle/config";
 import { fmtCompact, fmtDate, fmtInt, fmtPct, fmtUsd, usdOf } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
+import { ExpandableTable } from "./expandable-table";
 import { AccrualChart, EpochFeeChart } from "./charts";
 import { Eyebrow, SectionHeading, Stat } from "./primitives";
 
@@ -71,51 +65,40 @@ export function Revenue({ data }: { data: TrackerData }) {
   const ends = (epoch: FeeEpoch) => epoch.start + EPOCH_SECONDS;
 
   return (
-    <section className="flex flex-col gap-8">
+    <section id="fees" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="04"
         title="Fees, revenue, and incentives"
         lede={
           <>
-            Pendle V2 charges 5% of the yield and points accrued by YT, plus a fee on PT/YT swaps.
-            LPs keep 20% of swap fees; the rest, with all YT fees, is protocol take, which policy
-            splits up to 80% buybacks, 10% treasury, 10% operations. The buyback is the PENDLE bought
-            with that USDT and paid to stakers as sPENDLE; it runs below the 80% figure because
-            revenue also counts in-kind airdrops passed through as-is, and because fees are harvested
-            every two weeks and bought over the following weeks. AIM incentives are paid in PENDLE that
-            already exists; supply is flat, nothing is minted.
+            Pendle V2 takes 5% of YT yield and points plus a fee on PT/YT swaps; LPs keep 20% of the
+            swap fees. Policy sends up to 80% of the rest to PENDLE buybacks paid to stakers as
+            sPENDLE, 10% to treasury, 10% to operations.
           </>
         }
       />
 
-      <div className="rise rise-1 grid gap-4 rounded-xl border border-border/70 bg-background/40 p-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-1.5">
+      <dl className="rise rise-1 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-background/40 p-4 text-xs leading-relaxed text-muted-foreground sm:grid-cols-[auto_1fr_auto_1fr] sm:gap-x-6">
+        <dt className="font-mono text-[11px] uppercase tracking-wider text-spendle">Funded</dt>
+        <dd>USDT sent to the buyback contract for the epoch.</dd>
+        <dt className="font-mono text-[11px] uppercase tracking-wider text-spendle">Bought</dt>
+        <dd>PENDLE that USDT bought, paid to stakers 14 to 28 days after the epoch starts.</dd>
+        <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">80% share</dt>
+        <dd>0.8 × DefiLlama Revenue. Policy, not a flow: the gap to Funded is in-kind airdrops and lag.</dd>
+        <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Source</dt>
+        <dd>DefiLlama, Pendle V2 label, all chains, since 29 Jan 2026. Fees book on treasury receipt, so epochs are lumpy.</dd>
+      </dl>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <Eyebrow>Latest complete epoch</Eyebrow>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {fmtDate(e.start)} → {fmtDate(ends(e))}. The epoch starting {fmtDate(current.start)}{" "}
-            {current.complete ? "is complete." : `is in progress (${current.days} days in).`} DefiLlama
-            books a fee on the day the tokens reach Pendle&apos;s treasury, so an epoch&apos;s USD is
-            lumpy, is not Pendle&apos;s own epoch accounting, and its last day can arrive a day late.
-          </p>
+          <span className="tabular font-mono text-sm">
+            {fmtDate(e.start)} → {fmtDate(ends(e))}
+          </span>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Eyebrow>Policy split vs funded</Eyebrow>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            80% share, treasury, and operations are the 80/10/10 policy split of DefiLlama&apos;s
-            Revenue, not observed flows; Pendle&apos;s wording is &ldquo;up to 80%&rdquo;. Funded is
-            USDT sent to the buyback contract, attributed to the epoch whose end is nearest. Bought is
-            the PENDLE that USDT purchased by hourly TWAP and the distribution paid to stakers 14 to
-            28 days after the epoch start; a two to three week lag is normal.
-          </p>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Eyebrow>Pendle V2 only</Eyebrow>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Daily USD from DefiLlama&apos;s Pendle V2 label, summed across chains, from 29 Jan 2026;
-            Boros and anything before 29 Jan are excluded. Two identities back out the split: LP fees
-            = 20% of gross swap; DefiLlama&apos;s Revenue field = non-swap fees + 80% of swap.
-          </p>
-        </div>
+        <Badge variant="outline" className="font-mono text-[10px] text-boost ring-boost/30">
+          {fmtDate(current.start)} epoch{current.complete ? " complete" : `, ${current.days} days in`}
+        </Badge>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">
@@ -193,14 +176,12 @@ export function Revenue({ data }: { data: TrackerData }) {
               ]}
             />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Funded{e.buybackWindowClosed ? "" : " so far"}: {fmtUsd(e.buybackFunded)} USDT sent to the
-              buyback contract for this epoch, {fmtPct(share(e.buybackFunded, e.buyback), 0)} of the 80%
-              share. The 80% is policy, not an observed flow: Revenue includes in-kind airdrops that
-              go to stakers as-is{e.airdropUsd !== null ? ` (${fmtUsd(e.airdropUsd)} this epoch per Pendle&apos;s API)` : ""}, and fees
-              harvested at epoch end are bought over the following weeks.{" "}
+              Funded{e.buybackWindowClosed ? "" : " so far"}: {fmtUsd(e.buybackFunded)},{" "}
+              {fmtPct(share(e.buybackFunded, e.buyback), 0)} of the 80% share.
+              {e.airdropUsd !== null ? ` In-kind airdrops this epoch: ${fmtUsd(e.airdropUsd)}.` : ""}{" "}
               {e.bought
-                ? `The buyback for this epoch bought ${fmtInt(e.bought.pendle)} PENDLE for ${fmtUsd(e.bought.usd)} and was paid to stakers on ${fmtDate(e.bought.distributedAt)}.`
-                : "Its buyback has not been distributed yet."}
+                ? `Bought ${fmtInt(e.bought.pendle)} PENDLE for ${fmtUsd(e.bought.usd)}, paid to stakers on ${fmtDate(e.bought.distributedAt)}.`
+                : "Buyback not yet distributed."}
             </p>
           </CardContent>
         </Card>
@@ -226,7 +207,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="rise rise-4 border-0 bg-card/80">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Cumulative fees vs ETH gauge</Eyebrow>
+              <Eyebrow>Cumulative fees vs emissions</Eyebrow>
               <div className="flex flex-wrap gap-3 font-mono text-[10px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-block size-2 rounded-sm bg-spendle" /> 80% share
@@ -244,7 +225,7 @@ export function Revenue({ data }: { data: TrackerData }) {
                   <span className="inline-block size-2 rounded-sm" style={{ background: LP }} /> LP fees
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block h-px w-3 bg-boost" /> ETH gauge
+                  <span className="inline-block h-px w-3 bg-boost" /> LP emissions
                 </span>
               </div>
             </div>
@@ -253,10 +234,12 @@ export function Revenue({ data }: { data: TrackerData }) {
               Stacked USD is the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees,
               cumulative from 29 Jan 2026. The solid line is USDT actually received by the buyback
               contract, each transfer attributed to the fee epoch whose end is nearest. The dashed
-              line (right axis) is PENDLE leaving the Ethereum gauge controller over the same period,
-              all of it to Ethereum markets: the Performance stream only; limit-order and co-incentive
-              PENDLE is paid elsewhere and is not counted. The controller pays from inventory it already
-              held; PENDLE supply has been flat. Other chains&apos; AIM is in the AIM card.
+              line (right axis) is LP emissions: PENDLE paid to Ethereum markets from the gauge
+              controller over the same period, new supply for LPs to hold or sell. It is the
+              Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere and is
+              not counted. The controller pays from inventory it already held, so PENDLE total supply
+              is flat; these are emissions into circulation, not minting. Other chains&apos; AIM is in
+              the AIM card.
             </p>
           </CardContent>
         </Card>
@@ -298,13 +281,14 @@ export function Revenue({ data }: { data: TrackerData }) {
               <Stat label="Operations" value={fmtUsd(r.totals.ops)} sub="10% policy share of Revenue" />
               <Stat label="LP swap fees" value={fmtUsd(r.totals.lp)} sub="20% of gross swap" />
             </div>
-            <div className="grid grid-cols-2 gap-6 border-t border-border pt-4 sm:grid-cols-4">
+            <div className="grid gap-6 border-t border-border pt-4 sm:grid-cols-2">
               <Stat
-                label="ETH gauge spend"
+                label="Emissions to LPs"
                 value={fmtInt(r.totals.emittedPendle)}
                 unit="PENDLE"
                 usd={usdOf(r.totals.emittedPendle, pendleUsd)}
-                sub={`Performance stream only, via the gauge controller; ${fmtInt(r.gaugePendle)} PENDLE still in it; USD at the live quote`}
+                tone="boost"
+                sub={`PENDLE paid to Ethereum LPs from the gauge controller since 29 Jan 2026, Performance stream only; ${fmtInt(r.gaugePendle)} PENDLE left in it; USD at the live quote`}
               />
             </div>
           </CardContent>
@@ -353,8 +337,10 @@ export function Revenue({ data }: { data: TrackerData }) {
               USD from DefiLlama and USDT Transfer logs; since 29 Jan 2026
             </span>
           </div>
-          <Table>
-            <TableHeader>
+          <ExpandableTable
+            noun="epochs"
+            initial={r.current.complete ? 3 : 4}
+            head={
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Epoch</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">YT + other</TableHead>
@@ -364,12 +350,11 @@ export function Revenue({ data }: { data: TrackerData }) {
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-spendle">Bought</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Treasury</TableHead>
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-boost">Ops</TableHead>
-                <TableHead className="pr-4 text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">ETH gauge</TableHead>
+                <TableHead className="pr-4 text-right font-mono text-[11px] uppercase tracking-wider text-boost">Emissions</TableHead>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...r.epochs].reverse().map((row) => (
-                <TableRow key={row.start} className="tabular font-mono text-xs">
+            }
+            rows={[...r.epochs].reverse().map((row) => (
+              <TableRow key={row.start} className="tabular font-mono text-xs">
                   <TableCell className="pl-4">
                     <div className="flex items-center gap-2">
                       <span>{fmtDate(row.start)}</span>
@@ -395,9 +380,8 @@ export function Revenue({ data }: { data: TrackerData }) {
                     {row.emittedPendle > 0 ? fmtInt(row.emittedPendle) : "—"}
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          />
           <p className="px-4 pt-3 text-xs leading-relaxed text-muted-foreground">
             Funded is USDT received by the buyback contract, attributed to the fee epoch whose end is
             nearest (within seven days either side)
@@ -408,8 +392,8 @@ export function Revenue({ data }: { data: TrackerData }) {
             start; the USDT spent per distribution is in the ledger. Treasury and ops are the 10/10 policy split of
             DefiLlama Revenue. DefiLlama books fees on the day tokens
             reach the treasury, so a row is not Pendle&apos;s epoch accounting and its last day can
-            arrive a day late; the 27 Jan 2026 row starts at the 29 Jan snapshot. ETH gauge PENDLE
-            uses epoch boundaries approximated from block times.
+            arrive a day late; the 27 Jan 2026 row starts at the 29 Jan snapshot. Emissions are PENDLE paid
+            to Ethereum LPs from the gauge controller, with epoch boundaries approximated from block times.
           </p>
         </CardContent>
       </Card>

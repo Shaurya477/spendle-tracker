@@ -11,7 +11,19 @@ import { Thesis } from "@/components/dashboard/thesis";
 import { Position } from "@/components/dashboard/position";
 import { Methodology } from "@/components/dashboard/methodology";
 import { GitHubMark } from "@/components/dashboard/github-link";
+import { SectionNav } from "@/components/dashboard/section-nav";
 import { REPO_URL } from "@/lib/pendle/config";
+
+const SECTIONS = [
+  { id: "balances", index: "01", title: "Balances" },
+  { id: "yield", index: "02", title: "Yield" },
+  { id: "dilution", index: "03", title: "Dilution" },
+  { id: "fees", index: "04", title: "Fees" },
+  { id: "ledger", index: "05", title: "Ledger" },
+  { id: "thesis", index: "06", title: "Thesis" },
+  { id: "position", index: "07", title: "Position" },
+  { id: "methodology", index: "08", title: "Methodology" },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +37,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
   return (
     <main className="grain relative mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-10 sm:px-8 sm:py-14">
       <Header data={data} />
+      <SectionNav sections={SECTIONS} />
       <Balances data={data} />
       <Yield data={data} />
       <Dilution data={data} />

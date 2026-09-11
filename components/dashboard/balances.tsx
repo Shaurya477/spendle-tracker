@@ -12,7 +12,7 @@ export function Balances({ data }: { data: TrackerData }) {
   const pctExpired = vePendle.expiredUnwithdrawn / total;
 
   return (
-    <section className="flex flex-col gap-8">
+    <section id="balances" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="01"
         title="Staked vs locked"

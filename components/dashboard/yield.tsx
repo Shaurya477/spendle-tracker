@@ -13,7 +13,7 @@ export function Yield({ data }: { data: TrackerData }) {
   const overdue = y.nextDistributionEta < block.timestamp;
 
   return (
-    <section className="flex flex-col gap-8">
+    <section id="yield" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="02"
         title="sPENDLE yield"

@@ -1,20 +1,14 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtInt, fmtMult, fmtPct, fmtUsd, fmtUsdPrice } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
+import { ExpandableTable } from "./expandable-table";
 import { SectionHeading, TxLink, keepTokenCase } from "./primitives";
 
 export function Ledger({ data }: { data: TrackerData }) {
   const rows = [...data.distributions].reverse();
   return (
-    <section className="flex flex-col gap-8">
+    <section id="ledger" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
         index="05"
         title="Distribution ledger"
@@ -22,8 +16,9 @@ export function Ledger({ data }: { data: TrackerData }) {
       />
       <Card className="rise rise-1 border-0 bg-card/80">
         <CardContent className="px-0">
-          <Table>
-            <TableHeader>
+          <ExpandableTable
+            noun="distributions"
+            head={
               <TableRow className="hover:bg-transparent">
                 <TableHead className="pl-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">#</TableHead>
                 <TableHead className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Distributed</TableHead>
@@ -37,10 +32,9 @@ export function Ledger({ data }: { data: TrackerData }) {
                 <TableHead className="text-right font-mono text-[11px] uppercase tracking-wider text-boost">Boosted APR</TableHead>
                 <TableHead className="pr-4 text-right font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Tx</TableHead>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((d) => (
-                <TableRow key={d.txHash} className="tabular font-mono text-xs">
+            }
+            rows={rows.map((d) => (
+              <TableRow key={d.txHash} className="tabular font-mono text-xs">
                   <TableCell className="pl-4 text-muted-foreground">{d.epoch}</TableCell>
                   <TableCell>{fmtDate(d.timestamp)}</TableCell>
                   <TableCell className="text-right">{fmtInt(d.amount)}</TableCell>
@@ -55,9 +49,8 @@ export function Ledger({ data }: { data: TrackerData }) {
                     <TxLink hash={d.txHash} />
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          />
         </CardContent>
       </Card>
     </section>

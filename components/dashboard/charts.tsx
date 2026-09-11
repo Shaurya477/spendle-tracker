@@ -429,7 +429,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
                   { label: "Treasury", value: fmtUsd(p.treasury), color: TREASURY },
                   { label: "Operations", value: fmtUsd(p.ops), color: BOOST },
                   { label: "LP swap fees", value: fmtUsd(p.lp), color: LP },
-                  { label: "PENDLE leaving ETH gauge", value: `${fmtCompact(p.emittedPendle)} PENDLE` },
+                  { label: "LP emissions (ETH gauge)", value: `${fmtCompact(p.emittedPendle)} PENDLE` },
                 ]}
               />
             );

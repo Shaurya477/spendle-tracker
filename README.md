@@ -65,7 +65,7 @@ Annualisation is simple, not compounded: each epoch's ratio is multiplied by `36
 | Swap vs "YT and other" | gross swap = `dailySupplySideRevenue ÷ 0.20`; "YT and other fees" = DefiLlama's `Revenue` field − 0.80 × swap, i.e. everything booked at the treasury that is not AMM swap fee (YT yield and points fees, limit-order fees, post-maturity yield, airdrop tokens forwarded to the distributor) |
 | 80% share / treasury / ops | 0.8 / 0.1 / 0.1 × DefiLlama `Revenue`. A policy split, not a flow |
 | Funded | USDT `Transfer(to = buyback)` logs since the snapshot block, timestamps read from each block. A transfer at *t* belongs to the fee epoch starting at *T* when `T + 7d ≤ t < T + 21d` (Pendle funds the contract around the epoch boundary, observed 0.3 days before to 3.3 days after it). An epoch's figure can grow until `T + 21d` |
-| ETH gauge spend | PENDLE leaving the Ethereum gauge controller per fee epoch: start balance + top-ups − end balance, epoch boundaries approximated by linear block interpolation. Performance stream only; limit-order and co-incentive PENDLE is paid from other wallets |
+| Emissions to LPs | PENDLE paid to Ethereum LPs from the gauge controller per fee epoch (existing inventory entering circulation; total supply is flat): start balance + top-ups − end balance, epoch boundaries approximated by linear block interpolation. Performance stream only; limit-order and co-incentive PENDLE is paid from other wallets |
 | AIM assignment | `GET /v1/pendle-emission`, summed over every market: TVL + fee (Performance stream, to pools via the gauge controllers), limit order (to order makers), discretionary, co-incentives. PENDLE per week as reported |
 
 ## Your position (address lookup)

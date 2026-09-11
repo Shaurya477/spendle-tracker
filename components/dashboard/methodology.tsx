@@ -2,11 +2,12 @@ import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtInt } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { AddressLink, Eyebrow, SectionHeading } from "./primitives";
+import { CopyButton } from "./copy-button";
 
 export function Methodology({ data }: { data: TrackerData }) {
   const a = data.addresses;
   return (
-    <section className="flex flex-col gap-8">
+    <section id="methodology" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading index="08" title="How the numbers are made" />
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card className="rise rise-1 border-0 bg-card/60">
@@ -14,17 +15,35 @@ export function Methodology({ data }: { data: TrackerData }) {
             <Eyebrow>Contracts on Ethereum mainnet</Eyebrow>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <dt className="text-muted-foreground">PENDLE</dt>
-              <dd className="min-w-0"><AddressLink address={a.pendle} label={a.pendle} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.pendle} label={a.pendle} />
+                <CopyButton value={a.pendle} label="Copy address" />
+              </dd>
               <dt className="text-muted-foreground">sPENDLE</dt>
-              <dd className="min-w-0"><AddressLink address={a.sPendle} label={a.sPendle} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.sPendle} label={a.sPendle} />
+                <CopyButton value={a.sPendle} label="Copy address" />
+              </dd>
               <dt className="text-muted-foreground">vePENDLE</dt>
-              <dd className="min-w-0"><AddressLink address={a.vePendle} label={a.vePendle} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.vePendle} label={a.vePendle} />
+                <CopyButton value={a.vePendle} label="Copy address" />
+              </dd>
               <dt className="text-muted-foreground">Buyback</dt>
-              <dd className="min-w-0"><AddressLink address={a.buyback} label={a.buyback} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.buyback} label={a.buyback} />
+                <CopyButton value={a.buyback} label="Copy address" />
+              </dd>
               <dt className="text-muted-foreground">Merkle distributor</dt>
-              <dd className="min-w-0"><AddressLink address={a.merkleDistributor} label={a.merkleDistributor} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.merkleDistributor} label={a.merkleDistributor} />
+                <CopyButton value={a.merkleDistributor} label="Copy address" />
+              </dd>
               <dt className="text-muted-foreground">Gauge controller</dt>
-              <dd className="min-w-0"><AddressLink address={a.gaugeController} label={a.gaugeController} /></dd>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.gaugeController} label={a.gaugeController} />
+                <CopyButton value={a.gaugeController} label="Copy address" />
+              </dd>
             </dl>
             <div className="rule" />
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -87,7 +106,7 @@ export function Methodology({ data }: { data: TrackerData }) {
                 epoch whose distribution landed 14 to 28 days after the epoch start. In-kind airdrops
                 are Pendle&apos;s <code>/spendle/data</code> airdrop USD per epoch; they sit inside
                 Revenue but are passed to stakers as-is, never bought back. PENDLE supply is
-                unchanged; ETH gauge spend is Performance-stream PENDLE leaving the Ethereum gauge
+                unchanged; emissions are Performance-stream PENDLE paid to LPs from the Ethereum gauge
                 controller (start balance + top-ups − end balance, epoch boundaries approximated
                 from block times); limit-order and co-incentive PENDLE is paid elsewhere and is not
                 counted. The AIM card is Pendle&apos;s <code>/pendle-emission</code> assignment across
