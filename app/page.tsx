@@ -14,6 +14,7 @@ import { Methodology } from "@/components/dashboard/methodology";
 import { GitHubMark } from "@/components/dashboard/github-link";
 import { XMark } from "@/components/dashboard/x-mark";
 import { SectionBar } from "@/components/dashboard/section-nav";
+import { ScrollTop } from "@/components/dashboard/scroll-top";
 import { AUTHOR_X_HANDLE, AUTHOR_X_URL, REPO_URL } from "@/lib/pendle/config";
 
 const SECTIONS = [
@@ -78,6 +79,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
           </div>
         </footer>
       </main>
+      <ScrollTop />
     </div>
   );
 }
