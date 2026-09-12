@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -17,6 +18,7 @@ import {
 import type { CumPoint, FeeEpoch } from "@/lib/pendle/revenue";
 import type { ProjectionPoint } from "@/lib/pendle/tracker";
 import type { MigrationWeek } from "@/lib/pendle/chain";
+import type { MouseHandlerDataParam } from "recharts/types/synchronisation/types";
 import { fmtCompact, fmtDate, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
 
 const SPENDLE = "var(--spendle)";
@@ -35,21 +37,31 @@ const monthTick = (t: number) => {
   return `${month} ’${String(d.getUTCFullYear()).slice(-2)}`;
 };
 
-function TipFrame({ title, rows }: { title: string; rows: { label: string; value: string; color?: string }[] }) {
+type TipRow = { label: string; value: string; color?: string };
+
+function TipRows({ title, rows }: { title: string; rows: TipRow[] }) {
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 shadow-xl">
+    <>
       <div className="mb-1.5 text-xs font-medium text-muted-foreground">{title}</div>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center justify-between gap-6 text-xs">
-            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-              {r.color && <span className="inline-block size-2 rounded-sm" style={{ background: r.color }} />}
+          <div key={r.label} className="flex items-baseline justify-between gap-4 text-xs">
+            <span className="inline-flex items-baseline gap-1.5 text-muted-foreground">
+              {r.color && <span className="inline-block size-2 shrink-0 translate-y-px rounded-sm" style={{ background: r.color }} />}
               {r.label}
             </span>
-            <span className="tabular text-foreground">{r.value}</span>
+            <span className="tabular shrink-0 text-right text-foreground">{r.value}</span>
           </div>
         ))}
       </div>
+    </>
+  );
+}
+
+function TipFrame({ title, rows }: { title: string; rows: TipRow[] }) {
+  return (
+    <div className="max-w-[min(20rem,calc(100vw-2rem))] rounded-md border border-border bg-popover px-3 py-2 shadow-xl">
+      <TipRows title={title} rows={rows} />
     </div>
   );
 }
@@ -517,9 +529,38 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
     sPendle: w.sPendle,
   }));
   const week = 7 * 86_400;
+  // Phones: the in-chart tooltip does not fit, so the active week is shown in a panel under the chart.
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const pick = (s: MouseHandlerDataParam) => {
+    // Recharts 3 reports the index as a string for category-indexed charts.
+    const i = s.activeTooltipIndex === undefined ? NaN : Number(s.activeTooltipIndex);
+    if (Number.isInteger(i) && i >= 0 && i < data.length) setActiveIdx(i);
+  };
+  const rowsFor = (p: (typeof data)[number]): TipRow[] => {
+    const share = p.withdrawn > 0 ? fmtPct(p.restaked / p.withdrawn, 0) : "–";
+    return [
+      { label: "Withdrawn from vePENDLE", value: `${fmtCompact(p.withdrawn)} PENDLE` },
+      { label: "Restaked as sPENDLE within 30 d", value: `${fmtCompact(p.restaked)} (${share})`, color: SPENDLE },
+      { label: "Not restaked", value: fmtCompact(p.notRestaked), color: VEPENDLE },
+      { label: "PENDLE in vePENDLE, week end", value: fmtCompact(p.vePendle), color: VEPENDLE },
+      { label: "sPENDLE supply, week end", value: fmtCompact(p.sPendle), color: SPENDLE },
+    ];
+  };
+  const titleFor = (p: (typeof data)[number]) =>
+    `Week of ${fmtDate(p.t)}${p.open ? " (30-day window still open)" : ""}`;
+  const shown = data[activeIdx ?? data.length - 1];
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+    <div className="flex flex-col gap-3">
+      <ResponsiveContainer width="100%" height={320}>
+        <ComposedChart
+          data={data}
+          margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
+          barCategoryGap="30%"
+          onMouseMove={pick}
+          onTouchStart={pick}
+          onTouchMove={pick}
+          onMouseLeave={() => setActiveIdx(null)}
+        >
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis
           dataKey="t"
@@ -555,18 +596,10 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as (typeof data)[number];
-            const share = p.withdrawn > 0 ? fmtPct(p.restaked / p.withdrawn, 0) : "–";
             return (
-              <TipFrame
-                title={`Week of ${fmtDate(p.t)}${p.open ? " (30-day window still open)" : ""}`}
-                rows={[
-                  { label: "Withdrawn from vePENDLE", value: `${fmtCompact(p.withdrawn)} PENDLE` },
-                  { label: "Restaked as sPENDLE within 30 d", value: `${fmtCompact(p.restaked)} (${share})`, color: SPENDLE },
-                  { label: "Not restaked", value: fmtCompact(p.notRestaked), color: VEPENDLE },
-                  { label: "PENDLE in vePENDLE, week end", value: fmtCompact(p.vePendle), color: VEPENDLE },
-                  { label: "sPENDLE supply, week end", value: fmtCompact(p.sPendle), color: SPENDLE },
-                ]}
-              />
+              <div className="hidden sm:block">
+                <TipFrame title={titleFor(p)} rows={rowsFor(p)} />
+              </div>
             );
           }}
         />
@@ -574,7 +607,14 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
         <Bar yAxisId="flow" dataKey="notRestaked" stackId="w" fill={VEPENDLE} fillOpacity={0.55} radius={[2, 2, 0, 0]} isAnimationActive={false} />
         <Line yAxisId="stock" type="linear" dataKey="vePendle" stroke={VEPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
         <Line yAxisId="stock" type="linear" dataKey="sPendle" stroke={SPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-      </ComposedChart>
-    </ResponsiveContainer>
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div className="rounded-md border border-border bg-background/40 px-3 py-2 sm:hidden">
+        <TipRows title={titleFor(shown)} rows={rowsFor(shown)} />
+        {activeIdx === null && (
+          <div className="mt-1.5 text-[11px] text-muted-foreground">Latest week. Touch the chart to see another.</div>
+        )}
+      </div>
+    </div>
   );
 }
