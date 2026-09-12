@@ -3,6 +3,7 @@
 import {
   Area,
   AreaChart,
+  Bar,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -15,6 +16,7 @@ import {
 } from "recharts";
 import type { CumPoint, FeeEpoch } from "@/lib/pendle/revenue";
 import type { ProjectionPoint } from "@/lib/pendle/tracker";
+import type { MigrationWeek } from "@/lib/pendle/chain";
 import { fmtCompact, fmtDate, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
 
 const SPENDLE = "var(--spendle)";
@@ -494,6 +496,84 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           dot={false}
           isAnimationActive={false}
         />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+/**
+ * vePENDLE → sPENDLE by week. Bars (left axis): PENDLE withdrawn from expired locks, split into what
+ * the same wallet staked into sPENDLE within 30 days and what it did not. Lines (right axis): PENDLE
+ * still in the vePENDLE contract and sPENDLE supply at the end of each week.
+ */
+export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
+  const data = weeks.map((w) => ({
+    t: w.start,
+    restaked: w.restaked,
+    notRestaked: w.withdrawn - w.restaked,
+    withdrawn: w.withdrawn,
+    open: w.open,
+    vePendle: w.vePendle,
+    sPendle: w.sPendle,
+  }));
+  const week = 7 * 86_400;
+  return (
+    <ResponsiveContainer width="100%" height={320}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="t"
+          type="number"
+          scale="time"
+          domain={[(min: number) => min - week / 2, (max: number) => max + week / 2]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          yAxisId="flow"
+          tickFormatter={(v: number) => fmtCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <YAxis
+          yAxisId="stock"
+          orientation="right"
+          domain={[0, (max: number) => Math.ceil(max / 10e6) * 10e6]}
+          tickFormatter={(v: number) => fmtCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={false}
+          tickLine={false}
+          width={48}
+        />
+        <Tooltip
+          cursor={{ fill: CURSOR, fillOpacity: 0.12 }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0].payload as (typeof data)[number];
+            const share = p.withdrawn > 0 ? fmtPct(p.restaked / p.withdrawn, 0) : "–";
+            return (
+              <TipFrame
+                title={`Week of ${fmtDate(p.t)}${p.open ? " (30-day window still open)" : ""}`}
+                rows={[
+                  { label: "Withdrawn from vePENDLE", value: `${fmtCompact(p.withdrawn)} PENDLE` },
+                  { label: "Restaked as sPENDLE within 30 d", value: `${fmtCompact(p.restaked)} (${share})`, color: SPENDLE },
+                  { label: "Not restaked", value: fmtCompact(p.notRestaked), color: VEPENDLE },
+                  { label: "PENDLE in vePENDLE, week end", value: fmtCompact(p.vePendle), color: VEPENDLE },
+                  { label: "sPENDLE supply, week end", value: fmtCompact(p.sPendle), color: SPENDLE },
+                ]}
+              />
+            );
+          }}
+        />
+        <Bar yAxisId="flow" dataKey="restaked" stackId="w" fill={SPENDLE} isAnimationActive={false} />
+        <Bar yAxisId="flow" dataKey="notRestaked" stackId="w" fill={VEPENDLE} fillOpacity={0.55} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+        <Line yAxisId="stock" type="linear" dataKey="vePendle" stroke={VEPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+        <Line yAxisId="stock" type="linear" dataKey="sPendle" stroke={SPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
       </ComposedChart>
     </ResponsiveContainer>
   );

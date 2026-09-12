@@ -1,12 +1,17 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtDays, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
+import { MigrationChart } from "./charts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eyebrow, SectionHeading, Stat, Swatch } from "./primitives";
+import { Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
 
 export function Balances({ data }: { data: TrackerData }) {
-  const { sPendle, vePendle, loyalty, combined, pendleUsd } = data;
+  const { sPendle, vePendle, loyalty, combined, pendleUsd, migration } = data;
   const total = combined.hubTotalStaked;
+  const m = migration.totals;
+  const first = migration.weeks[0];
+  const last = migration.weeks[migration.weeks.length - 1];
+  const restakeRate = m.settledRestaked / m.settled;
   const pctS = sPendle.supply / total;
   const pctActive = vePendle.activeLocked / total;
   const pctExpired = vePendle.expiredUnwithdrawn / total;
@@ -180,6 +185,57 @@ export function Balances({ data }: { data: TrackerData }) {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-1.5">
+              <Eyebrow>From vePENDLE to sPENDLE</Eyebrow>
+              <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
+                There is no conversion. When a lock expires the PENDLE is withdrawn, and staking it is
+                a separate step the holder may or may not take. Bars: PENDLE withdrawn each week, split
+                by whether the same wallet staked it within 30 days. Lines: PENDLE still locked and
+                sPENDLE supply.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Swatch tone="spendle" /> restaked within 30 d
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Swatch tone="vependle" /> not restaked
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LineSwatch tone="vependle" /> PENDLE in vePENDLE
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LineSwatch tone="spendle" /> sPENDLE supply
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-4 border-y border-border py-4 sm:grid-cols-3">
+            <Stat
+              label="Withdrawn since the snapshot"
+              value={fmtCompact(m.withdrawn)}
+              unit="PENDLE"
+              sub={`by ${fmtInt(m.wallets)} wallets; PENDLE in vePENDLE went ${fmtCompact(first.vePendle)} → ${fmtCompact(last.vePendle)}`}
+            />
+            <Stat
+              label="Restaked as sPENDLE"
+              value={fmtPct(restakeRate, 0)}
+              tone="spendle"
+              sub={`${fmtCompact(m.restaked)} PENDLE by ${fmtInt(m.restakers)} of those wallets, within 30 days of withdrawing; the rest stayed liquid`}
+            />
+            <Stat
+              label="sPENDLE supply since the snapshot"
+              value={`${fmtCompact(first.sPendle)} → ${fmtCompact(last.sPendle)}`}
+              tone="spendle"
+              sub={`${fmtCompact(last.sPendle - first.sPendle)} more; restaked locks are ${fmtPct(m.restaked / (last.sPendle - first.sPendle), 0)} of that, the rest is new staking and distributed rewards`}
+            />
+          </div>
+          <MigrationChart weeks={migration.weeks} />
+        </CardContent>
+      </Card>
     </section>
   );
 }

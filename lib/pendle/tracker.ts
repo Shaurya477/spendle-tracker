@@ -7,6 +7,8 @@ import {
   fetchSnapshotSchedule,
   type BuybackWindow,
   type RawDistribution,
+  fetchMigration,
+  type Migration,
 } from "./chain";
 import {
   ADDRESSES,
@@ -123,6 +125,8 @@ export type TrackerData = {
     aprHaircut: number;
   };
   distributions: Distribution[];
+  /** vePENDLE → sPENDLE since the snapshot: weekly withdrawals, restakes, and balances. */
+  migration: Migration;
   projection: ProjectionPoint[];
   unlocks: UnlockWeek[];
   revenue: RevenueData;
@@ -190,12 +194,13 @@ export const getTrackerData = unstable_cache(computeTrackerData, ["tracker-data"
 });
 
 async function computeTrackerData(): Promise<TrackerData> {
-  const [live, snapshot, snapshotSupply, pendleUsd, revenueBase] = await Promise.all([
+  const [live, snapshot, snapshotSupply, pendleUsd, revenueBase, migration] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),
     fetchSnapshotPendleSupply(),
     fetchPendleUsd(),
     getRevenueData(),
+    fetchMigration(),
   ]);
   const raw = (await fetchDistributions(live.blockNumber)).sort((a, b) => Number(a.blockNumber - b.blockNumber));
   if (raw.length === 0) throw new Error("No sPENDLE reward distributions found onchain");
@@ -305,6 +310,7 @@ async function computeTrackerData(): Promise<TrackerData> {
       aprHaircut: 1 - (eligibleSPendle + locked) / eligibleTotal,
     },
     distributions,
+    migration,
     projection,
     unlocks,
     revenue,

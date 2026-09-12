@@ -17,7 +17,7 @@ import {
   EPOCH_SECONDS,
   FEE_EPOCH_ORIGIN,
 } from "./config";
-import type { LockBucket } from "./model";
+import { toTokens, type LockBucket } from "./model";
 
 const { pendle, sPendle, vePendle, buyback, merkleDistributor, usdt, gaugeController } = ADDRESSES;
 
@@ -412,4 +412,146 @@ export function fetchUserEpochStates(user: Address, blocks: bigint[]): Promise<U
       return { balance, claimed };
     }),
   );
+}
+
+/** How long after a vePENDLE withdrawal a stake by the same wallet counts as "restaked". */
+export const RESTAKE_WINDOW = 30 * 86_400;
+
+export type MigrationWeek = {
+  /** Week start (Thursday 00:00 UTC, the vePENDLE week boundary). */
+  start: number;
+  /** PENDLE withdrawn from expired vePENDLE locks this week. */
+  withdrawn: number;
+  /** Of that, staked into sPENDLE by the same wallet within RESTAKE_WINDOW. */
+  restaked: number;
+  /** True while some withdrawals this week still have their restake window open. */
+  open: boolean;
+  /** PENDLE still in the vePENDLE contract at the end of the week (or now, for the current week). */
+  vePendle: number;
+  /** sPENDLE supply at the end of the week (or now). */
+  sPendle: number;
+};
+
+export type Migration = {
+  weeks: MigrationWeek[];
+  totals: {
+    withdrawn: number;
+    restaked: number;
+    /** Withdrawals whose 30-day window has closed, the denominator for the restake rate. */
+    settled: number;
+    settledRestaked: number;
+    wallets: number;
+    restakers: number;
+  };
+};
+
+/**
+ * vePENDLE → sPENDLE since the snapshot, from four transfer-log queries. PENDLE leaving the vePENDLE
+ * contract is a withdrawal of an expired lock (`withdraw()` is the only way out); sPENDLE minted to a
+ * wallet is a stake (1:1). Matched per wallet: a withdrawal counts as restaked to the extent the same
+ * wallet staked within 30 days after it; the buyback contract's own stakes are excluded. Week-end
+ * balances are walked back from today's balances through the same logs.
+ */
+export async function fetchMigration(): Promise<Migration> {
+  const latest = await client.getBlock({ blockTag: "latest" });
+  const range = { fromBlock: SNAPSHOT_BLOCK, toBlock: latest.number };
+  const zero = "0x0000000000000000000000000000000000000000" as Address;
+  const [veIn, veOut, sMint, sBurn, [veNow, sNow]] = await Promise.all([
+    client.getLogs({ address: pendle, event: transferEvent, args: { to: vePendle }, ...range }),
+    client.getLogs({ address: pendle, event: transferEvent, args: { from: vePendle }, ...range }),
+    client.getLogs({ address: sPendle, event: transferEvent, args: { from: zero }, ...range }),
+    client.getLogs({ address: sPendle, event: transferEvent, args: { to: zero }, ...range }),
+    client.multicall({
+      allowFailure: false,
+      blockNumber: latest.number,
+      contracts: [
+        { address: pendle, abi: erc20Abi, functionName: "balanceOf", args: [vePendle] },
+        { address: sPendle, abi: stakedPendleAbi, functionName: "totalSupply" },
+      ],
+    }),
+  ]);
+  const dt = Number(latest.timestamp - SNAPSHOT_TS) / Number(latest.number - SNAPSHOT_BLOCK);
+  const tsOf = (blockNumber: bigint) => Number(SNAPSHOT_TS) + Number(blockNumber - SNAPSHOT_BLOCK) * dt;
+  const now = Number(latest.timestamp);
+
+  // Balance at time t, walked back from now: undo every inflow and outflow that happened after t.
+  const flows = (ins: typeof veIn, outs: typeof veOut) =>
+    [...ins.map((l) => ({ ts: tsOf(l.blockNumber), d: l.args.value! })), ...outs.map((l) => ({ ts: tsOf(l.blockNumber), d: -l.args.value! }))];
+  const veFlows = flows(veIn, veOut);
+  const sFlows = flows(sMint, sBurn);
+  const balanceAt = (nowValue: bigint, list: { ts: number; d: bigint }[], t: number) =>
+    list.reduce((v, f) => (f.ts > t ? v - f.d : v), nowValue);
+
+  // Stakes per wallet, in time order, with the amount not yet matched to a withdrawal.
+  const excluded = new Set([buyback.toLowerCase()]);
+  const stakesBy = new Map<string, { ts: number; left: bigint }[]>();
+  for (const l of sMint) {
+    const user = l.args.to!.toLowerCase();
+    if (excluded.has(user)) continue;
+    const list = stakesBy.get(user) ?? [];
+    list.push({ ts: tsOf(l.blockNumber), left: l.args.value! });
+    stakesBy.set(user, list);
+  }
+
+  const week = Number(WEEK);
+  const weekOf = (ts: number) => Math.floor(ts / week) * week;
+  const buckets = new Map<number, { withdrawn: bigint; restaked: bigint; open: boolean }>();
+  const wallets = new Set<string>();
+  const restakers = new Set<string>();
+  let settled = 0n;
+  let settledRestaked = 0n;
+  for (const l of [...veOut].sort((a, b) => Number(a.blockNumber - b.blockNumber))) {
+    const user = l.args.to!.toLowerCase();
+    const ts = tsOf(l.blockNumber);
+    const amount = l.args.value!;
+    wallets.add(user);
+    let restaked = 0n;
+    for (const s of stakesBy.get(user) ?? []) {
+      if (s.ts <= ts || s.ts > ts + RESTAKE_WINDOW || s.left === 0n) continue;
+      const take = s.left < amount - restaked ? s.left : amount - restaked;
+      s.left -= take;
+      restaked += take;
+      if (restaked === amount) break;
+    }
+    if (restaked > 0n) restakers.add(user);
+    const open = ts + RESTAKE_WINDOW > now;
+    if (!open) {
+      settled += amount;
+      settledRestaked += restaked;
+    }
+    const k = weekOf(ts);
+    const b = buckets.get(k) ?? { withdrawn: 0n, restaked: 0n, open: false };
+    b.withdrawn += amount;
+    b.restaked += restaked;
+    b.open ||= open;
+    buckets.set(k, b);
+  }
+
+  // Every week from the snapshot's week to the current one, with week-end balances.
+  const starts: number[] = [];
+  for (let t = weekOf(Number(SNAPSHOT_TS)); t <= now; t += week) starts.push(t);
+  const weeks: MigrationWeek[] = starts.map((start) => {
+    const b = buckets.get(start) ?? { withdrawn: 0n, restaked: 0n, open: false };
+    const end = Math.min(start + week, now);
+    return {
+      start,
+      withdrawn: toTokens(b.withdrawn),
+      restaked: toTokens(b.restaked),
+      open: b.open,
+      vePendle: toTokens(balanceAt(veNow, veFlows, end)),
+      sPendle: toTokens(balanceAt(sNow, sFlows, end)),
+    };
+  });
+  const sum = (f: (w: MigrationWeek) => number) => weeks.reduce((s, w) => s + f(w), 0);
+  return {
+    weeks,
+    totals: {
+      withdrawn: sum((w) => w.withdrawn),
+      restaked: sum((w) => w.restaked),
+      settled: toTokens(settled),
+      settledRestaked: toTokens(settledRestaked),
+      wallets: wallets.size,
+      restakers: restakers.size,
+    },
+  };
 }

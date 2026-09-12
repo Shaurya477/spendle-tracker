@@ -66,7 +66,11 @@ export function Methodology({ data }: { data: TrackerData }) {
                 sPENDLE staked is all sPENDLE in existence (<code>totalSupply()</code> on the staking
                 contract). Locked PENDLE is what the vePENDLE contract holds. Active and expired locks
                 come from the contract&apos;s weekly unlock schedule (<code>slopeChanges</code>): each
-                week&apos;s slope × 104 weeks is the PENDLE unlocking that week.
+                week&apos;s slope × 104 weeks is the PENDLE unlocking that week. The vePENDLE → sPENDLE
+                chart reads PENDLE leaving the vePENDLE contract (the only exit is <code>withdraw()</code>{" "}
+                on an expired lock) and sPENDLE minted to wallets (stakes), matched per wallet: a
+                withdrawal counts as restaked up to what the same wallet staked within 30 days after it.
+                Week-end balances are walked back from today&apos;s through the same transfer logs.
               </Step>
               <Step title="Virtual sPENDLE">
                 The same unlock schedule is read as it stood at the snapshot block and replayed: every lock gets
