@@ -112,6 +112,7 @@ The hub's "Yield Distributed Every 2 Saturdays" corresponds to the Friday-UTC tr
 
 ## Assumptions
 
+- **Scope is Ethereum mainnet for every contract read, global for supply and fees.** sPENDLE, vePENDLE, the buyback contract and the rewards distributor exist only on mainnet; PENDLE on Arbitrum, Base, Monad and the other chains must be bridged back to stake. Bridged PENDLE stays locked in mainnet bridge escrows (canonical bridges, Wormhole Portal, LayerZero OFT adapter), so `PENDLE.totalSupply()` on mainnet is the global supply and the staked-or-locked share is a share of all PENDLE; tokens on other chains or on exchanges are simply the unstaked remainder. Fees and AIM figures (DefiLlama, Pendle API) cover every chain; the LP-emissions series is the Ethereum gauge only, as labelled.
 - **Everyone is active.** Holders who skip a vote while a PPP is open forfeit 14 days of rewards. That set is offchain, so the APRs here are a floor for an active holder and slightly understate the payout each active holder actually received.
 - **Only PENDLE buybacks are counted.** Pendle also passes through in-kind airdrops (other tokens) received on points-bearing assets. They are not priced or included.
 - **Eligible balance timing.** Pendle snapshots active balances every 14 days on its own schedule. The app uses balances at the block before each distribution landed; eligible sPENDLE has moved between 0% and 6% per epoch since March 2026, so the timing choice shifts an epoch's APR by at most a few percent relative.

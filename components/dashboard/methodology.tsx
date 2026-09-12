@@ -63,8 +63,12 @@ export function Methodology({ data }: { data: TrackerData }) {
           <CardContent>
             <ol className="flex flex-col gap-4 text-sm leading-relaxed text-muted-foreground [counter-reset:step]">
               <Step title="Balances">
-                sPENDLE staked is all sPENDLE in existence (<code>totalSupply()</code> on the staking
-                contract). Locked PENDLE is what the vePENDLE contract holds. Active and expired locks
+                Every contract read is on Ethereum mainnet: sPENDLE, vePENDLE, the buyback contract and
+                the rewards distributor exist only there, and PENDLE on other chains has to be bridged
+                back to stake. PENDLE supply is also read on mainnet, where bridged PENDLE stays locked
+                in bridge escrows, so it is the global supply; PENDLE on other chains or on exchanges is
+                part of the unstaked remainder. sPENDLE staked is all sPENDLE in existence (
+                <code>totalSupply()</code> on the staking contract). Locked PENDLE is what the vePENDLE contract holds. Active and expired locks
                 come from the contract&apos;s weekly unlock schedule (<code>slopeChanges</code>): each
                 week&apos;s slope × 104 weeks is the PENDLE unlocking that week. The vePENDLE → sPENDLE
                 chart reads PENDLE leaving the vePENDLE contract (the only exit is <code>withdraw()</code>{" "}
