@@ -1,16 +1,9 @@
 import { getAddress, type Address } from "viem";
-import {
-  fetchBuybackWindows,
-  fetchDistributions,
-  fetchLiveState,
-  fetchSnapshotSchedule,
-  fetchUserEpochStates,
-  fetchUserState,
-} from "./chain";
-import { EPOCHS_PER_YEAR, EPOCH_SECONDS, MAX_LOCK_TIME, SNAPSHOT_BLOCK, WEEK } from "./config";
+import { fetchSnapshotSchedule, fetchUserEpochStates, fetchUserState } from "./chain";
+import { EPOCHS_PER_YEAR, EPOCH_SECONDS, MAX_LOCK_TIME, WEEK } from "./config";
 import { lastExpiry, loyaltyAt, toTokens, type LockBucket } from "./model";
 import { fetchApiEpochs, fetchApiUserSPendleAccrued, fetchPendleUsd, type ApiEpoch } from "./pendle-api";
-import { annualise, buildDistributions, type Distribution } from "./tracker";
+import { annualise, getTrackerData, type Distribution } from "./tracker";
 
 export type EpochRow = {
   epoch: number;
@@ -112,28 +105,33 @@ function apiEpochFor(epochs: ApiEpoch[], t: number): ApiEpoch | undefined {
   return epochs.find((e) => e.start + EPOCH_SECONDS <= t && t < e.start + 2 * EPOCH_SECONDS);
 }
 
+/**
+ * A wallet's slice of the dashboard. Protocol-wide inputs (distributions, buyback windows, live
+ * balances, the block they were read at) come from the cached tracker dataset, so a lookup only
+ * pays for the wallet's own reads: one multicall now, two transfer-log queries for its history,
+ * and Pendle's API for its accrued rewards.
+ */
 export async function getPosition(input: string): Promise<PositionData> {
   const address = getAddress(input);
-  const [live, snapshot, apiEpochs, pendleUsd] = await Promise.all([
-    fetchLiveState(),
+  const [data, snapshot, apiEpochs, pendleUsd] = await Promise.all([
+    getTrackerData(),
     fetchSnapshotSchedule(),
     fetchApiEpochs(),
     fetchPendleUsd(),
   ]);
-  const [raw, user, apiAccrued] = await Promise.all([
-    fetchDistributions(live.blockNumber),
-    fetchUserState(address, live.blockNumber),
+  const atBlock = BigInt(data.block.number);
+  const [user, apiAccrued] = await Promise.all([
+    fetchUserState(address, atBlock),
     fetchApiUserSPendleAccrued(address),
   ]);
-  raw.sort((a, b) => Number(a.blockNumber - b.blockNumber));
-  const blocks = raw.map((d) => d.blockNumber);
-  const [states, windows] = await Promise.all([
-    fetchUserEpochStates(address, blocks),
-    fetchBuybackWindows([SNAPSHOT_BLOCK, ...blocks]),
-  ]);
-  const distributions = buildDistributions(raw, windows, snapshot);
+  const distributions = data.distributions;
+  const states = await fetchUserEpochStates(
+    address,
+    distributions.map((d) => BigInt(d.blockNumber)),
+    { block: atBlock, balance: user.sPendleBalance, claimed: user.claimedSPendle },
+  );
 
-  const now = live.timestamp;
+  const now = BigInt(data.block.timestamp);
   // Unclaimed rewards keep earning, so a holder's eligible sPENDLE is wallet balance plus rewards
   // accrued so far and not yet claimed. Accrued-so-far is this estimate's own running total.
   let accruedSoFar = 0;
@@ -202,12 +200,12 @@ export async function getPosition(input: string): Promise<PositionData> {
   const virtualNow = toTokens(userVirtualAt(user.snapshotLockAmount, user.snapshotLockExpiry, now));
   const hasLock = user.snapshotLockAmount > 0n || user.lockAmount > 0n;
 
-  const eligibleSPendle = toTokens(live.sPendleSupply);
+  const eligibleSPendle = data.sPendle.eligible;
   const protocolNow = loyaltyAt(snapshot, now);
   const rewardEligible = eligibleSPendle + toTokens(protocolNow.virtual);
   const weightNow = balance + virtualNow;
   const share = weightNow / rewardEligible;
-  const pendingBuyback = toTokens(live.pendleInBuyback);
+  const pendingBuyback = data.yield.pendingBuyback;
 
   const boostEndsAt = lastExpiry(snapshot);
   const outlook = buildOutlook({
@@ -225,7 +223,7 @@ export async function getPosition(input: string): Promise<PositionData> {
 
   return {
     address,
-    block: { number: Number(live.blockNumber), timestamp: Number(now) },
+    block: { number: data.block.number, timestamp: data.block.timestamp },
     empty: walletBalance === 0 && user.cooldownAmount === 0n && !hasLock && accrued === 0,
     pendleUsd,
     sPendle: {
@@ -233,7 +231,7 @@ export async function getPosition(input: string): Promise<PositionData> {
       unclaimed: unclaimedNow,
       cooldownAmount: toTokens(user.cooldownAmount),
       cooldownReadyAt:
-        user.cooldownAmount > 0n ? Number(user.cooldownStart) + live.cooldownDuration : null,
+        user.cooldownAmount > 0n ? Number(user.cooldownStart) + data.sPendle.cooldownDays * 86_400 : null,
       walletPendle: toTokens(user.pendleBalance),
     },
     lock: hasLock

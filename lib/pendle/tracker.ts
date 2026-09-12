@@ -151,6 +151,9 @@ export function buildDistributions(
       const v = loyaltyAt(snapshot, d.timestamp);
       const amount = toTokens(d.amount);
       const eligible = toTokens(d.supplyBefore);
+      if (!Number.isFinite(eligible) || eligible <= 0) {
+        throw new Error(`Distribution ${d.txHash}: eligible sPENDLE at block ${d.blockNumber - 1n} is ${eligible}`);
+      }
       const virtualThen = toTokens(v.virtual);
       const lockedThen = toTokens(v.locked);
       const total = eligible + virtualThen;

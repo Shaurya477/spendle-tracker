@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { cn } from "cn";
 
-/** Copies `value` to the clipboard and shows a check for a moment. */
-export function CopyButton({ value, label, className }: { value: string; label: string; className?: string }) {
+/** Copies `value` (a string, or a function evaluated at click time) to the clipboard and shows a check for a moment. */
+export function CopyButton({
+  value,
+  label,
+  className,
+}: {
+  value: string | (() => string);
+  label: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
@@ -19,7 +27,7 @@ export function CopyButton({ value, label, className }: { value: string; label: 
       title={copied ? "Copied" : label}
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(value);
+          await navigator.clipboard.writeText(typeof value === "function" ? value() : value);
           setCopied(true);
         } catch {
           // Clipboard access denied (insecure context or permission); leave the icon unchanged.

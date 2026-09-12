@@ -394,24 +394,36 @@ export type UserEpochState = {
 };
 
 /**
- * The user's sPENDLE balance and cumulative claims the block before each distribution. Unclaimed
- * rewards keep earning, so a holder's eligible sPENDLE is wallet balance plus rewards accrued but
- * not yet claimed; the claimed figure lets the caller reconstruct the unclaimed part per epoch.
+ * The user's sPENDLE balance and cumulative claims the block before each distribution, walked back
+ * from the balance and claimed total at `atBlock` through the wallet's sPENDLE transfer logs (two
+ * `eth_getLogs`, in and out) instead of one historical multicall per distribution. Unclaimed rewards
+ * keep earning, so a holder's eligible sPENDLE is wallet balance plus rewards accrued but not yet
+ * claimed; the claimed figure lets the caller reconstruct the unclaimed part per epoch. Claims are
+ * the transfers from the distributor to the wallet.
  */
-export function fetchUserEpochStates(user: Address, blocks: bigint[]): Promise<UserEpochState[]> {
-  return Promise.all(
-    blocks.map(async (b) => {
-      const [balance, claimed] = await client.multicall({
-        allowFailure: false,
-        blockNumber: b - 1n,
-        contracts: [
-          { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [user] },
-          { address: merkleDistributor, abi: merkleDistributorAbi, functionName: "claimed", args: [sPendle, user] },
-        ],
-      });
-      return { balance, claimed };
-    }),
-  );
+export async function fetchUserEpochStates(
+  user: Address,
+  blocks: bigint[],
+  at: { block: bigint; balance: bigint; claimed: bigint },
+): Promise<UserEpochState[]> {
+  const range = { address: sPendle, event: transferEvent, fromBlock: SNAPSHOT_BLOCK, toBlock: at.block } as const;
+  const [ins, outs] = await Promise.all([
+    client.getLogs({ ...range, args: { to: user } }),
+    client.getLogs({ ...range, args: { from: user } }),
+  ]);
+  const distributor = merkleDistributor.toLowerCase();
+  return blocks.map((b) => {
+    // State at b − 1: undo every transfer mined at block b or later, up to `at.block`.
+    let balance = at.balance;
+    let claimed = at.claimed;
+    for (const l of ins) {
+      if (l.blockNumber < b) continue;
+      balance -= l.args.value!;
+      if (l.args.from!.toLowerCase() === distributor) claimed -= l.args.value!;
+    }
+    for (const l of outs) if (l.blockNumber >= b) balance += l.args.value!;
+    return { balance, claimed };
+  });
 }
 
 /** How long after a vePENDLE withdrawal a stake by the same wallet counts as "restaked". */

@@ -1,0 +1,16 @@
+name: Keep warm
+
+# The dataset is cached for five minutes and recomputed in the background after that. Fetching the
+# page on a schedule keeps a fresh copy in the cache, so a visitor never waits for the ~25 s of RPC
+# reads a cold compute takes (including right after a deploy).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 120 https://penconomics.vercel.app/

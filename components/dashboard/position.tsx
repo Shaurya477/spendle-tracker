@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { isAddress } from "viem";
 import { Search } from "lucide-react";
 import { cn } from "cn";
 import type { PositionData } from "@/lib/pendle/position";
 import { EPOCHS_PER_YEAR } from "@/lib/pendle/config";
+import { WALLET_KEY } from "@/lib/theme";
 import {
   fmtCompact,
   fmtDate,
@@ -53,8 +54,35 @@ export function Position({
   const [hex, setHex] = useState(initialHex);
   const [inputError, setInputError] = useState<string | null>(null);
   const [state, setState] = useState<State>(initial ? { kind: "result", data: initial } : { kind: "idle" });
+  // Whether the address on screen is saved in this browser's localStorage. A lookup typed here is
+  // saved; an address that arrived in the URL is not, until the visitor asks. Nothing leaves the device.
+  const [remembered, setRemembered] = useState(false);
 
-  async function lookup(candidate: string) {
+  // On return, with no address in the URL, load the remembered wallet.
+  useEffect(() => {
+    if (initial) return;
+    const saved = localStorage.getItem(WALLET_KEY);
+    if (saved) void restore(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on mount
+  }, []);
+
+  async function restore(saved: string) {
+    setHex(saved.replace(/^0x/i, ""));
+    setRemembered(true);
+    await lookup(saved.replace(/^0x/i, ""), false);
+  }
+
+  function remember(address: string) {
+    localStorage.setItem(WALLET_KEY, address);
+    setRemembered(true);
+  }
+
+  function forget() {
+    localStorage.removeItem(WALLET_KEY);
+    setRemembered(false);
+  }
+
+  async function lookup(candidate: string, save = true) {
     const address = `0x${candidate}`;
     if (!HEX40.test(candidate) || !isAddress(address, { strict: false })) {
       setInputError(
@@ -73,6 +101,7 @@ export function Position({
       return;
     }
     setState({ kind: "result", data: body });
+    if (save) remember(body.address);
     const url = new URL(window.location.href);
     url.searchParams.set("address", body.address);
     window.history.replaceState(null, "", url);
@@ -151,8 +180,58 @@ export function Position({
           <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-destructive/90">{state.message}</pre>
         </div>
       )}
-      {state.kind === "result" && <Result data={state.data} />}
+      {state.kind === "result" && (
+        <>
+          <MemoryRow
+            address={state.data.address}
+            remembered={remembered}
+            onRemember={() => remember(state.data.address)}
+            onForget={forget}
+          />
+          <Result data={state.data} />
+        </>
+      )}
     </section>
+  );
+}
+
+/** Device memory for the address on screen, and a link that opens straight on it. */
+function MemoryRow({
+  address,
+  remembered,
+  onRemember,
+  onForget,
+}: {
+  address: string;
+  remembered: boolean;
+  onRemember: () => void;
+  onForget: () => void;
+}) {
+  // Built at click time: this row also renders on the server when the address came from the URL.
+  const link = () => `${window.location.origin}/?address=${address}`;
+  const action = "underline decoration-border underline-offset-4 hover:text-foreground";
+  return (
+    <div className="-mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      {remembered ? (
+        <span>
+          Remembered on this device; it loads automatically next time.{" "}
+          <button type="button" onClick={onForget} className={action}>
+            Forget
+          </button>
+        </span>
+      ) : (
+        <span>
+          <button type="button" onClick={onRemember} className={action}>
+            Remember on this device
+          </button>{" "}
+          to load it automatically next time. Stays in this browser only.
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1">
+        <CopyButton value={link} label="Copy a link that opens on this wallet" className="-ml-1" />
+        Copy link to this wallet
+      </span>
+    </div>
   );
 }
 
