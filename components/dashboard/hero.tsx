@@ -22,18 +22,22 @@ export function Hero({ data }: { data: TrackerData }) {
         </h1>
         <p className="max-w-[62ch] text-base leading-relaxed text-muted-foreground sm:text-lg">
           Bought on the market with {fmtUsdCompact(y.totalBuybackUsd)} of protocol fees across{" "}
-          {distributions.length} distributions. {fmtCompact(y.pendingBuyback)} PENDLE is already waiting
-          in the buyback contract for the next one, {due}.
+          {distributions.length} distributions. {fmtCompact(y.pendingBuyback)} PENDLE is waiting in the
+          buyback contract for the next one, {due}.
         </p>
       </div>
 
       <figure className="flex flex-col gap-3">
         <Ruler bars={distributions} pending={y.pendingBuyback} pendingAt={pendingAt} />
-        <figcaption className="max-w-[80ch] text-xs leading-relaxed text-muted-foreground">
-          The five most recent distributions, scaled to the sPENDLE each paid out; drag the strip or use
-          the arrows to move through earlier ones. Hover a bar for the detail; click to open the
-          transaction on Etherscan. The dashed bar is PENDLE bought back since {fmtDate(latest.timestamp)}{" "}
-          and not yet distributed.
+        <figcaption className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="inline-block h-3 w-1.5 rounded-[1px] bg-spendle" />
+            sPENDLE paid per distribution
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="inline-block h-3 w-1.5 rounded-[1px] border border-dashed border-spendle/70" />
+            Bought back since {fmtDate(latest.timestamp, { year: undefined })}, not yet paid
+          </span>
         </figcaption>
       </figure>
 
@@ -53,10 +57,11 @@ export function Hero({ data }: { data: TrackerData }) {
           </dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-muted-foreground">Same payout with no boost</dt>
+          <dt className="text-xs font-medium text-muted-foreground">Same payout, sPENDLE only, no boost</dt>
           <dd className="font-figure text-3xl sm:text-4xl">{fmtPct(y.aprSolo)}</dd>
           <dd className="text-xs text-muted-foreground">
-            latest distribution over sPENDLE alone; the boost ends {fmtDate(data.loyalty.expiresAt)}
+            latest payout ÷ {fmtCompact(data.sPendle.eligible)} sPENDLE, if unlocking PENDLE is not
+            restaked; boost ends {fmtDate(data.loyalty.expiresAt)}
           </dd>
         </div>
       </dl>

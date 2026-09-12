@@ -35,11 +35,10 @@ export function Thesis({ data }: { data: TrackerData }) {
         title="Bullish $PENDLE Thesis"
         lede={
           <>
-            Every signal below is computed from the sections above and judged against a stated test.
-            The set re-evaluates when a distribution lands or a fee epoch closes; last inputs are
-            distribution {t.evaluated.distributionEpoch} ({fmtDate(t.evaluated.distributionAt)}) and
-            the fee epoch from {fmtDate(t.evaluated.feeEpochStart)}. Signals that fail their test are
-            listed, not dropped.
+            Each signal is computed from the sections above and judged against a stated test; failures
+            are listed, not dropped. Re-evaluated when a distribution lands or a fee epoch closes; last
+            inputs: distribution {t.evaluated.distributionEpoch} ({fmtDate(t.evaluated.distributionAt)}
+            ) and the fee epoch from {fmtDate(t.evaluated.feeEpochStart)}.
           </>
         }
       />

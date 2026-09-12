@@ -17,10 +17,10 @@ export function Dilution({ data }: { data: TrackerData }) {
         title="Boost dilution"
         lede={
           <>
-            Virtual sPENDLE shares the reward denominator with real sPENDLE. Locked PENDLE counts 1×,
-            like sPENDLE; the part above 1× is the loyalty boost, and it is taken from every 1× unit
-            in the pool, sPENDLE and locked PENDLE alike. Each locker&apos;s multiplier falls linearly
-            to 1× at unlock, so the premium shrinks continuously and reaches zero on{" "}
+            Virtual sPENDLE shares the reward pool with real sPENDLE. Locked PENDLE counts 1×;
+            everything above 1× is the loyalty boost, paid for by every 1× unit, sPENDLE and locked
+            PENDLE alike. Each multiplier falls linearly to 1× at unlock, so the premium shrinks every
+            day and reaches zero on{" "}
             <span className="tabular text-foreground">{fmtDate(loyalty.expiresAt)}</span>.
           </>
         }

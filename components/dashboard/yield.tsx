@@ -19,10 +19,9 @@ export function Yield({ data }: { data: TrackerData }) {
         title="sPENDLE yield"
         lede={
           <>
-            About every 14 days the buyback contract stakes the PENDLE it bought with protocol fees
-            and hands the new sPENDLE to the rewards distributor for stakers to claim. It is split pro-rata
-            over eligible sPENDLE plus virtual sPENDLE. A staker gets a 1× share; a locker gets
-            their multiplier times that.
+            About every 14 days the buyback contract stakes the PENDLE it bought with fees and hands
+            the new sPENDLE to the distributor for stakers to claim, split pro-rata over eligible plus
+            virtual sPENDLE: a staker gets a 1× share, a locker their multiplier times that.
           </>
         }
       />

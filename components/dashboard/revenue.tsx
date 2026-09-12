@@ -231,15 +231,11 @@ export function Revenue({ data }: { data: TrackerData }) {
             </div>
             <AccrualChart points={r.cumulative} />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Stacked USD is the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees,
-              cumulative from 29 Jan 2026. The solid line is USDT actually received by the buyback
-              contract, each transfer attributed to the fee epoch whose end is nearest. The dashed
-              line (right axis) is LP emissions: PENDLE paid to Ethereum markets from the gauge
-              controller over the same period, new supply for LPs to hold or sell. It is the
-              Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere and is
-              not counted. The gauge pays from PENDLE it already held, so PENDLE total supply
-              is flat; these are emissions into circulation, not minting. Other chains&apos; AIM is in
-              the AIM card.
+              Stacked USD: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, cumulative
+              from 29 Jan 2026. Solid line: USDT the buyback contract actually received, by fee epoch.
+              Dashed line, right axis: PENDLE emitted to Ethereum LPs from the gauge controller,
+              Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere. The gauge
+              pays from PENDLE it already held, so total supply stays flat.
             </p>
           </CardContent>
         </Card>
@@ -388,12 +384,12 @@ export function Revenue({ data }: { data: TrackerData }) {
             {e.buybackWindowClosed
               ? "."
               : `; the ${fmtDate(e.start)} epoch can still receive funding until ${fmtDate(ends(e) + EPOCH_SECONDS / 2)}.`}{" "}
-            Bought is the PENDLE paid to stakers in the distribution that lands 14 to 28 days after the epoch
-            start; the USDT spent per distribution is in the ledger. Treasury and ops are the 10/10 policy split of
-            DefiLlama Revenue. DefiLlama books fees on the day tokens
-            reach the treasury, so a row is not Pendle&apos;s epoch accounting and its last day can
-            arrive a day late; the 27 Jan 2026 row starts at the 29 Jan snapshot. Emissions are PENDLE paid
-            to Ethereum LPs from the gauge controller, with epoch boundaries approximated from block times.
+            Bought is the PENDLE paid to stakers in the distribution 14 to 28 days after the epoch start;
+            USDT per distribution is in the ledger. Treasury and ops are the 10/10 policy split of
+            DefiLlama Revenue, which books fees on the day tokens reach the treasury, so a row is not
+            Pendle&apos;s own epoch accounting and can run a day late; the 27 Jan 2026 row starts at the
+            29 Jan snapshot. Emissions are PENDLE paid to Ethereum LPs from the gauge controller, epoch
+            boundaries approximated from block times.
           </p>
         </CardContent>
       </Card>

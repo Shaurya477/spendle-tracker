@@ -141,7 +141,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "dilution-fading",
     title: "Dilution fades on schedule",
     value: `${fmtPct(dilution.premiumShare, 1)} → 0`,
-    detail: `The loyalty boost takes ${fmtPct(dilution.premiumShare, 1)} of every distribution today, ${fmtPct(yearAhead.dilutionFlat, 1)} a year from now, and nothing after ${fmtDate(loyalty.expiresAt)}. Holding the latest distribution flat, plain APR rises from ${fmtPct(latest.aprPlain)} to ${fmtPct(end.aprPlainFlat)} with no change in fees.`,
+    detail: `The loyalty boost takes ${fmtPct(dilution.premiumShare, 1)} of every distribution today, ${fmtPct(yearAhead.dilutionFlat, 1)} a year from now, and nothing after ${fmtDate(loyalty.expiresAt)}. Holding the latest distribution flat and restaking none of the unlocking PENDLE, plain APR rises from ${fmtPct(latest.aprPlain)} to ${fmtPct(end.aprPlainFlat)}.`,
     test: "boost premium share > 0 and its end date is in the future",
     passing: dilution.premiumShare > 0 && loyalty.expiresAt > data.block.timestamp,
   };

@@ -88,7 +88,7 @@ export function Position({
       <SectionHeading
         index="07"
         title="Your position"
-        lede="Paste a wallet address. Below is that address's share of the numbers above: holdings, sPENDLE paid per epoch, its own APR including in-kind airdrops, and what the boost costs or earns it until January 2028."
+        lede="Paste a wallet address for its share of the numbers above: holdings, sPENDLE paid per epoch, its own APR with in-kind airdrops, and what the boost costs or earns it until January 2028."
       />
 
       <form onSubmit={onSubmit} className="flex flex-col gap-2">
@@ -133,9 +133,9 @@ export function Position({
 
       {state.kind === "idle" && (
         <p className="text-sm text-muted-foreground">
-          Nothing is fetched until you look up an address. The lookup reads the same contracts as the
-          rest of the page, plus Pendle&apos;s API for the address&apos;s accrued rewards and in-kind
-          airdrops. Held balances are priced at the live PENDLE/USD quote.
+          Nothing is fetched until you look up an address. It reads the same contracts as the rest of
+          the page plus Pendle&apos;s API for accrued rewards and airdrops; balances are priced at the
+          live quote.
         </p>
       )}
       {state.kind === "loading" && (
