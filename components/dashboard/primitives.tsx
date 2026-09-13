@@ -136,7 +136,7 @@ export function LineSwatch({
   tone,
   dashed = false,
 }: {
-  tone: "spendle" | "vependle" | "boost";
+  tone: "spendle" | "vependle" | "boost" | "foreground";
   dashed?: boolean;
 }) {
   return (
@@ -148,6 +148,7 @@ export function LineSwatch({
         tone === "spendle" && "border-spendle",
         tone === "vependle" && "border-vependle",
         tone === "boost" && "border-boost",
+        tone === "foreground" && "border-foreground",
       )}
     />
   );

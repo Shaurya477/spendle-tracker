@@ -9,6 +9,13 @@ import {
   type RawDistribution,
   fetchMigration,
   type Migration,
+  fetchFlows,
+  type Flows,
+  fetchKnownWallets,
+  type KnownWallet,
+  fetchLockPositions,
+  type LockPosition,
+  type Move,
 } from "./chain";
 import {
   ADDRESSES,
@@ -23,6 +30,7 @@ import {
 import { lastExpiry, loyaltyAt, multiplierFor, toTokens, type LockBucket } from "./model";
 import { fetchPendleUsd } from "./pendle-api";
 import { getRevenueData, withExecutedBuybacks, type RevenueData } from "./revenue";
+import { buildValuation, type Valuation } from "./valuation";
 
 export type Distribution = {
   epoch: number;
@@ -65,6 +73,24 @@ export type ProjectionPoint = {
 };
 
 export type UnlockWeek = { expiry: number; amount: number; cumulativeRemaining: number };
+
+/** How the PENDLE supply splits between places it can and cannot trade from. */
+export type SupplySplit = {
+  staked: number;
+  locked: number;
+  /** Pendle's multisigs and treasury. */
+  pendle: number;
+  investors: number;
+  exchanges: number;
+  bridged: number;
+  /** Buyback contract and gauge controller inventory. */
+  contracts: number;
+  other: number;
+  total: number;
+};
+
+export type Locker = { label: string; address: string; amount: number; expiry: number; share: number };
+export type TopLock = LockPosition & { label?: string };
 
 export type TrackerData = {
   fetchedAt: number;
@@ -128,8 +154,21 @@ export type TrackerData = {
   /** vePENDLE → sPENDLE since the snapshot: weekly withdrawals, restakes, and balances. */
   migration: Migration;
   projection: ProjectionPoint[];
+  /** Snapshot schedule: what defines the boost. */
   unlocks: UnlockWeek[];
+  /** Live schedule: when locked PENDLE actually becomes withdrawable. Differs where locks changed after the snapshot. */
+  liveUnlocks: UnlockWeek[];
+  /** Largest live lock positions by wallet. */
+  topLocks: TopLock[];
+  /** The liquid-locker protocols' vePENDLE positions and their share of active locked PENDLE. */
+  lockers: Locker[];
   revenue: RevenueData;
+  /** sPENDLE stake and unstake flows since the snapshot. */
+  flows: Flows;
+  /** Largest stakes, cooldowns, instant unstakes, and lock withdrawals in the last 30 days. */
+  moves: Move[];
+  holders: { wallets: KnownWallet[]; split: SupplySplit };
+  valuation: Valuation;
 };
 
 const TRAILING_EPOCHS = 6;
@@ -197,15 +236,21 @@ export const getTrackerData = unstable_cache(computeTrackerData, ["tracker-data"
 });
 
 async function computeTrackerData(): Promise<TrackerData> {
-  const [live, snapshot, snapshotSupply, pendleUsd, revenueBase, migration] = await Promise.all([
+  const [live, snapshot, snapshotSupply, pendleUsd, revenueBase, migration, flows] = await Promise.all([
     fetchLiveState(),
     fetchSnapshotSchedule(),
     fetchSnapshotPendleSupply(),
     fetchPendleUsd(),
     getRevenueData(),
     fetchMigration(),
+    fetchFlows(),
   ]);
-  const raw = (await fetchDistributions(live.blockNumber)).sort((a, b) => Number(a.blockNumber - b.blockNumber));
+  const [rawUnsorted, wallets, lockPositions] = await Promise.all([
+    fetchDistributions(live.blockNumber),
+    fetchKnownWallets(live.blockNumber),
+    fetchLockPositions(live.blockNumber),
+  ]);
+  const raw = rawUnsorted.sort((a, b) => Number(a.blockNumber - b.blockNumber));
   if (raw.length === 0) throw new Error("No sPENDLE reward distributions found onchain");
   // Buyback execution between consecutive distributions: (previous distribution block, this one].
   const windows = await fetchBuybackWindows([SNAPSHOT_BLOCK, ...raw.map((d) => d.blockNumber)]);
@@ -243,6 +288,40 @@ async function computeTrackerData(): Promise<TrackerData> {
 
   const projection = buildProjection(snapshot, now, expiresAt, eligibleSPendle, latest.amount);
   const unlocks = buildUnlocks(snapshot, now);
+  const liveUnlocks = buildUnlocks(live.liveSchedule, now);
+
+  const labelOf = new Map(wallets.map((w) => [w.address.toLowerCase(), w.label]));
+  const topLocks: TopLock[] = lockPositions.slice(0, 10).map((l) => ({ ...l, label: labelOf.get(l.user.toLowerCase()) }));
+  const activeLocked = toTokens(liveNow.locked);
+  const lockers: Locker[] = wallets
+    .filter((w) => w.category === "locker")
+    .map((w) => ({ label: w.label, address: w.address, amount: w.locked, expiry: w.lockExpiry, share: w.locked / activeLocked }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const sumCat = (c: KnownWallet["category"]) => wallets.filter((w) => w.category === c).reduce((s, w) => s + w.pendle, 0);
+  const totalSupply = toTokens(live.pendleTotalSupply);
+  const split: SupplySplit = {
+    staked: toTokens(live.pendleInSPendle),
+    locked: toTokens(live.pendleInVePendle),
+    pendle: sumCat("pendle"),
+    investors: sumCat("investor"),
+    exchanges: sumCat("exchange"),
+    bridged: sumCat("bridge"),
+    contracts: sumCat("contract"),
+    other: 0,
+    total: totalSupply,
+  };
+  split.other = totalSupply - (split.staked + split.locked + split.pendle + split.investors + split.exchanges + split.bridged + split.contracts);
+  if (split.other < 0) throw new Error(`Supply split exceeds total supply by ${-split.other} PENDLE`);
+
+  const moves = [...flows.largeMoves, ...migration.largeWithdrawals].sort((a, b) => b.amount - a.amount).slice(0, 8);
+  const valuation = buildValuation({
+    price: pendleUsd,
+    totalSupply,
+    pendleHeld: split.pendle + split.contracts,
+    revenue,
+    distributions,
+  });
 
   return {
     fetchedAt: Date.now(),
@@ -316,7 +395,14 @@ async function computeTrackerData(): Promise<TrackerData> {
     migration,
     projection,
     unlocks,
+    liveUnlocks,
+    topLocks,
+    lockers,
     revenue,
+    flows,
+    moves,
+    holders: { wallets, split },
+    valuation,
   };
 }
 

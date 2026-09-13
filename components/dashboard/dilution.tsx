@@ -1,19 +1,27 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtMult, fmtPct } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
-import { DecayChart, DilutionChart } from "./charts";
-import { Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
+import { DecayChart, DilutionChart, UnlockCalendarChart } from "./charts";
+import { AddressLink, Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
 
 export function Dilution({ data }: { data: TrackerData }) {
-  const { dilution, loyalty, sPendle, projection, unlocks, yield: y } = data;
+  const { dilution, loyalty, sPendle, vePendle, projection, unlocks, liveUnlocks, lockers, topLocks, yield: y } = data;
   const biggest = [...unlocks].sort((a, b) => b.amount - a.amount).slice(0, 6);
   const remainingNow = unlocks.reduce((s, u) => s + u.amount, 0);
+  const liveRemaining = liveUnlocks.reduce((s, u) => s + u.amount, 0);
   const oneYear = projection.find((p) => p.t >= data.block.timestamp + 365.25 * 86_400);
+  const lastLive = liveUnlocks[liveUnlocks.length - 1];
+  const lockerTotal = lockers.reduce((s, l) => s + l.amount, 0);
+  // Live unlock weeks holding more than the snapshot schedule: locks extended or added since.
+  const moved = liveUnlocks
+    .map((l) => ({ expiry: l.expiry, amount: l.amount - (unlocks.find((u) => u.expiry === l.expiry)?.amount ?? 0) }))
+    .filter((l) => l.amount > 100_000)
+    .sort((a, b) => b.amount - a.amount);
 
   return (
     <section id="dilution" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="03"
+        index="04"
         title="Boost dilution"
         methodId="method-virtual"
         lede={
@@ -119,10 +127,91 @@ export function Dilution({ data }: { data: TrackerData }) {
         </Card>
       </div>
 
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card className="">
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <Eyebrow tip="Snapshot: the vePENDLE unlock schedule as it stood at the 29 Jan snapshot, which fixes the boost. Live: the schedule the contract holds today. They differ where a lock was extended or added after the snapshot; the boost terms of such a lock stay as they were.">
+                When locked PENDLE becomes liquid
+              </Eyebrow>
+              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <LineSwatch tone="boost" dashed /> snapshot schedule
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <LineSwatch tone="vependle" /> live schedule
+                </span>
+              </div>
+            </div>
+            <UnlockCalendarChart snapshot={unlocks} live={liveUnlocks} now={data.block.timestamp} />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {fmtCompact(liveRemaining)} PENDLE is under a live lock, last unlock {fmtDate(lastLive.expiry)}.
+              {moved.length > 0
+                ? ` Extended since the snapshot: ${moved
+                    .slice(0, 2)
+                    .map((m) => `${fmtCompact(m.amount)} now unlocks ${fmtDate(m.expiry)}`)
+                    .join("; ")}; its boost terms did not change.`
+                : " No lock has been extended since the snapshot."}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="">
+          <CardContent className="flex flex-col gap-4">
+            <Eyebrow tip="Live vePENDLE positions, from every NewLockPosition event the contract has emitted with the largest re-read from positionData at the latest block. Penpie, Equilibria and Stake DAO are the liquid-locker protocols whose users hold a wrapped claim on the lock.">
+              Largest lock positions
+            </Eyebrow>
+            <ul className="flex flex-col divide-y divide-border/60">
+              {topLocks.map((l) => (
+                <li key={l.user} className="flex items-center justify-between gap-3 py-1.5 text-xs">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    {l.label && <span className="text-foreground">{l.label}</span>}
+                    <AddressLink address={l.user} />
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span className="tabular text-sm text-vependle">
+                      {fmtCompact(l.amount)}{" "}
+                      <span className="text-[10px] text-muted-foreground">{fmtPct(l.amount / liveRemaining, 1)}</span>
+                    </span>
+                    <span className="tabular text-[11px] text-muted-foreground">unlocks {fmtDate(l.expiry)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="">
         <CardContent className="grid gap-6 lg:grid-cols-[1fr_2fr]">
           <div className="flex flex-col gap-2">
-            <Eyebrow>Largest unlock weeks ahead</Eyebrow>
+            <Eyebrow tip="Penpie, Equilibria and Stake DAO lock PENDLE on behalf of their depositors and issue a liquid token against it. What they do at expiry decides a large share of how the migration to sPENDLE ends.">
+              Liquid lockers
+            </Eyebrow>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {fmtCompact(lockerTotal)} PENDLE, {fmtPct(lockerTotal / vePendle.activeLocked, 0)} of everything under an
+              active lock, sits in three protocols&apos; positions.
+            </p>
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-3">
+            {lockers.map((l) => (
+              <li key={l.address} className="flex flex-col gap-1 rounded-md border border-border/60 bg-background/40 px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-foreground">{l.label}</span>
+                  <span className="tabular text-[11px] text-muted-foreground">{fmtPct(l.share, 1)}</span>
+                </div>
+                <span className="tabular text-lg leading-none text-vependle">{fmtCompact(l.amount)}</span>
+                <span className="tabular text-[11px] text-muted-foreground">unlocks {fmtDate(l.expiry)}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card className="">
+        <CardContent className="grid gap-6 lg:grid-cols-[1fr_2fr]">
+          <div className="flex flex-col gap-2">
+            <Eyebrow tip="Snapshot schedule: this is what the boost decays against, whatever happens to the live locks.">Largest unlock weeks, snapshot schedule</Eyebrow>
             <p className="text-xs leading-relaxed text-muted-foreground">
               {fmtCompact(remainingNow)} snapshot PENDLE still locked across {unlocks.length} weekly
               expiries; most was max-locked just before the snapshot and unlocks in January 2028.

@@ -4,10 +4,12 @@ import { getPosition } from "@/lib/pendle/position";
 import { MobileHeader, Rail } from "@/components/dashboard/header";
 import { Hero } from "@/components/dashboard/hero";
 import { Balances } from "@/components/dashboard/balances";
+import { Holders } from "@/components/dashboard/holders";
 import { Yield } from "@/components/dashboard/yield";
 import { Dilution } from "@/components/dashboard/dilution";
 import { Revenue } from "@/components/dashboard/revenue";
 import { Ledger } from "@/components/dashboard/ledger";
+import { Valuation } from "@/components/dashboard/valuation";
 import { Thesis } from "@/components/dashboard/thesis";
 import { Position } from "@/components/dashboard/position";
 import { Methodology } from "@/components/dashboard/methodology";
@@ -19,13 +21,15 @@ import { AUTHOR_X_HANDLE, AUTHOR_X_URL, REPO_URL } from "@/lib/pendle/config";
 
 const SECTIONS = [
   { id: "balances", index: "01", title: "Balances" },
-  { id: "yield", index: "02", title: "Yield" },
-  { id: "dilution", index: "03", title: "Dilution" },
-  { id: "fees", index: "04", title: "Fees" },
-  { id: "ledger", index: "05", title: "Ledger" },
-  { id: "thesis", index: "06", title: "Thesis" },
-  { id: "position", index: "07", title: "Position" },
-  { id: "methodology", index: "08", title: "Methodology" },
+  { id: "holders", index: "02", title: "Holders" },
+  { id: "yield", index: "03", title: "Yield" },
+  { id: "dilution", index: "04", title: "Dilution" },
+  { id: "fees", index: "05", title: "Fees" },
+  { id: "ledger", index: "06", title: "Ledger" },
+  { id: "valuation", index: "07", title: "Valuation" },
+  { id: "thesis", index: "08", title: "Thesis" },
+  { id: "position", index: "09", title: "Position" },
+  { id: "methodology", index: "10", title: "Methodology" },
 ];
 
 export const dynamic = "force-dynamic";
@@ -48,10 +52,12 @@ export default async function Page({ searchParams }: PageProps<"/">) {
         <Hero data={data} />
         <SectionBar sections={SECTIONS} />
         <Balances data={data} />
+        <Holders data={data} />
         <Yield data={data} />
         <Dilution data={data} />
         <Revenue data={data} />
         <Ledger data={data} />
+        <Valuation data={data} />
         <Thesis data={data} />
         <Position initialHex={preset.replace(/^0x/i, "")} initial={position} />
         <Methodology data={data} />

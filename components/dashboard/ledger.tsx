@@ -10,7 +10,7 @@ export function Ledger({ data }: { data: TrackerData }) {
   return (
     <section id="ledger" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="05"
+        index="06"
         title="Distribution ledger"
         lede="Every distribution: PENDLE bought and USDT paid, sPENDLE paid to stakers, the eligible (unclaimed rewards included) and virtual sPENDLE it was split over, and that epoch's plain and boosted APR."
       />

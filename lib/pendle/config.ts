@@ -11,7 +11,40 @@ export const ADDRESSES = {
   merkleDistributor: "0x3942f7b55094250644cffda7160226caa349a38e" as Address,
   gaugeController: "0x47D74516B33eD5D70ddE7119A40839f6Fcc24e57" as Address,
   usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7" as Address,
+  /** Receives the 5% instant-unstake fee (the PENDLE transfer paired with every `Unstaked` event with `fee > 0`). */
+  treasury: "0x8270400d528c34e1596EF367eeDEc99080A1b592" as Address,
 } as const;
+
+/** First block scanned for vePENDLE lock events; the contract's first lock week was 21 Nov 2022 (block ~16.02M). */
+export const VE_PENDLE_FROM_BLOCK = 15_900_000n;
+
+export type WalletCategory = "pendle" | "investor" | "exchange" | "bridge" | "locker" | "contract";
+
+/**
+ * Labelled PENDLE wallets, read directly for the supply-distribution view. Labels are the public
+ * Etherscan/Dune tags; only wallets that hold PENDLE on mainnet are listed. Liquid lockers hold
+ * theirs inside the vePENDLE contract, so they are shown but not counted again in the split.
+ */
+export const KNOWN_WALLETS: { address: Address; label: string; category: WalletCategory }[] = [
+  { address: "0x8119ec16f0573b7dac7c0cb94eb504fb32456ee1", label: "Pendle governance multisig", category: "pendle" },
+  { address: "0x399be606db281a054e359eb709df9f21e922ec9a", label: "Pendle ecosystem fund", category: "pendle" },
+  { address: "0x918cf6b16d1426b5aa0edf0492ced1aa89f9659a", label: "Pendle team tokens multisig", category: "pendle" },
+  { address: "0x8270400d528c34e1596EF367eeDEc99080A1b592", label: "Pendle treasury", category: "pendle" },
+  { address: "0x2081411ed407f2364e5162e641a2db7575ef6f7b", label: "Binance Labs", category: "investor" },
+  { address: "0xf977814e90da44bfa03b6295a0616a897441acec", label: "Binance", category: "exchange" },
+  { address: "0x5a52e96bacdabb82fd05763e25335261b270efcb", label: "Binance", category: "exchange" },
+  { address: "0xcffad3200574698b78f32232aa9d63eabd290703", label: "Crypto.com", category: "exchange" },
+  { address: "0x0d0707963952f2fba59dd06f2b425ace40b492fe", label: "Gate.io", category: "exchange" },
+  { address: "0xa3a7b6f88361f48403514059f1f16c8e78d60eec", label: "Arbitrum bridge", category: "bridge" },
+  { address: "0x3ee18b2214aff97000d974cf647e7c347e8fa585", label: "Wormhole Portal", category: "bridge" },
+  { address: "0x3154cf16ccdb4c6d922629664174b904d80f2c35", label: "Base bridge", category: "bridge" },
+  { address: "0x99c9fc46f92e8a1c0dec1b1747d010903e884be1", label: "Optimism bridge", category: "bridge" },
+  { address: "0x6e799758cee75dae3d84e09d40dc416ecf713652", label: "Penpie", category: "locker" },
+  { address: "0x64627901dadb46ed7f275fd4fc87d086cff1e6e3", label: "Equilibria", category: "locker" },
+  { address: "0xd8fa8dc5adec503acc5e026a98f32ca5c1fa289a", label: "Stake DAO", category: "locker" },
+  { address: "0x9e08C5499f953C6297A7755BcBcEd383b606896b", label: "Buyback contract", category: "contract" },
+  { address: "0x47D74516B33eD5D70ddE7119A40839f6Fcc24e57", label: "Gauge controller", category: "contract" },
+];
 
 export const PENDLE_API = "https://api-v2.pendle.finance/core/v1/spendle";
 export const PENDLE_PRICE_API = "https://api-v2.pendle.finance/core/v1/prices/assets";

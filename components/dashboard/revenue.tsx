@@ -68,7 +68,7 @@ export function Revenue({ data }: { data: TrackerData }) {
   return (
     <section id="fees" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="04"
+        index="05"
         title="Fees, revenue, and incentives"
         methodId="method-fees"
         lede={

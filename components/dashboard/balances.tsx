@@ -1,12 +1,29 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
+import type { Move } from "@/lib/pendle/chain";
 import { fmtCompact, fmtDate, fmtDays, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
-import { MigrationChart } from "./charts";
+import { FlowsChart, MigrationChart } from "./charts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
+import { AddressLink, Eyebrow, LineSwatch, SectionHeading, Stat, Swatch, TxLink } from "./primitives";
+
+const MOVE_LABEL: Record<Move["kind"], string> = {
+  stake: "Staked",
+  cooldown: "To cooldown",
+  instant: "Instant unstake",
+  withdraw: "Lock withdrawn",
+};
+const MOVE_TONE: Record<Move["kind"], string> = {
+  stake: "text-spendle ring-spendle/30",
+  cooldown: "text-vependle ring-vependle/30",
+  instant: "text-boost ring-boost/30",
+  withdraw: "text-muted-foreground ring-border",
+};
+
+const signed = (n: number) => `${n >= 0 ? "+" : "−"}${fmtCompact(Math.abs(n))}`;
 
 export function Balances({ data }: { data: TrackerData }) {
-  const { sPendle, vePendle, loyalty, combined, pendleUsd, migration } = data;
+  const { sPendle, vePendle, loyalty, combined, pendleUsd, migration, flows, moves } = data;
+  const f = flows.totals;
   const total = combined.hubTotalStaked;
   const m = migration.totals;
   const first = migration.weeks[0];
@@ -241,6 +258,97 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </div>
           <MigrationChart weeks={migration.weeks} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-1.5">
+              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only.">
+                Staking flows
+              </Eyebrow>
+              <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
+                Weekly PENDLE staked by holders against sPENDLE sent to the {sPendle.cooldownDays}-day cooldown or
+                unstaked instantly for the {sPendle.instantFeePct}% fee. The queue is PENDLE that becomes withdrawable
+                within two weeks.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Swatch tone="spendle" /> staked
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Swatch tone="vependle" /> to cooldown
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Swatch tone="boost" /> instant, fee paid
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LineSwatch tone="foreground" /> cooldown queue
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-4 border-y border-border py-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              label="Net holder flow, 7 days"
+              value={signed(flows.net7d)}
+              unit="PENDLE"
+              tone={flows.net7d >= 0 ? "spendle" : "boost"}
+              sub={`${signed(flows.net30d)} over 30 days; stakes minus cooldowns and instant unstakes, cancellations added back`}
+            />
+            <Stat
+              label="Cooldown queue"
+              value={fmtCompact(flows.queue.now)}
+              unit="PENDLE"
+              tone="vependle"
+              sub={`${signed(flows.queue.now - flows.queue.weekAgo)} vs a week ago; withdrawable within ${sPendle.cooldownDays} days`}
+            />
+            <Stat
+              label="Unstaked instantly"
+              value={fmtCompact(f.instant)}
+              unit="PENDLE"
+              sub={`${fmtInt(f.instantCount)} unstakes since the snapshot, ${fmtPct(f.instant / (f.instant + f.toCooldown), 0)} of all unstaking by amount`}
+              tip="Holders who paid the fee rather than wait. The rest went through the cooldown."
+            />
+            <Stat
+              label="Fees paid to skip the queue"
+              value={fmtCompact(f.instantFee)}
+              unit="PENDLE"
+              tone="boost"
+              usd={usdOf(f.instantFee, pendleUsd)}
+              sub="sent to the Pendle treasury in the same transaction"
+              tip="The PENDLE transfer paired with every Unstaked event with a non-zero fee goes to Pendle's treasury multisig, 0x8270…b592."
+            />
+          </div>
+          <FlowsChart weeks={flows.weeks} />
+          <div className="flex flex-col gap-3 border-t border-border pt-4">
+            <Eyebrow tip="The largest single stakes, cooldown starts, instant unstakes, and expired-lock withdrawals in the last 30 days, by wallet.">
+              Largest moves, 30 days
+            </Eyebrow>
+            <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {moves.map((m) => (
+                <li
+                  key={m.txHash + m.kind}
+                  className="flex flex-col gap-1.5 rounded-md border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className={`text-[10px] ${MOVE_TONE[m.kind]}`}>
+                      {MOVE_LABEL[m.kind]}
+                    </Badge>
+                    <span className="tabular text-[11px] text-muted-foreground">{fmtDate(m.timestamp, { year: undefined })}</span>
+                  </div>
+                  <div className="tabular text-lg leading-none text-foreground">
+                    {fmtCompact(m.amount)} <span className="text-[11px] text-muted-foreground">PENDLE</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <AddressLink address={m.wallet} />
+                    <TxLink hash={m.txHash} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </section>

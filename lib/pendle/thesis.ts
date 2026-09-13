@@ -1,4 +1,4 @@
-import { fmtCompact, fmtDate, fmtInt, fmtMult, fmtPct, fmtUsd } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtInt, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
 import type { TrackerData } from "./tracker";
 
 /**
@@ -248,7 +248,20 @@ export function buildThesis(data: TrackerData): Thesis {
     passing: dilution.premiumShare > 0 && loyalty.expiresAt > data.block.timestamp,
   };
 
-  const signals = [staking, locked, fees, funding, emissions, apr, fading];
+  // 9. Policy honoured: the share of revenue that actually reaches the buyback contract.
+  const v = data.valuation;
+  const payout: Signal = {
+    id: "payout-honoured",
+    title: "Revenue reaching stakers",
+    value: fmtPct(v.payoutRatio, 0),
+    caption: "of revenue funded to buybacks; policy says up to 80%",
+    metric: { kind: "share", value: v.payoutRatio, threshold: 0.7 },
+    detail: `Over the last ${v.payoutEpochs} closed funding windows the buyback contract received ${fmtPct(v.payoutRatio, 0)} of DefiLlama revenue as USDT. At ${fmtUsdCompact(v.buybackAnnual)} a year that is a ${fmtPct(v.buybackYield)} buyback yield on a ${fmtUsdCompact(v.marketCap)} market cap, ${fmtPct(v.netBuybackYield)} after AIM emissions.`,
+    test: "USDT funded to the buyback contract ≥ 70% of DefiLlama revenue over the last four closed epochs",
+    passing: v.payoutRatio >= 0.7,
+  };
+
+  const signals = [staking, locked, fees, funding, emissions, apr, fading, payout];
   return {
     headline,
     passing: signals.filter((s) => s.passing),

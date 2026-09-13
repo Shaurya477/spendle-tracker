@@ -16,8 +16,9 @@ import {
   YAxis,
 } from "recharts";
 import type { CumPoint, FeeEpoch } from "@/lib/pendle/revenue";
-import type { ProjectionPoint } from "@/lib/pendle/tracker";
-import type { MigrationWeek } from "@/lib/pendle/chain";
+import type { ProjectionPoint, UnlockWeek } from "@/lib/pendle/tracker";
+import type { FlowWeek, MigrationWeek } from "@/lib/pendle/chain";
+import type { Valuation } from "@/lib/pendle/valuation";
 import type { MouseHandlerDataParam } from "recharts/types/synchronisation/types";
 import { fmtCompact, fmtDate, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
 
@@ -616,5 +617,228 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** Weekly holder stakes up, unstakes down (cooldown and instant), with the cooldown queue on the right axis. */
+export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
+  const data = weeks.map((w) => ({
+    t: w.start,
+    staked: w.staked,
+    cooldown: -w.toCooldown,
+    instant: -w.instant,
+    cancelled: w.cancelled,
+    net: w.staked + w.cancelled - w.toCooldown - w.instant,
+    queue: w.queueEnd,
+    fee: w.instantFee,
+  }));
+  const week = 7 * 86_400;
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const pick = (s: MouseHandlerDataParam) => {
+    const i = s.activeTooltipIndex === undefined ? NaN : Number(s.activeTooltipIndex);
+    if (Number.isInteger(i) && i >= 0 && i < data.length) setActiveIdx(i);
+  };
+  const rowsFor = (p: (typeof data)[number]): TipRow[] => [
+    { label: "Staked by holders", value: `${fmtCompact(p.staked)} PENDLE`, color: SPENDLE },
+    { label: "Sent to cooldown", value: fmtCompact(-p.cooldown), color: VEPENDLE },
+    { label: "Unstaked instantly (fee paid)", value: `${fmtCompact(-p.instant)} (${fmtCompact(p.fee)})`, color: BOOST },
+    { label: "Cooldowns cancelled", value: fmtCompact(p.cancelled) },
+    { label: "Net", value: `${p.net >= 0 ? "+" : "−"}${fmtCompact(Math.abs(p.net))}` },
+    { label: "Cooldown queue, week end", value: fmtCompact(p.queue), color: FUNDED },
+  ];
+  const titleFor = (p: (typeof data)[number]) => `Week of ${fmtDate(p.t)}`;
+  const shown = data[activeIdx ?? data.length - 1];
+  return (
+    <div className="flex flex-col gap-3">
+      <ResponsiveContainer width="100%" height={300}>
+        <ComposedChart
+          data={data}
+          stackOffset="sign"
+          margin={{ top: 12, right: 8, left: 0, bottom: 0 }}
+          barCategoryGap="30%"
+          onMouseMove={pick}
+          onTouchStart={pick}
+          onTouchMove={pick}
+          onMouseLeave={() => setActiveIdx(null)}
+        >
+          <CartesianGrid stroke={GRID} vertical={false} />
+          <XAxis
+            dataKey="t"
+            type="number"
+            scale="time"
+            domain={[(min: number) => min - week / 2, (max: number) => max + week / 2]}
+            tickFormatter={monthTick}
+            tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+            axisLine={{ stroke: GRID }}
+            tickLine={false}
+            minTickGap={48}
+          />
+          <YAxis
+            yAxisId="flow"
+            tickFormatter={(v: number) => fmtCompact(v)}
+            tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+            axisLine={false}
+            tickLine={false}
+            width={52}
+          />
+          <YAxis
+            yAxisId="queue"
+            orientation="right"
+            domain={[0, (max: number) => Math.ceil(max / 5e5) * 5e5]}
+            tickFormatter={(v: number) => fmtCompact(v)}
+            tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+          />
+          <ReferenceLine yAxisId="flow" y={0} stroke={AXIS} />
+          <Tooltip
+            cursor={{ fill: CURSOR, fillOpacity: 0.12 }}
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const p = payload[0].payload as (typeof data)[number];
+              return (
+                <div className="hidden sm:block">
+                  <TipFrame title={titleFor(p)} rows={rowsFor(p)} />
+                </div>
+              );
+            }}
+          />
+          <Bar yAxisId="flow" dataKey="staked" stackId="f" fill={SPENDLE} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+          <Bar yAxisId="flow" dataKey="cooldown" stackId="f" fill={VEPENDLE} fillOpacity={0.7} isAnimationActive={false} />
+          <Bar yAxisId="flow" dataKey="instant" stackId="f" fill={BOOST} radius={[0, 0, 2, 2]} isAnimationActive={false} />
+          <Line yAxisId="queue" type="linear" dataKey="queue" stroke={FUNDED} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div className="rounded-md border border-border bg-background/40 px-3 py-2 sm:hidden">
+        <TipRows title={titleFor(shown)} rows={rowsFor(shown)} />
+        {activeIdx === null && (
+          <div className="mt-1.5 text-[11px] text-muted-foreground">Latest week. Touch the chart to see another.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** PENDLE still locked over time under the snapshot schedule and the live one, as step lines. */
+export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockWeek[]; live: UnlockWeek[]; now: number }) {
+  const total = (u: UnlockWeek[]) => u.reduce((s, w) => s + w.amount, 0);
+  const points = new Map<number, { t: number; snapshot?: number; live?: number }>();
+  const put = (t: number, key: "snapshot" | "live", v: number) => {
+    const p = points.get(t) ?? { t };
+    p[key] = v;
+    points.set(t, p);
+  };
+  put(now, "snapshot", total(snapshot));
+  put(now, "live", total(live));
+  for (const w of snapshot) put(w.expiry, "snapshot", w.cumulativeRemaining);
+  for (const w of live) put(w.expiry, "live", w.cumulativeRemaining);
+  const data = [...points.values()].sort((a, b) => a.t - b.t);
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="t"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          domain={[0, (max: number) => Math.ceil(max / 10e6) * 10e6]}
+          tickFormatter={(v: number) => fmtCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <Tooltip
+          cursor={{ stroke: CURSOR }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0].payload as (typeof data)[number];
+            return (
+              <TipFrame
+                title={`After ${fmtDate(p.t)}`}
+                rows={[
+                  { label: "Still locked, snapshot schedule", value: p.snapshot === undefined ? "–" : fmtCompact(p.snapshot), color: BOOST },
+                  { label: "Still locked, live schedule", value: p.live === undefined ? "–" : fmtCompact(p.live), color: VEPENDLE },
+                ]}
+              />
+            );
+          }}
+        />
+        <Line type="stepAfter" dataKey="snapshot" stroke={BOOST} strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls isAnimationActive={false} />
+        <Line type="stepAfter" dataKey="live" stroke={VEPENDLE} strokeWidth={1.5} dot={false} connectNulls isAnimationActive={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** What each distribution's buyback paid per PENDLE, against today's price. */
+export function BuybackPriceChart({ prices, spot }: { prices: Valuation["buybackPrices"]; spot: number }) {
+  const data = prices.map((p) => ({ ...p, t: p.timestamp }));
+  const epoch = 14 * 86_400;
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          dataKey="t"
+          type="number"
+          scale="time"
+          domain={[(min: number) => min - epoch / 2, (max: number) => max + epoch / 2]}
+          tickFormatter={monthTick}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={{ stroke: GRID }}
+          tickLine={false}
+          minTickGap={48}
+        />
+        <YAxis
+          yAxisId="usd"
+          tickFormatter={(v: number) => fmtUsdCompact(v)}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <YAxis
+          yAxisId="price"
+          orientation="right"
+          domain={[0, (max: number) => Math.ceil(Math.max(max, spot) * 2) / 2]}
+          tickFormatter={(v: number) => `$${v.toFixed(1)}`}
+          tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          axisLine={false}
+          tickLine={false}
+          width={44}
+        />
+        <Tooltip
+          cursor={{ fill: CURSOR, fillOpacity: 0.12 }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0].payload as (typeof data)[number];
+            return (
+              <TipFrame
+                title={`Distribution ${p.epoch}, ${fmtDate(p.timestamp)}`}
+                rows={[
+                  { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE },
+                  { label: "PENDLE bought", value: fmtCompact(p.pendle) },
+                  { label: "Paid per PENDLE", value: `$${p.price.toFixed(3)}`, color: FUNDED },
+                  { label: "PENDLE today", value: `$${spot.toFixed(3)}` },
+                ]}
+              />
+            );
+          }}
+        />
+        <ReferenceLine yAxisId="price" y={spot} stroke={BOOST} strokeDasharray="4 3" />
+        <Bar yAxisId="usd" dataKey="usd" fill={SPENDLE} fillOpacity={0.6} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+        <Line yAxisId="price" type="linear" dataKey="price" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
+      </ComposedChart>
+    </ResponsiveContainer>
   );
 }

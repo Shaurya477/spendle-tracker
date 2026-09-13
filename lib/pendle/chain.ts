@@ -1,21 +1,29 @@
 import type { Address, Hex } from "viem";
 import {
+  cooldownCanceledEvent,
+  cooldownInitiatedEvent,
   erc20Abi,
   merkleDistributorAbi,
+  newLockPositionEvent,
+  stakedEvent,
   stakedPendleAbi,
   transferEvent,
+  unstakedEvent,
   votingEscrowAbi,
 } from "./abis";
 import { client } from "./client";
 import {
   ADDRESSES,
+  KNOWN_WALLETS,
   LIVE_WEEKS,
   SNAPSHOT_BLOCK,
   SNAPSHOT_TS,
   SNAPSHOT_WEEKS,
+  VE_PENDLE_FROM_BLOCK,
   WEEK,
   EPOCH_SECONDS,
   FEE_EPOCH_ORIGIN,
+  type WalletCategory,
 } from "./config";
 import { toTokens, type LockBucket } from "./model";
 
@@ -30,10 +38,13 @@ type ChainCache = {
   snapshotPendleSupply?: Promise<bigint>;
   distributions: Map<Hex, Promise<RawDistribution>>;
   windows: Map<string, Promise<BuybackWindow>>;
+  /** vePENDLE lock events per closed 1M-block range; history never changes. */
+  lockChunks: Map<string, Promise<LockEvent[]>>;
 };
 const cache: ChainCache = ((globalThis as typeof globalThis & { __spendleChainCache?: ChainCache }).__spendleChainCache ??= {
   distributions: new Map(),
   windows: new Map(),
+  lockChunks: new Map(),
 });
 
 /** Cache a pending read under `key`; a rejected read is dropped again so the next load re-reads instead of replaying the failure. */
@@ -444,8 +455,22 @@ export type MigrationWeek = {
   sPendle: number;
 };
 
+/** One wallet-level movement of PENDLE, for the "largest moves" list. */
+export type Move = {
+  kind: "stake" | "cooldown" | "instant" | "withdraw";
+  wallet: Address;
+  amount: number;
+  timestamp: number;
+  txHash: Hex;
+};
+
+/** Window for the "largest moves" lists. */
+export const MOVES_WINDOW = 30 * 86_400;
+
 export type Migration = {
   weeks: MigrationWeek[];
+  /** Largest vePENDLE withdrawals in the last 30 days. */
+  largeWithdrawals: Move[];
   totals: {
     withdrawn: number;
     restaked: number;
@@ -555,8 +580,14 @@ export async function fetchMigration(): Promise<Migration> {
     };
   });
   const sum = (f: (w: MigrationWeek) => number) => weeks.reduce((s, w) => s + f(w), 0);
+  const largeWithdrawals: Move[] = veOut
+    .filter((l) => tsOf(l.blockNumber) >= now - MOVES_WINDOW)
+    .map((l) => ({ kind: "withdraw" as const, wallet: l.args.to!, amount: toTokens(l.args.value!), timestamp: Math.round(tsOf(l.blockNumber)), txHash: l.transactionHash }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10);
   return {
     weeks,
+    largeWithdrawals,
     totals: {
       withdrawn: sum((w) => w.withdrawn),
       restaked: sum((w) => w.restaked),
@@ -566,4 +597,227 @@ export async function fetchMigration(): Promise<Migration> {
       restakers: restakers.size,
     },
   };
+}
+
+export type FlowWeek = {
+  /** Week start (Thursday 00:00 UTC). */
+  start: number;
+  /** PENDLE staked by holders this week; the buyback contract's own stakes (reward distributions) are excluded. */
+  staked: number;
+  /** sPENDLE sent into the 14-day cooldown (burned at once). */
+  toCooldown: number;
+  /** sPENDLE unstaked instantly, gross of the fee. */
+  instant: number;
+  /** Fee paid on those instant unstakes, in PENDLE. */
+  instantFee: number;
+  /** Cooldowns cancelled (sPENDLE re-minted). */
+  cancelled: number;
+  /** PENDLE in the cooldown queue at the end of the week (or now). */
+  queueEnd: number;
+};
+
+export type Flows = {
+  weeks: FlowWeek[];
+  totals: { staked: number; toCooldown: number; instant: number; instantFee: number; instantCount: number; cancelled: number };
+  /** Net holder flow over the last 7 and 30 days: staked − (cooldown + instant − cancelled). */
+  net7d: number;
+  net30d: number;
+  /** Cooldown queue now and 7 days ago. */
+  queue: { now: number; weekAgo: number };
+  /** Largest stakes, cooldowns, and instant unstakes in the last 30 days. */
+  largeMoves: Move[];
+};
+
+/**
+ * sPENDLE stake and unstake flows since the snapshot, from the staking contract's four events.
+ * The cooldown queue is walked back from today's (PENDLE held − sPENDLE supply) through cooldown
+ * starts, cancellations, and finalisations (`Unstaked` with `fee = 0`); instant unstakes never
+ * enter the queue. Timestamps are interpolated between the snapshot block and the latest one.
+ */
+export async function fetchFlows(): Promise<Flows> {
+  const latest = await client.getBlock({ blockTag: "latest" });
+  const range = { address: sPendle, fromBlock: SNAPSHOT_BLOCK, toBlock: latest.number } as const;
+  const [staked, unstaked, initiated, cancelled, [pendleHeld, supply]] = await Promise.all([
+    client.getLogs({ ...range, event: stakedEvent }),
+    client.getLogs({ ...range, event: unstakedEvent }),
+    client.getLogs({ ...range, event: cooldownInitiatedEvent }),
+    client.getLogs({ ...range, event: cooldownCanceledEvent }),
+    client.multicall({
+      allowFailure: false,
+      blockNumber: latest.number,
+      contracts: [
+        { address: pendle, abi: erc20Abi, functionName: "balanceOf", args: [sPendle] },
+        { address: sPendle, abi: stakedPendleAbi, functionName: "totalSupply" },
+      ],
+    }),
+  ]);
+  const dt = Number(latest.timestamp - SNAPSHOT_TS) / Number(latest.number - SNAPSHOT_BLOCK);
+  const tsOf = (blockNumber: bigint) => Number(SNAPSHOT_TS) + Number(blockNumber - SNAPSHOT_BLOCK) * dt;
+  const now = Number(latest.timestamp);
+  const week = Number(WEEK);
+  const weekOf = (ts: number) => Math.floor(ts / week) * week;
+  const buybackAddr = buyback.toLowerCase();
+
+  type Ev = { ts: number; amount: bigint; fee: bigint; user: Address; txHash: Hex };
+  const ev = (l: { blockNumber: bigint; transactionHash: Hex }, user: Address, amount: bigint, fee = 0n): Ev => ({
+    ts: tsOf(l.blockNumber),
+    amount,
+    fee,
+    user,
+    txHash: l.transactionHash,
+  });
+  const stakes = staked.filter((l) => l.args.user!.toLowerCase() !== buybackAddr).map((l) => ev(l, l.args.user!, l.args.amount!));
+  const cooldowns = initiated.map((l) => ev(l, l.args.user!, l.args.amount!));
+  const cancels = cancelled.map((l) => ev(l, l.args.user!, l.args.amount!));
+  const instants = unstaked.filter((l) => l.args.fee! > 0n).map((l) => ev(l, l.args.user!, l.args.amountAfterFee! + l.args.fee!, l.args.fee!));
+  const finalised = unstaked.filter((l) => l.args.fee! === 0n).map((l) => ev(l, l.args.user!, l.args.amountAfterFee!));
+
+  // Queue at time t: undo every queue change after t.
+  const queueNow = pendleHeld - supply;
+  const queueAt = (t: number) => {
+    let q = queueNow;
+    for (const e of cooldowns) if (e.ts > t) q -= e.amount;
+    for (const e of cancels) if (e.ts > t) q += e.amount;
+    for (const e of finalised) if (e.ts > t) q += e.amount;
+    return q;
+  };
+
+  const sumIn = (list: Ev[], from: number, to: number, f: (e: Ev) => bigint = (e) => e.amount) =>
+    list.reduce((s, e) => (e.ts >= from && e.ts < to ? s + f(e) : s), 0n);
+  const starts: number[] = [];
+  for (let t = weekOf(Number(SNAPSHOT_TS)); t <= now; t += week) starts.push(t);
+  const weeks: FlowWeek[] = starts.map((start) => {
+    const end = start + week;
+    return {
+      start,
+      staked: toTokens(sumIn(stakes, start, end)),
+      toCooldown: toTokens(sumIn(cooldowns, start, end)),
+      instant: toTokens(sumIn(instants, start, end)),
+      instantFee: toTokens(sumIn(instants, start, end, (e) => e.fee)),
+      cancelled: toTokens(sumIn(cancels, start, end)),
+      queueEnd: toTokens(queueAt(Math.min(end, now))),
+    };
+  });
+  const netOver = (days: number) => {
+    const from = now - days * 86_400;
+    const to = now + 1;
+    return toTokens(sumIn(stakes, from, to) - sumIn(cooldowns, from, to) - sumIn(instants, from, to) + sumIn(cancels, from, to));
+  };
+  const move = (kind: Move["kind"]) => (e: Ev): Move => ({ kind, wallet: e.user, amount: toTokens(e.amount), timestamp: Math.round(e.ts), txHash: e.txHash });
+  const recent = (list: Ev[]) => list.filter((e) => e.ts >= now - MOVES_WINDOW);
+  const largeMoves = [
+    ...recent(stakes).map(move("stake")),
+    ...recent(cooldowns).map(move("cooldown")),
+    ...recent(instants).map(move("instant")),
+  ]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10);
+  const total = (list: Ev[], f: (e: Ev) => bigint = (e) => e.amount) => toTokens(list.reduce((s, e) => s + f(e), 0n));
+  return {
+    weeks,
+    totals: {
+      staked: total(stakes),
+      toCooldown: total(cooldowns),
+      instant: total(instants),
+      instantFee: total(instants, (e) => e.fee),
+      instantCount: instants.length,
+      cancelled: total(cancels),
+    },
+    net7d: netOver(7),
+    net30d: netOver(30),
+    queue: { now: toTokens(queueNow), weekAgo: toTokens(queueAt(now - 7 * 86_400)) },
+    largeMoves,
+  };
+}
+
+export type LockEvent = { user: Address; amount: bigint; expiry: bigint };
+export type LockPosition = { user: Address; amount: number; expiry: number };
+
+/**
+ * Every wallet's live vePENDLE position: the latest `NewLockPosition` per wallet across the
+ * contract's history (about 24K events in 1M-block chunks; closed chunks are memoised), kept where
+ * the lock has not expired. A lock cannot be withdrawn before expiry and any change re-emits the
+ * event with the new totals, so the latest event is the position. The largest are re-read with
+ * `positionData` at the latest block so the figures shown are the contract's own.
+ */
+export async function fetchLockPositions(latestBlock: bigint, verify = 12): Promise<LockPosition[]> {
+  const step = 1_000_000n;
+  const ranges: [bigint, bigint][] = [];
+  for (let b = VE_PENDLE_FROM_BLOCK; b <= latestBlock; b += step) {
+    ranges.push([b, b + step - 1n < latestBlock ? b + step - 1n : latestBlock]);
+  }
+  const read = ([from, to]: [bigint, bigint]) =>
+    client
+      .getLogs({ address: vePendle, event: newLockPositionEvent, fromBlock: from, toBlock: to })
+      .then((logs) => logs.map((l) => ({ user: l.args.user!, amount: l.args.amount!, expiry: l.args.expiry! })));
+  const chunks = await Promise.all(
+    ranges.map((r) => (r[1] === latestBlock ? read(r) : memo(cache.lockChunks, `${r[0]}-${r[1]}`, () => read(r)))),
+  );
+  const latestBy = new Map<string, LockEvent>();
+  for (const chunk of chunks) for (const e of chunk) latestBy.set(e.user.toLowerCase(), e);
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const active = [...latestBy.values()].filter((e) => e.expiry > now && e.amount > 0n).sort((a, b) => (b.amount > a.amount ? 1 : -1));
+  const verified = await client.multicall({
+    allowFailure: false,
+    blockNumber: latestBlock,
+    contracts: active.slice(0, verify).map((e) => ({ address: vePendle, abi: votingEscrowAbi, functionName: "positionData", args: [e.user] })),
+  });
+  return active.map((e, i) => {
+    const [amount, expiry] = i < verify ? verified[i] : [e.amount, e.expiry];
+    return { user: e.user, amount: toTokens(amount), expiry: Number(expiry) };
+  });
+}
+
+export type KnownWallet = {
+  address: Address;
+  label: string;
+  category: WalletCategory;
+  /** PENDLE held now, and about 7 and 30 days ago. */
+  pendle: number;
+  pendle7d: number;
+  pendle30d: number;
+  sPendle: number;
+  locked: number;
+  lockExpiry: number;
+};
+
+/** Ethereum slots are 12 s; missed slots make these a little more than the nominal span. */
+const BLOCKS_7D = 50_400n;
+const BLOCKS_30D = 216_000n;
+
+/** Balances of the labelled wallets now and at ~7 d / ~30 d ago, in four multicalls. */
+export async function fetchKnownWallets(latestBlock: bigint): Promise<KnownWallet[]> {
+  const addrs = KNOWN_WALLETS.map((w) => w.address);
+  const pendleOf = (blockNumber: bigint) =>
+    client.multicall({
+      allowFailure: false,
+      blockNumber,
+      contracts: addrs.map((a) => ({ address: pendle, abi: erc20Abi, functionName: "balanceOf", args: [a] })),
+    });
+  const [now, d7, d30, rest] = await Promise.all([
+    pendleOf(latestBlock),
+    pendleOf(latestBlock - BLOCKS_7D),
+    pendleOf(latestBlock - BLOCKS_30D),
+    client.multicall({
+      allowFailure: false,
+      blockNumber: latestBlock,
+      contracts: addrs.flatMap((a) => [
+        { address: sPendle, abi: stakedPendleAbi, functionName: "balanceOf", args: [a] } as const,
+        { address: vePendle, abi: votingEscrowAbi, functionName: "positionData", args: [a] } as const,
+      ]),
+    }),
+  ]);
+  return KNOWN_WALLETS.map((w, i) => {
+    const sBal = rest[2 * i] as bigint;
+    const [lockAmount, lockExpiry] = rest[2 * i + 1] as readonly [bigint, bigint];
+    return {
+      ...w,
+      pendle: toTokens(now[i]),
+      pendle7d: toTokens(d7[i]),
+      pendle30d: toTokens(d30[i]),
+      sPendle: toTokens(sBal),
+      locked: toTokens(lockAmount),
+      lockExpiry: Number(lockExpiry),
+    };
+  });
 }

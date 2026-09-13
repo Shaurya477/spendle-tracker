@@ -8,7 +8,7 @@ export function Methodology({ data }: { data: TrackerData }) {
   const a = data.addresses;
   return (
     <section id="methodology" className="scroll-mt-20 flex flex-col gap-8">
-      <SectionHeading index="08" title="How the numbers are made" />
+      <SectionHeading index="10" title="How the numbers are made" />
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card className="">
           <CardContent className="flex flex-col gap-4">
@@ -44,6 +44,11 @@ export function Methodology({ data }: { data: TrackerData }) {
                 <AddressLink address={a.gaugeController} label={a.gaugeController} />
                 <CopyButton value={a.gaugeController} label="Copy address" />
               </dd>
+              <dt className="text-muted-foreground">Treasury</dt>
+              <dd className="flex min-w-0 items-center gap-1">
+                <AddressLink address={a.treasury} label={a.treasury} />
+                <CopyButton value={a.treasury} label="Copy address" />
+              </dd>
             </dl>
             <div className="rule" />
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -77,6 +82,26 @@ export function Methodology({ data }: { data: TrackerData }) {
                 on an expired lock) and sPENDLE minted to wallets (stakes), matched per wallet: a
                 withdrawal counts as restaked up to what the same wallet staked within 30 days after it.
                 Week-end balances are walked back from today&apos;s through the same transfer logs.
+                Staking flows come from the staking contract&apos;s own events: <code>Staked</code> (the
+                buyback contract&apos;s stakes, which are reward distributions, are excluded),{" "}
+                <code>CooldownInitiated</code>, <code>CooldownCanceled</code>, and <code>Unstaked</code>, whose{" "}
+                <code>fee</code> is zero for a finalised cooldown and 5% for an instant unstake. The cooldown
+                queue is PENDLE held minus sPENDLE supply, walked back through those events. The
+                instant-unstake fee is the PENDLE transfer to the treasury in the same transaction.
+              </Step>
+              <Step id="method-holders" title="Holders">
+                A fixed list of labelled wallets (Pendle&apos;s multisigs and treasury, Binance Labs,
+                the Binance, Crypto.com and Gate.io wallets that hold PENDLE, the Arbitrum, Wormhole,
+                Base and Optimism bridge escrows, the Penpie, Equilibria and Stake DAO lockers, the
+                buyback contract and gauge controller) is read with <code>balanceOf</code> at the
+                latest block and at 50,400 and 216,000 blocks earlier, about 7 and 30 days. Labels are
+                Etherscan&apos;s and Dune&apos;s public tags. The split is those balances plus PENDLE in
+                the two staking contracts against total supply; &ldquo;everything else&rdquo; is the
+                remainder, which includes unlabelled exchange wallets. Lock positions are every{" "}
+                <code>NewLockPosition</code> event the vePENDLE contract has emitted, latest per wallet,
+                kept where the expiry is ahead; the largest are re-read with <code>positionData</code>.
+                The live unlock schedule is <code>slopeChanges</code> at the latest block, the snapshot
+                one at the snapshot block.
               </Step>
               <Step id="method-virtual" title="Virtual sPENDLE">
                 The same unlock schedule is read as it stood at the snapshot block and replayed: every lock gets
@@ -124,6 +149,17 @@ export function Methodology({ data }: { data: TrackerData }) {
                 from block times); limit-order and co-incentive PENDLE is paid elsewhere and is not
                 counted. The AIM card is the assignment from Pendle&apos;s incentives API (<code>/pendle-emission</code>)
                 across every chain, PENDLE per week as reported.
+              </Step>
+              <Step id="method-valuation" title="Valuation">
+                FDV is total supply × price. Circulating supply is total minus PENDLE in Pendle&apos;s
+                governance multisig, ecosystem fund, team tokens multisig and treasury, and in the
+                buyback contract and gauge controller; staked and locked PENDLE is holders&apos; and
+                counts. Annualised fees and revenue are the mean of the last four complete fee epochs
+                × 26.09; annualised buybacks are the mean USDT spent over the last six distributions ×
+                26.09. Emissions cost is AIM&apos;s weekly PENDLE assignment × 52 × today&apos;s price.
+                Revenue reaching stakers is USDT funded to the buyback contract ÷ DefiLlama revenue
+                over the last four closed funding windows. The price paid per PENDLE is each
+                distribution&apos;s USDT spent ÷ PENDLE bought.
               </Step>
               <Step id="method-assumptions" title="Assumptions">
                 Every holder is treated as &ldquo;active&rdquo; (no one forfeited an epoch by skipping a

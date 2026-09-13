@@ -115,7 +115,7 @@ export function Position({
   return (
     <section id="position" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="07"
+        index="09"
         title="Your position"
         methodId="method-assumptions"
         lede="Paste a wallet address for its holdings, sPENDLE paid per epoch, its own APR including airdrops, and what the boost costs or earns it."

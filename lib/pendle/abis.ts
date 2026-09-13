@@ -25,3 +25,16 @@ export const merkleDistributorAbi = parseAbi([
 export const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
+
+/** sPENDLE (`PStakedPendle`) events. A cooldown burns the sPENDLE at once; `Unstaked` with `fee = 0` is a finalised cooldown, with `fee > 0` an instant unstake. */
+export const stakedEvent = parseAbiItem("event Staked(address indexed user, uint256 amount)");
+export const unstakedEvent = parseAbiItem("event Unstaked(address indexed user, uint256 amountAfterFee, uint256 fee)");
+export const cooldownInitiatedEvent = parseAbiItem(
+  "event CooldownInitiated(address indexed user, uint256 amount, uint256 cooldownStart)",
+);
+export const cooldownCanceledEvent = parseAbiItem("event CooldownCanceled(address indexed user, uint256 amount)");
+
+/** vePENDLE: emitted on every lock creation, increase, or extension with the position's new totals. */
+export const newLockPositionEvent = parseAbiItem(
+  "event NewLockPosition(address indexed user, uint128 amount, uint128 expiry)",
+);

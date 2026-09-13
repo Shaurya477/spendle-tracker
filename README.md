@@ -4,12 +4,15 @@
 
 A dashboard for Pendle Protocol's transition from **vePENDLE** (locked PENDLE, deprecated Jan 2026) to **sPENDLE** (staked PENDLE). Everything is computed directly from Ethereum mainnet contracts and public APIs; there is no database and no fallback data. The finished dataset is kept in Next's data cache for five minutes and recomputed in the background once stale, so a page load is ~300 ms instead of the 20–30 s a cold read takes; the Refresh button drops the cache and reads the chain again. A GitHub Actions job (`.github/workflows/keep-warm.yml`) fetches the production page every five minutes so the cache stays fresh, including right after a deploy. A wallet lookup reuses the cached dataset and only reads the wallet's own state (one multicall, two transfer-log queries, Pendle's API), about 1.5–2 s.
 
-It answers four questions Pendle's own staking hub does not, and then lets you point all of it at a single wallet:
+It answers seven questions Pendle's own staking hub does not, and then lets you point all of it at a single wallet:
 
-1. **How much is sPENDLE, and how much is still vePENDLE?** The hub adds both into one "total staked" figure. This shows them separately, plus the loyalty-boost *virtual sPENDLE* the old lockers carry.
-2. **What does a plain sPENDLE staker earn versus a boosted vePENDLE locker?** Per-epoch APR for both, from the actual bi-weekly buyback distributions.
-3. **How much do vePENDLE lockers dilute sPENDLE stakers, and how fast does that fade?** Current dilution plus a day-by-day projection of the boost decaying to zero on 20 Jan 2028.
-4. **What does this mean for one address?** Balances, lock and virtual sPENDLE, an epoch-by-epoch reward breakdown with in-kind airdrops folded in, personal APR, what the boost has cost or paid that wallet, and its APR path to the end of the boost.
+1. **How much is sPENDLE, and how much is still vePENDLE?** The hub adds both into one "total staked" figure. This shows them separately, plus the loyalty-boost *virtual sPENDLE* the old lockers carry, and the weekly stake, cooldown and instant-unstake flows behind the sPENDLE number.
+2. **Who holds PENDLE, and how much can actually trade?** The supply split across the staking contracts, Pendle's own wallets, labelled exchanges, bridge escrows and the open float, with the labelled wallets' 7- and 30-day changes.
+3. **What does a plain sPENDLE staker earn versus a boosted vePENDLE locker?** Per-epoch APR for both, from the actual bi-weekly buyback distributions.
+4. **How much do vePENDLE lockers dilute sPENDLE stakers, and how fast does that fade?** Current dilution plus a day-by-day projection of the boost decaying to zero on 20 Jan 2028, the live unlock calendar against the snapshot one, the largest lock positions, and the three liquid lockers' share.
+5. **What does the market pay for it?** FDV, market cap, price to fees, fee and buyback yields, buybacks net of AIM emissions, the share of revenue that reaches stakers, and what each buyback paid per PENDLE.
+6. **Is the bullish case holding up?** Nine signals, each judged against a stated test, recomputed every epoch.
+7. **What does this mean for one address?** Balances, lock and virtual sPENDLE, an epoch-by-epoch reward breakdown with in-kind airdrops folded in, personal APR, what the boost has cost or paid that wallet, and its APR path to the end of the boost.
 
 ## Run it
 
@@ -57,8 +60,14 @@ Every APR in the app is **token-denominated**: sPENDLE distributed divided by re
 Annualisation is simple, not compounded: each epoch's ratio is multiplied by `365.25 / 14 = 26.09`. "Latest epoch" is the most recent distribution on its own. "Trailing 6 epochs" is the arithmetic mean of the last six per-epoch APRs, each computed against its own denominator at that block (so it is not `Σ distributed ÷ current stake`). In-kind airdrops of other tokens are excluded because pricing them would break the token-only denomination.
 | Dilution | boost premium share = `(virtual − locked) ÷ (eligible sPENDLE + virtual)`. This is both the share of each epoch's rewards captured by the boost *above* a 1× count of the locked PENDLE, and the haircut on a plain staker's APR compared with a world where lockers counted 1× |
 | Projection | The snapshot schedule replayed daily to 20 Jan 2028 (+1 week). Two scenarios for the sPENDLE side: supply held flat, or every unlocked PENDLE restaked as sPENDLE on its unlock day. The APR line holds the latest epoch's payout flat |
+| Staking flows | The staking contract's `Staked`, `CooldownInitiated`, `CooldownCanceled` and `Unstaked(amountAfterFee, fee)` events since the snapshot, bucketed by vePENDLE week. `Staked` from the buyback contract (reward distributions) is excluded so the series is holder behaviour. `Unstaked` with `fee = 0` is a finalised cooldown, with `fee > 0` an instant unstake (gross = after-fee + fee). The cooldown queue is `PENDLE.balanceOf(sPENDLE) − totalSupply()` today, walked back through starts, cancellations and finalisations. The fee is the PENDLE transfer to the treasury (`0x8270…b592`) in the same transaction |
+| Largest moves | The biggest single stakes, cooldown starts, instant unstakes and expired-lock withdrawals in the last 30 days, from the same logs |
+| Live unlock calendar | `slopeChanges` at the latest block, against the same buckets at the snapshot block. Where a live week holds more than the snapshot week a lock was extended or added since; the boost of such a lock is unchanged |
+| Lock positions | Every `NewLockPosition(user, amount, expiry)` the vePENDLE contract has emitted (from block 15.9M, 1M-block chunks, closed chunks memoised), latest per wallet, kept where `expiry > now`; the twelve largest are re-read with `positionData` at the latest block. Penpie, Equilibria and Stake DAO are the liquid lockers |
+| Holders | A fixed list of labelled wallets (Pendle governance multisig, ecosystem fund, team tokens multisig, treasury; Binance Labs; the Binance, Crypto.com and Gate.io wallets that hold PENDLE; Arbitrum, Wormhole Portal, Base and Optimism bridge escrows; the three lockers; buyback contract and gauge controller) read with `balanceOf` at the latest block and at 50,400 and 216,000 blocks earlier (~7 and ~30 days). Labels are Etherscan's and Dune's public tags. The split is those balances plus the two staking contracts against `totalSupply()`; "everything else" is the remainder and includes unlabelled exchange wallets |
+| Valuation | FDV = total supply × price; circulating = total − Pendle's four wallets − buyback contract − gauge controller (staked and locked PENDLE is holders' and counts). Annualised fees and revenue = mean of the last four complete fee epochs × 26.09; annualised buybacks = mean USDT spent over the last six distributions × 26.09; emissions cost = AIM weekly PENDLE × 52 × price. Revenue reaching stakers = USDT funded ÷ DefiLlama revenue over the last four closed funding windows. Price paid per PENDLE = each distribution's USDT spent ÷ PENDLE bought |
 
-### Fees, revenue, and incentives (section 04)
+### Fees, revenue, and incentives (section 05)
 
 | Figure | Source |
 | --- | --- |
@@ -106,7 +115,7 @@ The hub UI itself (`app.pendle.finance/spendle/stake/in`, read 11 Sep 2026 06:18
 | --- | --- | --- |
 | Total PENDLE Staked | 97,869,428 | 97,869,428 (sPENDLE supply + PENDLE in vePENDLE) |
 | Last Epoch Distribution | 199,338 | epoch 14, 14 Aug 2026: 199,338. Onchain there is a later distribution of 94,065 sPENDLE on 28 Aug 2026 that the hub and API had not yet surfaced |
-| Fees Collected Since 08 Sep 2026 | $42,130 | equals the API's `fees` for that epoch. For closed epochs that figure is the USDT Pendle sent to the buyback contract, which is the "Funded" column in section 04 (matches in 9 of 10 closed epochs); the open epoch has no funding yet |
+| Fees Collected Since 08 Sep 2026 | $42,130 | equals the API's `fees` for that epoch. For closed epochs that figure is the USDT Pendle sent to the buyback contract, which is the "Funded" column in section 05 (matches in 9 of 10 closed epochs); the open epoch has no funding yet |
 
 The hub's "Yield Distributed Every 2 Saturdays" corresponds to the Friday-UTC transactions in the ledger (Saturday in UTC+8). Because the hub publishes no APR, the APR figures here are derived from the onchain distributions alone.
 

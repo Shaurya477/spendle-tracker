@@ -249,11 +249,11 @@ export function Thesis({ data }: { data: TrackerData }) {
   return (
     <section id="thesis" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="06"
+        index="08"
         title="Bullish $PENDLE Thesis"
         lede={
           <>
-            Eight signals from the sections above, each judged against a stated test. Inputs: distribution{" "}
+            Nine signals from the sections above, each judged against a stated test. Inputs: distribution{" "}
             {t.evaluated.distributionEpoch} ({fmtDate(t.evaluated.distributionAt)}) and the fee epoch from{" "}
             {fmtDate(t.evaluated.feeEpochStart)}.
           </>

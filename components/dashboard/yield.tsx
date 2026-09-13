@@ -15,7 +15,7 @@ export function Yield({ data }: { data: TrackerData }) {
   return (
     <section id="yield" className="scroll-mt-20 flex flex-col gap-8">
       <SectionHeading
-        index="02"
+        index="03"
         title="sPENDLE yield"
         methodId="method-rewards"
         lede={
@@ -132,7 +132,9 @@ export function Yield({ data }: { data: TrackerData }) {
               />
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Multipliers fall to 1× at unlock; a lock ending next week is already ~1×.
+              Multipliers fall to 1× at unlock; a lock ending next week is already ~1×. The average snapshot
+              lock has {((loyalty.avgMultiplier - 1) / 3 * 2).toFixed(1)} years left, which is what the{" "}
+              {fmtMult(loyalty.avgMultiplier)} average multiplier means.
             </p>
           </CardContent>
         </Card>
