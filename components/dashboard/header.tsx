@@ -69,21 +69,21 @@ export function Rail({ data, sections }: { data: TrackerData; sections: NavSecti
   );
 }
 
-/** Phones and tablets: wordmark, menu knob, and the quote in one compact block above the content. */
+/**
+ * Phones and tablets: wordmark and menu knob; the quote lives inside the menu. The negative margin
+ * pulls the hero up under the header, closer than the page's section gap.
+ */
 export function MobileHeader({ data }: { data: TrackerData }) {
   return (
-    <header className="flex flex-col gap-6 lg:hidden">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Wordmark className="text-[2.4rem]" />
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <PendleCoin className="size-3.5 shrink-0" />
-            Pendle · Ethereum mainnet
-          </div>
+    <header className="-mb-8 flex items-start justify-between gap-4 sm:-mb-14 lg:hidden">
+      <div className="flex flex-col gap-1.5">
+        <Wordmark className="text-[2.4rem]" />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <PendleCoin className="size-3.5 shrink-0" />
+          Pendle · Ethereum mainnet
         </div>
-        <HeaderMenu repoUrl={REPO_URL} />
       </div>
-      <Price data={data} />
+      <HeaderMenu repoUrl={REPO_URL} quote={<Price data={data} />} />
     </header>
   );
 }

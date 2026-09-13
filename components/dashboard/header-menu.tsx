@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Moon, RefreshCw, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GitHubMark } from "./github-mark";
@@ -11,8 +11,11 @@ const BAR = "absolute left-0 top-1/2 h-[1.5px] w-full rounded-full bg-current tr
 const ITEM =
   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-foreground hover:bg-muted disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0";
 
-/** Phone-width replacement for the three header buttons: one knob that opens a right-aligned menu. */
-export function HeaderMenu({ repoUrl }: { repoUrl: string }) {
+/**
+ * Phone-width replacement for the rail's lower half: one knob that opens a right-aligned menu with
+ * the live quote on top and the three actions under it.
+ */
+export function HeaderMenu({ repoUrl, quote }: { repoUrl: string; quote: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useDarkTheme();
   const [pending, refresh] = useRefreshTracker();
@@ -65,8 +68,9 @@ export function HeaderMenu({ repoUrl }: { repoUrl: string }) {
         <div
           id={menuId}
           role="menu"
-          className="absolute right-0 top-9 z-20 w-52 rounded-xl border border-border bg-popover p-1.5 shadow-xl"
+          className="absolute right-0 top-9 z-20 w-64 rounded-xl border border-border bg-popover p-1.5 shadow-xl"
         >
+          <div className="border-b border-border px-3 pb-3 pt-2">{quote}</div>
           <button type="button" role="menuitem" className={ITEM} onClick={() => setDark(!dark)}>
             {dark ? <Sun /> : <Moon />}
             {dark ? "Light mode" : "Dark mode"}
