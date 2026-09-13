@@ -3,21 +3,39 @@ import { ArrowUpRight } from "lucide-react";
 import { cn } from "cn";
 import { ETHERSCAN } from "@/lib/pendle/config";
 import { shortHash } from "@/lib/format";
+import { InfoTip } from "./info-tip";
 
 /** Small sentence-case label that names the figure or block under it. */
-export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("text-xs font-medium text-muted-foreground", className)}>{children}</div>;
+export function Eyebrow({
+  children,
+  className,
+  tip,
+  tipLabel,
+}: {
+  children: ReactNode;
+  className?: string;
+  tip?: ReactNode;
+  tipLabel?: string;
+}) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground", className)}>
+      <span>{children}</span>
+      {tip && <InfoTip label={tipLabel ?? (typeof children === "string" ? children : "this figure")}>{tip}</InfoTip>}
+    </div>
+  );
 }
 
 export function SectionHeading({
   index,
   title,
   lede,
+  methodId,
   className,
 }: {
   index: string;
   title: ReactNode;
   lede?: ReactNode;
+  methodId?: string;
   className?: string;
 }) {
   return (
@@ -27,6 +45,14 @@ export function SectionHeading({
         <h2 className="font-display text-[2rem] leading-none sm:text-[2.6rem]">{title}</h2>
       </div>
       {lede && <p className="max-w-[68ch] text-[15px] leading-relaxed text-muted-foreground">{lede}</p>}
+      {methodId && (
+        <a
+          href={`#${methodId}`}
+          className="self-start text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground"
+        >
+          How these numbers are made
+        </a>
+      )}
     </div>
   );
 }
@@ -37,6 +63,7 @@ export function Stat({
   unit,
   usd,
   sub,
+  tip,
   tone,
   className,
   size = "md",
@@ -46,13 +73,16 @@ export function Stat({
   unit?: ReactNode;
   usd?: ReactNode;
   sub?: ReactNode;
+  tip?: ReactNode;
   tone?: "spendle" | "vependle" | "boost";
   className?: string;
   size?: "md" | "lg";
 }) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Eyebrow>{label}</Eyebrow>
+      <Eyebrow tip={tip} tipLabel={typeof label === "string" ? label : undefined}>
+        {label}
+      </Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span
           className={cn(

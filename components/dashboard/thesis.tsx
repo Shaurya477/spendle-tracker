@@ -36,9 +36,9 @@ export function Thesis({ data }: { data: TrackerData }) {
         lede={
           <>
             Each signal is computed from the sections above and judged against a stated test; failures
-            are listed, not dropped. Re-evaluated when a distribution lands or a fee epoch closes; last
-            inputs: distribution {t.evaluated.distributionEpoch} ({fmtDate(t.evaluated.distributionAt)}
-            ) and the fee epoch from {fmtDate(t.evaluated.feeEpochStart)}.
+            are listed, not dropped. Inputs: distribution {t.evaluated.distributionEpoch} (
+            {fmtDate(t.evaluated.distributionAt)}) and the fee epoch from{" "}
+            {fmtDate(t.evaluated.feeEpochStart)}.
           </>
         }
       />

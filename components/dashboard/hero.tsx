@@ -1,6 +1,7 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtInt, fmtPct, fmtUsdCompact } from "@/lib/format";
 import { Ruler } from "./ruler";
+import { InfoTip } from "./info-tip";
 
 /**
  * Opens the page with the thing that defines sPENDLE: the fortnightly distribution. The latest
@@ -43,7 +44,13 @@ export function Hero({ data }: { data: TrackerData }) {
 
       <dl className="grid gap-6 sm:grid-cols-3">
         <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-muted-foreground">Plain sPENDLE APR, latest epoch</dt>
+          <dt className="flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground">
+            <span>Plain sPENDLE APR, latest epoch</span>
+            <InfoTip label="Plain sPENDLE APR, latest epoch">
+              sPENDLE distributed ÷ (all sPENDLE + virtual sPENDLE) × 26.09 epochs a year. Token terms:
+              rewards are paid in the staked asset, so PENDLE&apos;s dollar price cancels out.
+            </InfoTip>
+          </dt>
           <dd className="font-figure text-3xl text-spendle sm:text-4xl">{fmtPct(y.latest.aprPlain)}</dd>
           <dd className="text-xs text-muted-foreground">
             {fmtPct(y.trailing.aprPlain)} trailing mean over {y.trailing.epochs} epochs, in PENDLE terms
@@ -57,11 +64,17 @@ export function Hero({ data }: { data: TrackerData }) {
           </dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-muted-foreground">Same payout, sPENDLE only, no boost</dt>
+          <dt className="flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground">
+            <span>Same payout, sPENDLE only, no boost</span>
+            <InfoTip label="Same payout, sPENDLE only, no boost">
+              Latest payout ÷ {fmtCompact(data.sPendle.eligible)} sPENDLE × 26.09: plain APR once every
+              snapshot lock has unlocked, if none of that PENDLE is restaked and each distribution stays
+              at the latest amount.
+            </InfoTip>
+          </dt>
           <dd className="font-figure text-3xl sm:text-4xl">{fmtPct(y.aprSolo)}</dd>
           <dd className="text-xs text-muted-foreground">
-            latest payout ÷ {fmtCompact(data.sPendle.eligible)} sPENDLE, if unlocking PENDLE is not
-            restaked; boost ends {fmtDate(data.loyalty.expiresAt)}
+            if unlocking PENDLE is not restaked; boost ends {fmtDate(data.loyalty.expiresAt)}
           </dd>
         </div>
       </dl>

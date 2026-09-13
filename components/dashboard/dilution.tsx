@@ -2,7 +2,7 @@ import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtMult, fmtPct } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { DecayChart, DilutionChart } from "./charts";
-import { Eyebrow, SectionHeading, Stat, Swatch } from "./primitives";
+import { Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
 
 export function Dilution({ data }: { data: TrackerData }) {
   const { dilution, loyalty, sPendle, projection, unlocks, yield: y } = data;
@@ -15,12 +15,12 @@ export function Dilution({ data }: { data: TrackerData }) {
       <SectionHeading
         index="03"
         title="Boost dilution"
+        methodId="method-virtual"
         lede={
           <>
-            Virtual sPENDLE shares the reward pool with real sPENDLE. Locked PENDLE counts 1×;
-            everything above 1× is the loyalty boost, paid for by every 1× unit, sPENDLE and locked
-            PENDLE alike. Each multiplier falls linearly to 1× at unlock, so the premium shrinks every
-            day and reaches zero on{" "}
+            Virtual sPENDLE shares the reward pool with real sPENDLE; the part above a 1× count of
+            locked PENDLE is the boost premium, paid by every 1× unit. Multipliers fall linearly to 1×
+            at unlock, so the premium reaches zero on{" "}
             <span className="tabular text-foreground">{fmtDate(loyalty.expiresAt)}</span>.
           </>
         }
@@ -34,7 +34,8 @@ export function Dilution({ data }: { data: TrackerData }) {
               value={fmtPct(dilution.premiumShare, 1)}
               tone="boost"
               size="lg"
-              sub="share of each distribution taken by the boost premium; equal to the haircut on plain APR vs everyone at 1×"
+              sub="share of each distribution taken by the boost premium"
+              tip="Boost premium ÷ reward-eligible total. It is also how much lower plain APR is than it would be with every unit counted at 1×."
             />
           </CardContent>
         </Card>
@@ -56,7 +57,7 @@ export function Dilution({ data }: { data: TrackerData }) {
               value={oneYear ? fmtPct(oneYear.aprPlainFlat) : "—"}
               tone="spendle"
               size="lg"
-              sub={`from ${fmtPct(y.latest.aprPlain)} today, if each distribution stayed at the latest ${fmtCompact(y.latest.amount)} sPENDLE and sPENDLE supply stayed flat`}
+              sub={`from ${fmtPct(y.latest.aprPlain)} today; latest distribution and sPENDLE supply held flat`}
             />
           </CardContent>
         </Card>
@@ -76,13 +77,9 @@ export function Dilution({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <Eyebrow>Projected virtual sPENDLE</Eyebrow>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Snapshot lock schedule replayed forward. Daily resolution; steps are weekly unlock
-                  batches.
-                </p>
-              </div>
+              <Eyebrow tip="The snapshot lock schedule replayed forward at daily resolution; the steps are weekly unlock batches. Locks changed after the snapshot do not affect the boost.">
+                Projected virtual sPENDLE
+              </Eyebrow>
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Swatch tone="vependle" /> 1× base
@@ -102,22 +99,18 @@ export function Dilution({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <Eyebrow>Projected dilution &amp; plain APR</Eyebrow>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Solid: sPENDLE supply held flat. Dashed: PENDLE restaked as sPENDLE the day its lock
-                  expires. Right axis: plain APR if distributions stay at the latest amount.
-                </p>
-              </div>
+              <Eyebrow tip="Flat: sPENDLE supply held at today's. Restaked: unlocking PENDLE staked as sPENDLE the day its lock expires. Plain APR, right axis: each distribution held at the latest amount.">
+                Projected dilution &amp; plain APR
+              </Eyebrow>
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="boost" /> dilution, flat
+                  <LineSwatch tone="boost" /> dilution, sPENDLE flat
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="vependle" /> dilution, restaked
+                  <LineSwatch tone="vependle" dashed /> dilution, unlocks restaked
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="spendle" /> plain APR
+                  <LineSwatch tone="spendle" /> plain APR, right axis
                 </span>
               </div>
             </div>
@@ -131,9 +124,8 @@ export function Dilution({ data }: { data: TrackerData }) {
           <div className="flex flex-col gap-2">
             <Eyebrow>Largest unlock weeks ahead</Eyebrow>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {fmtCompact(remainingNow)} snapshot-eligible PENDLE is still locked across{" "}
-              {unlocks.length} weekly expiries. Most of it was max-locked in the final week before the
-              snapshot and unlocks together in January 2028.
+              {fmtCompact(remainingNow)} snapshot PENDLE still locked across {unlocks.length} weekly
+              expiries; most was max-locked just before the snapshot and unlocks in January 2028.
             </p>
           </div>
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

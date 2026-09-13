@@ -52,9 +52,9 @@ export function buildThesis(data: TrackerData): Thesis {
       : `Supply is ${fmtCompact(pendleSupply.now)} PENDLE, ${supplyDelta > 0 ? "up" : "down"} ${fmtCompact(Math.abs(supplyDelta))} since the 29 Jan snapshot.`;
   const headline: Signal = {
     id: "ultra-sound",
-    title: "Buybacks outrun emissions",
+    title: "Buybacks vs emissions",
     value: fmtMult(ratio, 1),
-    detail: `The buyback is the sPENDLE yield: the latest distribution bought ${fmtInt(latest.amount)} PENDLE on the market for ${fmtUsd(latest.usdtSpent)} USDT of protocol fees and paid it to stakers. AIM currently assigns ${fmtCompact(revenue.aim.pendle)} PENDLE a week, ${fmtCompact(emissionsPerEpoch)} per 14-day epoch, across every chain and stream. Since 29 Jan, ${fmtCompact(data.yield.totalDistributed)} PENDLE has been bought back for ${fmtUsd(data.yield.totalBuybackUsd)}. ${supplyNote}`,
+    detail: `Latest distribution: ${fmtInt(latest.amount)} PENDLE bought for ${fmtUsd(latest.usdtSpent)} USDT of fees and paid to stakers. AIM assigns ${fmtCompact(revenue.aim.pendle)} PENDLE a week, ${fmtCompact(emissionsPerEpoch)} per 14-day epoch, all chains and streams. ${supplyNote}`,
     test: "PENDLE bought back in the latest distribution > 2 × the weekly AIM assignment",
     passing: ratio > 1,
   };
@@ -68,7 +68,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "staking-rising",
     title: "Eligible sPENDLE growth",
     value: signedPct(stakedGrowth),
-    detail: `Eligible sPENDLE, every sPENDLE including unclaimed rewards, is ${fmtCompact(sPendle.eligible)}, from ${fmtCompact(first.eligibleSPendle)} at the first distribution (${fmtDate(first.timestamp)}) and ${fmtCompact(prev.eligibleSPendle)} at the latest. ${fmtPct(exitShare, 1)} of sPENDLE is in the 14-day cooldown queue.`,
+    detail: `Eligible sPENDLE is ${fmtCompact(sPendle.eligible)}, from ${fmtCompact(first.eligibleSPendle)} at the first distribution (${fmtDate(first.timestamp)}) and ${fmtCompact(prev.eligibleSPendle)} at the latest. ${fmtPct(exitShare, 1)} of sPENDLE is in the cooldown queue.`,
     test: "eligible sPENDLE today > eligible sPENDLE at the latest distribution",
     passing: sPendle.eligible > prev.eligibleSPendle,
   };
@@ -79,7 +79,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "illiquid-share",
     title: "Supply staked or locked",
     value: fmtPct(illiquid, 1),
-    detail: `${fmtCompact(sPendle.supply)} sPENDLE plus ${fmtCompact(vePendle.pendleHeld)} PENDLE still in the old vePENDLE lock contract, of ${fmtCompact(pendleSupply.now)} total supply. sPENDLE leaves through a 14-day cooldown or a 5% fee; ${fmtCompact(vePendle.activeLocked)} of the locked PENDLE is still under an active lock, most of it until January 2028.`,
+    detail: `${fmtCompact(sPendle.supply)} sPENDLE + ${fmtCompact(vePendle.pendleHeld)} PENDLE in the vePENDLE contract, of ${fmtCompact(pendleSupply.now)} total supply. ${fmtCompact(vePendle.activeLocked)} of the locked PENDLE is under an active lock.`,
     test: "> 25% of PENDLE supply is staked or locked",
     passing: illiquid > 0.25,
   };
@@ -91,7 +91,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "fees-rising",
     title: "Gross fees vs 4-epoch mean",
     value: signedPct(change(latestEpoch.fees, priorFees)),
-    detail: `Gross fees were ${fmtUsd(latestEpoch.fees)} in the epoch from ${fmtDate(latestEpoch.start)}, against a ${fmtUsd(priorFees)} mean over the four epochs before it. DefiLlama books a fee when the tokens reach Pendle's treasury, so single epochs are lumpy.`,
+    detail: `${fmtUsd(latestEpoch.fees)} gross in the epoch from ${fmtDate(latestEpoch.start)}, against a ${fmtUsd(priorFees)} mean over the four before it. Single epochs are lumpy: DefiLlama books fees on treasury arrival.`,
     test: "latest complete epoch gross fees > mean of the prior four",
     passing: latestEpoch.fees > priorFees,
   };
@@ -106,7 +106,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "funding-rising",
     title: "Buyback funding, last closed",
     value: signedPct(change(latestClosed.buybackFunded, priorFunded)),
-    detail: `${fmtUsd(latestClosed.buybackFunded)} USDT reached the buyback contract for the epoch from ${fmtDate(latestClosed.start)}, against a ${fmtUsd(priorFunded)} mean over the four before it.${open ? ` The ${fmtDate(open.start)} epoch has ${fmtUsd(open.buybackFunded)} so far with its window still open.` : ""}`,
+    detail: `${fmtUsd(latestClosed.buybackFunded)} USDT funded for the epoch from ${fmtDate(latestClosed.start)}, against a ${fmtUsd(priorFunded)} mean over the four before it.${open ? ` The ${fmtDate(open.start)} epoch has ${fmtUsd(open.buybackFunded)} so far, window open.` : ""}`,
     test: "USDT funded for the latest closed epoch > mean of the prior four",
     passing: latestClosed.buybackFunded > priorFunded,
   };
@@ -119,7 +119,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "emissions-falling",
     title: "LP emissions, Ethereum",
     value: signedPct(change(latestEmit.emittedPendle, priorEmit)),
-    detail: `Emissions to Ethereum LPs were ${fmtInt(latestEmit.emittedPendle)} PENDLE in the epoch from ${fmtDate(latestEmit.start)}, paid from the gauge controller, against ${fmtInt(priorEmit)} mean over the four before it and ${fmtInt(emitting[0].emittedPendle)} in the first epoch after the snapshot. Performance stream on Ethereum only; limit-order and other chains' PENDLE is not in this figure.`,
+    detail: `${fmtInt(latestEmit.emittedPendle)} PENDLE to Ethereum LPs in the epoch from ${fmtDate(latestEmit.start)}, against ${fmtInt(priorEmit)} mean over the four before it and ${fmtInt(emitting[0].emittedPendle)} in the first epoch after the snapshot. Ethereum gauge, Performance stream only.`,
     test: "LP emissions from the Ethereum gauge in the latest complete epoch < mean of the prior four",
     passing: latestEmit.emittedPendle < priorEmit,
   };
@@ -129,7 +129,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "apr-improving",
     title: "Plain APR, latest",
     value: fmtPct(latest.aprPlain),
-    detail: `Plain sPENDLE APR was ${fmtPct(latest.aprPlain)} on the latest distribution (${fmtDate(latest.timestamp)}), against a ${fmtPct(data.yield.trailing.aprPlain)} mean over the last ${data.yield.trailing.epochs} epochs. Token terms; PENDLE price cancels out.`,
+    detail: `${fmtPct(latest.aprPlain)} on the latest distribution (${fmtDate(latest.timestamp)}), against a ${fmtPct(data.yield.trailing.aprPlain)} mean over the last ${data.yield.trailing.epochs} epochs. Token terms.`,
     test: "latest plain APR > trailing 6-epoch mean",
     passing: latest.aprPlain > data.yield.trailing.aprPlain,
   };
@@ -141,7 +141,7 @@ export function buildThesis(data: TrackerData): Thesis {
     id: "dilution-fading",
     title: "Dilution fades on schedule",
     value: `${fmtPct(dilution.premiumShare, 1)} → 0`,
-    detail: `The loyalty boost takes ${fmtPct(dilution.premiumShare, 1)} of every distribution today, ${fmtPct(yearAhead.dilutionFlat, 1)} a year from now, and nothing after ${fmtDate(loyalty.expiresAt)}. Holding the latest distribution flat and restaking none of the unlocking PENDLE, plain APR rises from ${fmtPct(latest.aprPlain)} to ${fmtPct(end.aprPlainFlat)}.`,
+    detail: `The boost takes ${fmtPct(dilution.premiumShare, 1)} of each distribution today, ${fmtPct(yearAhead.dilutionFlat, 1)} in a year, nothing after ${fmtDate(loyalty.expiresAt)}. Plain APR goes from ${fmtPct(latest.aprPlain)} to ${fmtPct(end.aprPlainFlat)} if the distribution stays flat and unlocking PENDLE is not restaked.`,
     test: "boost premium share > 0 and its end date is in the future",
     passing: dilution.premiumShare > 0 && loyalty.expiresAt > data.block.timestamp,
   };

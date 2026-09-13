@@ -12,7 +12,7 @@ export function Ledger({ data }: { data: TrackerData }) {
       <SectionHeading
         index="05"
         title="Distribution ledger"
-        lede="Every distribution so far: PENDLE bought and USDT paid, sPENDLE handed to stakers, the eligible and virtual sPENDLE it was split over (unclaimed rewards included), and that epoch's plain and boosted APR."
+        lede="Every distribution: PENDLE bought and USDT paid, sPENDLE paid to stakers, the eligible (unclaimed rewards included) and virtual sPENDLE it was split over, and that epoch's plain and boosted APR."
       />
       <Card className="">
         <CardContent className="px-0">
