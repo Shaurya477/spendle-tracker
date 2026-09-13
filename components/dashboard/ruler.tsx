@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import type { Distribution } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtInt, fmtPct, fmtUsd, fmtUsdPrice } from "@/lib/format";
@@ -20,9 +20,55 @@ const subscribeHover = (cb: () => void) => {
   mq.addEventListener("change", cb);
   return () => mq.removeEventListener("change", cb);
 };
-/** True on touch devices, where there is no hover: the first tap selects a bar, the second opens it. */
+/** True on touch devices, where there is no hover: a tap selects a bar and its details show in a panel under the chart. */
 function useTouch() {
   return useSyncExternalStore(subscribeHover, () => matchMedia(HOVER_NONE).matches, () => false);
+}
+
+/** One distribution's figures: the hover card on desktop, the panel under the chart on touch devices. */
+function Details({ d, prev, footer }: { d: Distribution; prev: Distribution | null; footer: React.ReactNode }) {
+  const change = prev ? d.amount / prev.amount - 1 : null;
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-medium text-foreground">Distribution {d.epoch}</span>
+        <span className="tabular shrink-0 text-muted-foreground">{fmtDate(d.timestamp)}</span>
+      </div>
+      <div className="font-figure mt-1 text-xl leading-none text-spendle">
+        {fmtInt(d.amount)} <span className="text-xs text-muted-foreground">sPENDLE</span>
+      </div>
+      <div className="tabular mt-1 text-muted-foreground">
+        Bought for {fmtUsd(d.usdtSpent)} at {fmtUsdPrice(d.usdtSpent / d.pendleBought)} average
+        {change !== null && (
+          <>
+            ,{" "}
+            <span className={change >= 0 ? "text-spendle" : "text-boost"}>
+              {change >= 0 ? "+" : ""}
+              {fmtPct(change, 0)}
+            </span>{" "}
+            vs the previous one
+          </>
+        )}
+      </div>
+      <dl className="tabular mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="shrink-0 text-muted-foreground">Plain APR</dt>
+          <dd className="text-spendle">{fmtPct(d.aprPlain)}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="shrink-0 text-muted-foreground">Boosted, average locker</dt>
+          <dd className="text-vependle">{fmtPct(d.aprBoostedAvg)}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="shrink-0 text-muted-foreground">Split over</dt>
+          <dd className="text-right text-foreground">
+            {fmtCompact(d.eligibleSPendle)} sPENDLE + {fmtCompact(d.virtualSPendle)} virtual
+          </dd>
+        </div>
+      </dl>
+      {footer}
+    </>
+  );
 }
 
 /**
@@ -46,8 +92,8 @@ export function Ruler({
   const view = bars.slice(start, end);
   const atLatest = end === n;
 
-  // Touch: a tap selects the bar and shows its card; a second tap on the same bar opens Etherscan.
-  // Tapping anywhere outside the chart clears the selection.
+  // Touch: a tap selects a bar and the panel under the chart shows its figures with an Etherscan
+  // link; nothing covers the bars. Tapping anywhere outside the chart clears the selection.
   const touch = useTouch();
   const [selected, setSelected] = useState<string | null>(null);
   const chart = useRef<HTMLDivElement>(null);
@@ -108,7 +154,6 @@ export function Ruler({
         {view.map((d, i) => {
           const k = start + i;
           const prev = k > 0 ? bars[k - 1] : null;
-          const change = prev ? d.amount / prev.amount - 1 : null;
           const px = x(d.timestamp);
           // The card sits at the top of the chart. On phones it is centred over the chart; from sm up
           // it sits beside the bar, to its right on the left half and to its left on the right half,
@@ -121,11 +166,11 @@ export function Ruler({
                 href={`${ETHERSCAN}/tx/${d.txHash}`}
                 target="_blank"
                 rel="noreferrer"
-                aria-label={`Distribution ${d.epoch}, ${fmtDate(d.timestamp)}: ${fmtInt(d.amount)} sPENDLE. Opens the transaction on Etherscan.`}
+                aria-label={`Distribution ${d.epoch}, ${fmtDate(d.timestamp)}: ${fmtInt(d.amount)} sPENDLE.${touch ? "" : " Opens the transaction on Etherscan."}`}
                 className={cn("ruler-link group absolute bottom-0 -translate-x-1/2", isSelected && "is-selected")}
                 style={{ left: `${px}%`, height: `${h(d.amount)}%`, width: "clamp(10px, 4%, 28px)" }}
                 onClick={(e) => {
-                  if (!touch || isSelected) return;
+                  if (!touch) return;
                   e.preventDefault();
                   setSelected(d.txHash);
                 }}
@@ -138,70 +183,30 @@ export function Ruler({
                   )}
                   style={{ "--i": i } as React.CSSProperties}
                 />
-                <span
-                  className={cn(
-                    "tabular absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-spendle transition-opacity group-hover:opacity-0",
-                    isSelected && "opacity-0",
-                  )}
-                >
+                <span className="tabular absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-spendle transition-opacity group-hover:opacity-0">
                   {fmtCompact(d.amount)}
                 </span>
               </a>
-              <div
-                aria-hidden="true"
-                className={cn(
-                  "ruler-tip pointer-events-none absolute top-0 left-0 z-10 w-full sm:left-(--px) sm:w-0",
-                  isSelected && "is-open",
-                )}
-                style={{ "--px": `${px}%` } as React.CSSProperties}
-              >
+              {!touch && (
                 <div
-                  className={cn(
-                    "absolute top-0 left-1/2 w-64 max-w-full -translate-x-1/2 rounded-md border border-border bg-popover p-3 text-[11px] leading-snug shadow-lg shadow-black/25 sm:max-w-none",
-                    side,
-                  )}
+                  aria-hidden="true"
+                  className="ruler-tip pointer-events-none absolute top-0 z-10 w-0"
+                  style={{ left: `${px}%` }}
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium text-foreground">Distribution {d.epoch}</span>
-                    <span className="tabular shrink-0 text-muted-foreground">{fmtDate(d.timestamp)}</span>
-                  </div>
-                  <div className="font-figure mt-1 text-xl leading-none text-spendle">
-                    {fmtInt(d.amount)} <span className="text-xs text-muted-foreground">sPENDLE</span>
-                  </div>
-                  <div className="tabular mt-1 text-muted-foreground">
-                    Bought for {fmtUsd(d.usdtSpent)} at {fmtUsdPrice(d.usdtSpent / d.pendleBought)} average
-                    {change !== null && (
-                      <>
-                        ,{" "}
-                        <span className={change >= 0 ? "text-spendle" : "text-boost"}>
-                          {change >= 0 ? "+" : ""}
-                          {fmtPct(change, 0)}
-                        </span>{" "}
-                        vs the previous one
-                      </>
+                  <div
+                    className={cn(
+                      "absolute top-0 w-64 rounded-md border border-border bg-popover p-3 text-[11px] leading-snug shadow-lg shadow-black/25",
+                      side,
                     )}
-                  </div>
-                  <dl className="tabular mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <dt className="shrink-0 text-muted-foreground">Plain APR</dt>
-                      <dd className="text-spendle">{fmtPct(d.aprPlain)}</dd>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <dt className="shrink-0 text-muted-foreground">Boosted, average locker</dt>
-                      <dd className="text-vependle">{fmtPct(d.aprBoostedAvg)}</dd>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <dt className="shrink-0 text-muted-foreground">Split over</dt>
-                      <dd className="text-right text-foreground">
-                        {fmtCompact(d.eligibleSPendle)} sPENDLE + {fmtCompact(d.virtualSPendle)} virtual
-                      </dd>
-                    </div>
-                  </dl>
-                  <div className="mt-2 text-muted-foreground">
-                    {touch ? "Tap the bar again to open the transaction on Etherscan." : "Opens the transaction on Etherscan."}
+                  >
+                    <Details
+                      d={d}
+                      prev={prev}
+                      footer={<div className="mt-2 text-muted-foreground">Opens the transaction on Etherscan.</div>}
+                    />
                   </div>
                 </div>
-              </div>
+              )}
             </Fragment>
           );
         })}
@@ -233,6 +238,36 @@ export function Ruler({
           </span>
         ))}
       </div>
+
+      {touch && (
+        <div className="rounded-md border border-border bg-background/40 px-3 py-2.5 text-[11px] leading-snug">
+          {(() => {
+            const k = Math.max(0, bars.findIndex((b) => b.txHash === (selected ?? view[view.length - 1].txHash)));
+            const d = bars[k];
+            return (
+              <Details
+                d={d}
+                prev={k > 0 ? bars[k - 1] : null}
+                footer={
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {selected === null ? "Latest shown. Tap a bar for another." : "Tap outside the chart to clear."}
+                    </span>
+                    <a
+                      href={`${ETHERSCAN}/tx/${d.txHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-foreground hover:text-spendle"
+                    >
+                      Transaction <ArrowUpRight className="size-3" />
+                    </a>
+                  </div>
+                }
+              />
+            );
+          })()}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Button
