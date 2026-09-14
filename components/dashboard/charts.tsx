@@ -21,6 +21,7 @@ import type { FlowWeek, MigrationWeek } from "@/lib/pendle/chain";
 import type { Valuation } from "@/lib/pendle/valuation";
 import type { MouseHandlerDataParam } from "recharts/types/synchronisation/types";
 import { fmtCompact, fmtDate, fmtMult, fmtPct, fmtUsd, fmtUsdCompact } from "@/lib/format";
+import { useSeries } from "./series";
 
 const SPENDLE = "var(--spendle)";
 const VEPENDLE = "var(--vependle)";
@@ -38,7 +39,10 @@ const monthTick = (t: number) => {
   return `${month} ’${String(d.getUTCFullYear()).slice(-2)}`;
 };
 
-type TipRow = { label: string; value: string; color?: string };
+/** `series` ties a row to a legend metric so it disappears with it; untagged rows always show. */
+type TipRow = { label: string; value: string; color?: string; series?: string };
+
+const visibleRows = (rows: TipRow[], on: (key: string) => boolean) => rows.filter((r) => !r.series || on(r.series));
 
 function TipRows({ title, rows }: { title: string; rows: TipRow[] }) {
   return (
@@ -76,6 +80,7 @@ export function DecayChart({
   sPendle: number;
   expiresAt: number;
 }) {
+  const { on } = useSeries();
   return (
     <ResponsiveContainer width="100%" height={340}>
       <AreaChart data={points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
@@ -116,13 +121,16 @@ export function DecayChart({
             return (
               <TipFrame
                 title={fmtDate(p.t)}
-                rows={[
-                  { label: "Virtual sPENDLE", value: fmtCompact(p.virtual), color: BOOST },
-                  { label: "of which 1× base (locked PENDLE)", value: fmtCompact(p.locked), color: VEPENDLE },
-                  { label: "of which boost premium", value: fmtCompact(p.premium) },
-                  { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
-                  { label: "sPENDLE (held flat)", value: fmtCompact(sPendle), color: SPENDLE },
-                ]}
+                rows={visibleRows(
+                  [
+                    { label: "Virtual sPENDLE", value: fmtCompact(p.virtual), color: BOOST },
+                    { label: "of which 1× base (locked PENDLE)", value: fmtCompact(p.locked), color: VEPENDLE, series: "locked" },
+                    { label: "of which boost premium", value: fmtCompact(p.premium), series: "premium" },
+                    { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
+                    { label: "sPENDLE (held flat)", value: fmtCompact(sPendle), color: SPENDLE, series: "sPendle" },
+                  ],
+                  on,
+                )}
               />
             );
           }}
@@ -143,14 +151,17 @@ export function DecayChart({
           stroke={BOOST}
           strokeWidth={1.5}
           fill="url(#gPremium)"
+          hide={!on("premium")}
           isAnimationActive={false}
         />
-        <ReferenceLine
-          y={sPendle}
-          stroke={SPENDLE}
-          strokeDasharray="4 4"
-          label={{ value: "eligible sPENDLE today", position: "insideTopLeft", fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
-        />
+        {on("sPendle") && (
+          <ReferenceLine
+            y={sPendle}
+            stroke={SPENDLE}
+            strokeDasharray="4 4"
+            label={{ value: "eligible sPENDLE today", position: "insideTopLeft", fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
+          />
+        )}
         <ReferenceLine
           x={expiresAt}
           stroke={AXIS}
@@ -219,6 +230,7 @@ export function PersonalAprChart({
 }
 
 export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
+  const { on } = useSeries();
   return (
     <ResponsiveContainer width="100%" height={340}>
       <LineChart data={points} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
@@ -246,6 +258,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
         <YAxis
           yAxisId="apr"
           orientation="right"
+          hide={!on("aprPlainFlat")}
           tickFormatter={(v: number) => fmtPct(v, 1)}
           tick={{ fill: SPENDLE, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
@@ -260,13 +273,16 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
             return (
               <TipFrame
                 title={fmtDate(p.t)}
-                rows={[
-                  { label: "Dilution, sPENDLE flat", value: fmtPct(p.dilutionFlat, 1), color: BOOST },
-                  { label: "Dilution, unlocks restaked", value: fmtPct(p.dilutionRestake, 1), color: VEPENDLE },
-                  { label: "Plain APR at latest distribution", value: fmtPct(p.aprPlainFlat), color: SPENDLE },
-                  { label: "Stakers' reward share (flat)", value: fmtPct(p.stakerShareFlat, 1) },
-                  { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
-                ]}
+                rows={visibleRows(
+                  [
+                    { label: "Dilution, sPENDLE flat", value: fmtPct(p.dilutionFlat, 1), color: BOOST, series: "dilutionFlat" },
+                    { label: "Dilution, unlocks restaked", value: fmtPct(p.dilutionRestake, 1), color: VEPENDLE, series: "dilutionRestake" },
+                    { label: "Plain APR at latest distribution", value: fmtPct(p.aprPlainFlat), color: SPENDLE, series: "aprPlainFlat" },
+                    { label: "Stakers' reward share (flat)", value: fmtPct(p.stakerShareFlat, 1) },
+                    { label: "Average multiplier", value: fmtMult(p.avgMultiplier) },
+                  ],
+                  on,
+                )}
               />
             );
           }}
@@ -288,6 +304,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           strokeWidth={1.5}
           strokeDasharray="5 4"
           dot={false}
+          hide={!on("dilutionRestake")}
           isAnimationActive={false}
         />
         <Line
@@ -297,6 +314,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
           stroke={SPENDLE}
           strokeWidth={1.5}
           dot={false}
+          hide={!on("aprPlainFlat")}
           isAnimationActive={false}
         />
       </LineChart>
@@ -305,6 +323,7 @@ export function DilutionChart({ points }: { points: ProjectionPoint[] }) {
 }
 
 export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
+  const { on } = useSeries();
   return (
     <ResponsiveContainer width="100%" height={320}>
       <AreaChart data={epochs} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
@@ -345,13 +364,16 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
             return (
               <TipFrame
                 title={`${fmtDate(e.start)}${e.complete ? "" : " (in progress)"}`}
-                rows={[
-                  { label: "YT and other fees", value: fmtUsd(e.yt), color: SPENDLE },
-                  { label: "Swap fees", value: fmtUsd(e.swap), color: VEPENDLE },
-                  { label: "Gross (non-swap + swap)", value: fmtUsd(e.yt + e.swap) },
-                  { label: "Protocol take (DefiLlama Revenue)", value: fmtUsd(e.revenue) },
-                  { label: "LP 20% of swap", value: fmtUsd(e.lp), color: LP },
-                ]}
+                rows={visibleRows(
+                  [
+                    { label: "YT and other fees", value: fmtUsd(e.yt), color: SPENDLE, series: "yt" },
+                    { label: "Swap fees", value: fmtUsd(e.swap), color: VEPENDLE, series: "swap" },
+                    { label: "Gross (non-swap + swap)", value: fmtUsd(e.yt + e.swap) },
+                    { label: "Protocol take (DefiLlama Revenue)", value: fmtUsd(e.revenue) },
+                    { label: "LP 20% of swap", value: fmtUsd(e.lp), color: LP },
+                  ],
+                  on,
+                )}
               />
             );
           }}
@@ -372,6 +394,7 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
           stroke={VEPENDLE}
           strokeWidth={1.5}
           fill="url(#gSwap)"
+          hide={!on("swap")}
           isAnimationActive={false}
         />
       </AreaChart>
@@ -380,6 +403,7 @@ export function EpochFeeChart({ epochs }: { epochs: FeeEpoch[] }) {
 }
 
 export function AccrualChart({ points }: { points: CumPoint[] }) {
+  const { on } = useSeries();
   return (
     <ResponsiveContainer width="100%" height={320}>
       <ComposedChart data={points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
@@ -424,6 +448,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
         <YAxis
           yAxisId="pendle"
           orientation="right"
+          hide={!on("emittedPendle")}
           tickFormatter={(v: number) => fmtCompact(v)}
           tick={{ fill: BOOST, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
@@ -438,14 +463,17 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
             return (
               <TipFrame
                 title={`Cumulative to ${fmtDate(p.t)}`}
-                rows={[
-                  { label: "80% policy share", value: fmtUsd(p.buyback), color: SPENDLE },
-                  { label: "Funded (USDT to buyback contract)", value: fmtUsd(p.buybackFunded), color: FUNDED },
-                  { label: "Treasury", value: fmtUsd(p.treasury), color: TREASURY },
-                  { label: "Operations", value: fmtUsd(p.ops), color: BOOST },
-                  { label: "LP swap fees", value: fmtUsd(p.lp), color: LP },
-                  { label: "LP emissions (ETH gauge)", value: `${fmtCompact(p.emittedPendle)} PENDLE` },
-                ]}
+                rows={visibleRows(
+                  [
+                    { label: "80% policy share", value: fmtUsd(p.buyback), color: SPENDLE, series: "buyback" },
+                    { label: "Funded (USDT to buyback contract)", value: fmtUsd(p.buybackFunded), color: FUNDED, series: "buybackFunded" },
+                    { label: "Treasury", value: fmtUsd(p.treasury), color: TREASURY, series: "treasury" },
+                    { label: "Operations", value: fmtUsd(p.ops), color: BOOST, series: "ops" },
+                    { label: "LP swap fees", value: fmtUsd(p.lp), color: LP, series: "lp" },
+                    { label: "LP emissions (ETH gauge)", value: `${fmtCompact(p.emittedPendle)} PENDLE`, series: "emittedPendle" },
+                  ],
+                  on,
+                )}
               />
             );
           }}
@@ -468,6 +496,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           stroke={TREASURY}
           strokeWidth={1.5}
           fill="url(#gTreasury)"
+          hide={!on("treasury")}
           isAnimationActive={false}
         />
         <Area
@@ -478,6 +507,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           stroke={BOOST}
           strokeWidth={1.5}
           fill="url(#gOps)"
+          hide={!on("ops")}
           isAnimationActive={false}
         />
         <Area
@@ -488,6 +518,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           stroke={LP}
           strokeWidth={1.5}
           fill="url(#gLp)"
+          hide={!on("lp")}
           isAnimationActive={false}
         />
         <Line
@@ -497,6 +528,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           stroke={FUNDED}
           strokeWidth={1.5}
           dot={false}
+          hide={!on("buybackFunded")}
           isAnimationActive={false}
         />
         <Line
@@ -507,6 +539,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
           strokeWidth={1.75}
           strokeDasharray="5 4"
           dot={false}
+          hide={!on("emittedPendle")}
           isAnimationActive={false}
         />
       </ComposedChart>
@@ -520,6 +553,7 @@ export function AccrualChart({ points }: { points: CumPoint[] }) {
  * still in the vePENDLE contract and sPENDLE supply at the end of each week.
  */
 export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
+  const { on } = useSeries();
   const data = weeks.map((w) => ({
     t: w.start,
     restaked: w.restaked,
@@ -539,13 +573,16 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
   };
   const rowsFor = (p: (typeof data)[number]): TipRow[] => {
     const share = p.withdrawn > 0 ? fmtPct(p.restaked / p.withdrawn, 0) : "–";
-    return [
-      { label: "Withdrawn from vePENDLE", value: `${fmtCompact(p.withdrawn)} PENDLE` },
-      { label: "Restaked as sPENDLE within 30 d", value: `${fmtCompact(p.restaked)} (${share})`, color: SPENDLE },
-      { label: "Not restaked", value: fmtCompact(p.notRestaked), color: VEPENDLE },
-      { label: "PENDLE in vePENDLE, week end", value: fmtCompact(p.vePendle), color: VEPENDLE },
-      { label: "sPENDLE supply, week end", value: fmtCompact(p.sPendle), color: SPENDLE },
-    ];
+    return visibleRows(
+      [
+        { label: "Withdrawn from vePENDLE", value: `${fmtCompact(p.withdrawn)} PENDLE` },
+        { label: "Restaked as sPENDLE within 30 d", value: `${fmtCompact(p.restaked)} (${share})`, color: SPENDLE, series: "restaked" },
+        { label: "Not restaked", value: fmtCompact(p.notRestaked), color: VEPENDLE, series: "notRestaked" },
+        { label: "PENDLE in vePENDLE, week end", value: fmtCompact(p.vePendle), color: VEPENDLE, series: "vePendle" },
+        { label: "sPENDLE supply, week end", value: fmtCompact(p.sPendle), color: SPENDLE, series: "sPendle" },
+      ],
+      on,
+    );
   };
   const titleFor = (p: (typeof data)[number]) =>
     `Week of ${fmtDate(p.t)}${p.open ? " (30-day window still open)" : ""}`;
@@ -585,6 +622,7 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
         <YAxis
           yAxisId="stock"
           orientation="right"
+          hide={!on("vePendle") && !on("sPendle")}
           domain={[0, (max: number) => Math.ceil(max / 10e6) * 10e6]}
           tickFormatter={(v: number) => fmtCompact(v)}
           tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
@@ -605,9 +643,9 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
           }}
         />
         <Bar yAxisId="flow" dataKey="restaked" stackId="w" fill={SPENDLE} isAnimationActive={false} />
-        <Bar yAxisId="flow" dataKey="notRestaked" stackId="w" fill={VEPENDLE} fillOpacity={0.55} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-        <Line yAxisId="stock" type="linear" dataKey="vePendle" stroke={VEPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-        <Line yAxisId="stock" type="linear" dataKey="sPendle" stroke={SPENDLE} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+        <Bar yAxisId="flow" dataKey="notRestaked" stackId="w" fill={VEPENDLE} fillOpacity={0.55} radius={[2, 2, 0, 0]} hide={!on("notRestaked")} isAnimationActive={false} />
+        <Line yAxisId="stock" type="linear" dataKey="vePendle" stroke={VEPENDLE} strokeWidth={1.5} dot={false} hide={!on("vePendle")} isAnimationActive={false} />
+        <Line yAxisId="stock" type="linear" dataKey="sPendle" stroke={SPENDLE} strokeWidth={1.5} dot={false} hide={!on("sPendle")} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
       <div className="rounded-md border border-border bg-background/40 px-3 py-2 sm:hidden">
@@ -622,6 +660,7 @@ export function MigrationChart({ weeks }: { weeks: MigrationWeek[] }) {
 
 /** Weekly holder stakes up, unstakes down (cooldown and instant), with the cooldown queue on the right axis. */
 export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
+  const { on } = useSeries();
   const data = weeks.map((w) => ({
     t: w.start,
     staked: w.staked,
@@ -638,14 +677,18 @@ export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
     const i = s.activeTooltipIndex === undefined ? NaN : Number(s.activeTooltipIndex);
     if (Number.isInteger(i) && i >= 0 && i < data.length) setActiveIdx(i);
   };
-  const rowsFor = (p: (typeof data)[number]): TipRow[] => [
-    { label: "Staked by holders", value: `${fmtCompact(p.staked)} PENDLE`, color: SPENDLE },
-    { label: "Sent to cooldown", value: fmtCompact(-p.cooldown), color: VEPENDLE },
-    { label: "Unstaked instantly (fee paid)", value: `${fmtCompact(-p.instant)} (${fmtCompact(p.fee)})`, color: BOOST },
-    { label: "Cooldowns cancelled", value: fmtCompact(p.cancelled) },
-    { label: "Net", value: `${p.net >= 0 ? "+" : "−"}${fmtCompact(Math.abs(p.net))}` },
-    { label: "Cooldown queue, week end", value: fmtCompact(p.queue), color: FUNDED },
-  ];
+  const rowsFor = (p: (typeof data)[number]): TipRow[] =>
+    visibleRows(
+      [
+        { label: "Staked by holders", value: `${fmtCompact(p.staked)} PENDLE`, color: SPENDLE, series: "staked" },
+        { label: "Sent to cooldown", value: fmtCompact(-p.cooldown), color: VEPENDLE, series: "cooldown" },
+        { label: "Unstaked instantly (fee paid)", value: `${fmtCompact(-p.instant)} (${fmtCompact(p.fee)})`, color: BOOST, series: "instant" },
+        { label: "Cooldowns cancelled", value: fmtCompact(p.cancelled) },
+        { label: "Net", value: `${p.net >= 0 ? "+" : "−"}${fmtCompact(Math.abs(p.net))}` },
+        { label: "Cooldown queue, week end", value: fmtCompact(p.queue), color: FUNDED, series: "queue" },
+      ],
+      on,
+    );
   const titleFor = (p: (typeof data)[number]) => `Week of ${fmtDate(p.t)}`;
   const shown = data[activeIdx ?? data.length - 1];
   return (
@@ -684,6 +727,7 @@ export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
           <YAxis
             yAxisId="queue"
             orientation="right"
+            hide={!on("queue")}
             domain={[0, (max: number) => Math.ceil(max / 5e5) * 5e5]}
             tickFormatter={(v: number) => fmtCompact(v)}
             tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
@@ -705,9 +749,9 @@ export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
             }}
           />
           <Bar yAxisId="flow" dataKey="staked" stackId="f" fill={SPENDLE} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-          <Bar yAxisId="flow" dataKey="cooldown" stackId="f" fill={VEPENDLE} fillOpacity={0.7} isAnimationActive={false} />
-          <Bar yAxisId="flow" dataKey="instant" stackId="f" fill={BOOST} radius={[0, 0, 2, 2]} isAnimationActive={false} />
-          <Line yAxisId="queue" type="linear" dataKey="queue" stroke={FUNDED} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+          <Bar yAxisId="flow" dataKey="cooldown" stackId="f" fill={VEPENDLE} fillOpacity={0.7} hide={!on("cooldown")} isAnimationActive={false} />
+          <Bar yAxisId="flow" dataKey="instant" stackId="f" fill={BOOST} radius={[0, 0, 2, 2]} hide={!on("instant")} isAnimationActive={false} />
+          <Line yAxisId="queue" type="linear" dataKey="queue" stroke={FUNDED} strokeWidth={1.5} dot={false} hide={!on("queue")} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
       <div className="rounded-md border border-border bg-background/40 px-3 py-2 sm:hidden">
@@ -722,6 +766,7 @@ export function FlowsChart({ weeks }: { weeks: FlowWeek[] }) {
 
 /** PENDLE still locked over time under the snapshot schedule and the live one, as step lines. */
 export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockWeek[]; live: UnlockWeek[]; now: number }) {
+  const { on } = useSeries();
   const total = (u: UnlockWeek[]) => u.reduce((s, w) => s + w.amount, 0);
   const points = new Map<number, { t: number; snapshot?: number; live?: number }>();
   const put = (t: number, key: "snapshot" | "live", v: number) => {
@@ -751,7 +796,8 @@ export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockW
         />
         <YAxis
           domain={[0, (max: number) => Math.ceil(max / 10e6) * 10e6]}
-          tickFormatter={(v: number) => fmtCompact(v)}
+          // The scale can hand back −0 for the bottom tick, which Intl prints as "-0".
+          tickFormatter={(v: number) => fmtCompact(v === 0 ? 0 : v)}
           tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
           tickLine={false}
@@ -765,15 +811,18 @@ export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockW
             return (
               <TipFrame
                 title={`After ${fmtDate(p.t)}`}
-                rows={[
-                  { label: "Still locked, snapshot schedule", value: p.snapshot === undefined ? "–" : fmtCompact(p.snapshot), color: BOOST },
-                  { label: "Still locked, live schedule", value: p.live === undefined ? "–" : fmtCompact(p.live), color: VEPENDLE },
-                ]}
+                rows={visibleRows(
+                  [
+                    { label: "Still locked, live schedule", value: p.live === undefined ? "–" : fmtCompact(p.live), color: VEPENDLE, series: "live" },
+                    { label: "Still locked, snapshot schedule", value: p.snapshot === undefined ? "–" : fmtCompact(p.snapshot), color: BOOST, series: "snapshot" },
+                  ],
+                  on,
+                )}
               />
             );
           }}
         />
-        <Line type="stepAfter" dataKey="snapshot" stroke={BOOST} strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls isAnimationActive={false} />
+        <Line type="stepAfter" dataKey="snapshot" stroke={BOOST} strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls hide={!on("snapshot")} isAnimationActive={false} />
         <Line type="stepAfter" dataKey="live" stroke={VEPENDLE} strokeWidth={1.5} dot={false} connectNulls isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
@@ -782,6 +831,7 @@ export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockW
 
 /** What each distribution's buyback paid per PENDLE, against PENDLE's daily market price. */
 export function BuybackPriceChart({ prices, history }: { prices: Valuation["buybackPrices"]; history: Valuation["priceHistory"] }) {
+  const { on } = useSeries();
   // Bars and the paid line come from the 16 distributions (14-day bands); the market line carries its
   // own daily series, so the bars keep their width.
   type Point = { t: number; market?: number; paid?: number; epoch?: number; pendle?: number; usd?: number };
@@ -809,6 +859,7 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
         />
         <YAxis
           yAxisId="usd"
+          hide={!on("usd")}
           tickFormatter={(v: number) => fmtUsdCompact(v)}
           tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
@@ -830,15 +881,18 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
             const p = payload[0].payload as Point;
-            const rows: TipRow[] =
+            const rows: TipRow[] = visibleRows(
               p.usd !== undefined
                 ? [
-                    { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE },
-                    { label: "PENDLE bought", value: fmtCompact(p.pendle!) },
-                    { label: "Paid per PENDLE", value: `$${p.paid!.toFixed(3)}`, color: FUNDED },
-                    ...(p.market !== undefined ? [{ label: "Market price that day", value: `$${p.market.toFixed(3)}`, color: BOOST }] : []),
+                    { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE, series: "usd" },
+                    { label: "PENDLE bought", value: fmtCompact(p.pendle!), series: "usd" },
+                    { label: "Paid per PENDLE", value: `$${p.paid!.toFixed(3)}`, color: FUNDED, series: "paid" },
+                    ...(p.market !== undefined ? [{ label: "Market price that day", value: `$${p.market.toFixed(3)}`, color: BOOST, series: "market" }] : []),
                   ]
-                : [{ label: "PENDLE price", value: `$${p.market!.toFixed(3)}`, color: BOOST }];
+                : [{ label: "PENDLE price", value: `$${p.market!.toFixed(3)}`, color: BOOST, series: "market" }],
+              on,
+            );
+            if (rows.length === 0) return null;
             return <TipFrame title={p.epoch !== undefined ? `Distribution ${p.epoch}, ${fmtDate(p.t)}` : fmtDate(p.t)} rows={rows} />;
           }}
         />
@@ -847,6 +901,7 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
           dataKey="usd"
           fill={SPENDLE}
           fillOpacity={0.6}
+          hide={!on("usd")}
           isAnimationActive={false}
           // The daily market series puts one-day bands on the time axis, which would make the bars
           // hairlines; draw each as a fixed 12 px column centred on its band instead.
@@ -855,7 +910,7 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
             return <rect x={x + width / 2 - 6} y={y} width={12} height={Math.max(0, height)} rx={2} fill={SPENDLE} fillOpacity={0.6} />;
           }}
         />
-        <Line yAxisId="price" data={market} type="monotone" dataKey="market" stroke={BOOST} strokeWidth={1.25} dot={false} isAnimationActive={false} />
+        <Line yAxisId="price" data={market} type="monotone" dataKey="market" stroke={BOOST} strokeWidth={1.25} dot={false} hide={!on("market")} isAnimationActive={false} />
         <Line yAxisId="price" type="linear" dataKey="paid" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
       </ComposedChart>
     </ResponsiveContainer>

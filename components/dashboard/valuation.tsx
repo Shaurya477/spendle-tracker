@@ -1,8 +1,10 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtMult, fmtPct, fmtUsdCompact, fmtUsdPrice } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
+import { BUYBACK_PRICE_SERIES } from "@/lib/chart-series";
 import { BuybackPriceChart } from "./charts";
-import { Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
+import { Eyebrow, SectionHeading, Stat } from "./primitives";
+import { SeriesLegend, SeriesProvider } from "./series";
 
 export function Valuation({ data }: { data: TrackerData }) {
   const v = data.valuation;
@@ -113,29 +115,21 @@ export function Valuation({ data }: { data: TrackerData }) {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote.">
-                What the protocol paid per PENDLE
-              </Eyebrow>
-              <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(avgPaid)} on average; PENDLE
-                is {fmtUsdPrice(v.price)} today.
-              </p>
+          <SeriesProvider series={BUYBACK_PRICE_SERIES}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote. Legend items switch their series on and off; the paid line always shows.">
+                  What the protocol paid per PENDLE
+                </Eyebrow>
+                <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
+                  Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(avgPaid)} on average; PENDLE
+                  is {fmtUsdPrice(v.price)} today.
+                </p>
+              </div>
+              <SeriesLegend />
             </div>
-            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="spendle" /> USDT spent
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="foreground" /> paid per PENDLE
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="boost" /> PENDLE price, daily
-              </span>
-            </div>
-          </div>
-          <BuybackPriceChart prices={v.buybackPrices} history={v.priceHistory} />
+            <BuybackPriceChart prices={v.buybackPrices} history={v.priceHistory} />
+          </SeriesProvider>
         </CardContent>
       </Card>
     </section>

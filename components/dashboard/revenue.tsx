@@ -6,7 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { ExpandableTable } from "./expandable-table";
+import { ACCRUAL_SERIES, EPOCH_FEE_SERIES } from "@/lib/chart-series";
 import { AccrualChart, EpochFeeChart } from "./charts";
+import { SeriesLegend, SeriesProvider } from "./series";
 import { Eyebrow, SectionHeading, Stat } from "./primitives";
 import { InfoTip } from "./info-tip";
 
@@ -215,48 +217,28 @@ export function Revenue({ data }: { data: TrackerData }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="">
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Non-swap vs swap by epoch</Eyebrow>
-              <div className="flex gap-3 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm bg-spendle" /> YT and other
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm bg-vependle" /> Swap
-                </span>
+            <SeriesProvider series={EPOCH_FEE_SERIES}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Eyebrow tip="Gross fees per 14-day epoch, non-swap stacked on swap. Click a legend item to hide it; YT and other fees always show.">
+                  Non-swap vs swap by epoch
+                </Eyebrow>
+                <SeriesLegend />
               </div>
-            </div>
-            <EpochFeeChart epochs={r.epochs} />
+              <EpochFeeChart epochs={r.epochs} />
+            </SeriesProvider>
           </CardContent>
         </Card>
         <Card className="">
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the gauge controller paid to Ethereum LPs out of PENDLE it already held; supply is unchanged.">
-                Cumulative fees vs emissions
-              </Eyebrow>
-              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm bg-spendle" /> 80% share
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block h-px w-3 bg-foreground" /> Funded
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm" style={{ background: TREASURY }} /> Treasury
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm bg-boost" /> Ops
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block size-2 rounded-sm" style={{ background: LP }} /> LP fees
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="inline-block h-px w-3 bg-boost" /> LP emissions, right axis
-                </span>
+            <SeriesProvider series={ACCRUAL_SERIES}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the gauge controller paid to Ethereum LPs out of PENDLE it already held; supply is unchanged. Click a legend item to hide it; the 80% share always shows.">
+                  Cumulative fees vs emissions
+                </Eyebrow>
+                <SeriesLegend />
               </div>
-            </div>
-            <AccrualChart points={r.cumulative} />
+              <AccrualChart points={r.cumulative} />
+            </SeriesProvider>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Emissions: Ethereum gauge controller, Performance stream only; limit-order and co-incentive
               PENDLE is paid elsewhere.

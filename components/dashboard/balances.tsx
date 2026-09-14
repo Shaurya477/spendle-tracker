@@ -1,10 +1,12 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import type { Move } from "@/lib/pendle/chain";
 import { fmtCompact, fmtDate, fmtDays, fmtInt, fmtMult, fmtPct, usdOf } from "@/lib/format";
+import { FLOWS_SERIES, MIGRATION_SERIES } from "@/lib/chart-series";
 import { FlowsChart, MigrationChart } from "./charts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AddressLink, Eyebrow, LineSwatch, SectionHeading, Stat, Swatch, TxLink } from "./primitives";
+import { AddressLink, Eyebrow, SectionHeading, Stat, Swatch, TxLink } from "./primitives";
+import { SeriesLegend, SeriesProvider } from "./series";
 
 const MOVE_LABEL: Record<Move["kind"], string> = {
   stake: "Staked",
@@ -213,29 +215,17 @@ export function Balances({ data }: { data: TrackerData }) {
 
       <Card>
         <CardContent className="flex flex-col gap-5">
+          <SeriesProvider series={MIGRATION_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow>From vePENDLE to sPENDLE</Eyebrow>
+              <Eyebrow tip="Legend items switch their series on and off; restaked withdrawals always show.">From vePENDLE to sPENDLE</Eyebrow>
               <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
                 There is no conversion: an expired lock is withdrawn, and staking the PENDLE is a
                 separate step. Bars: weekly withdrawals, split by whether the same wallet staked within
-                30 days.
+                30 days. Lines, right axis: PENDLE still in vePENDLE and sPENDLE supply.
               </p>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="spendle" /> restaked within 30 d
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="vependle" /> not restaked
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="vependle" /> PENDLE in vePENDLE
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="spendle" /> sPENDLE supply
-              </span>
-            </div>
+            <SeriesLegend />
           </div>
           <div className="grid gap-4 border-y border-border py-4 sm:grid-cols-3">
             <Stat
@@ -258,36 +248,25 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </div>
           <MigrationChart weeks={migration.weeks} />
+          </SeriesProvider>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="flex flex-col gap-5">
+          <SeriesProvider series={FLOWS_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only.">
+              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only. Legend items switch their series on and off; stakes always show.">
                 Staking flows
               </Eyebrow>
               <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
                 Weekly PENDLE staked by holders against sPENDLE sent to the {sPendle.cooldownDays}-day cooldown or
-                unstaked instantly for the {sPendle.instantFeePct}% fee. The queue is PENDLE that becomes withdrawable
-                within two weeks.
+                unstaked instantly for the {sPendle.instantFeePct}% fee. The queue, right axis, is PENDLE that
+                becomes withdrawable within two weeks.
               </p>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="spendle" /> staked
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="vependle" /> to cooldown
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Swatch tone="boost" /> instant, fee paid
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="foreground" /> cooldown queue
-              </span>
-            </div>
+            <SeriesLegend />
           </div>
           <div className="grid gap-4 border-y border-border py-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
@@ -322,6 +301,7 @@ export function Balances({ data }: { data: TrackerData }) {
             />
           </div>
           <FlowsChart weeks={flows.weeks} />
+          </SeriesProvider>
           <div className="flex flex-col gap-3 border-t border-border pt-4">
             <Eyebrow tip="The largest single stakes, cooldown starts, instant unstakes, and expired-lock withdrawals in the last 30 days, by wallet.">
               Largest moves, 30 days

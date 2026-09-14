@@ -1,8 +1,10 @@
 import type { TrackerData } from "@/lib/pendle/tracker";
 import { fmtCompact, fmtDate, fmtMult, fmtPct } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
+import { DECAY_SERIES, DILUTION_SERIES, UNLOCK_SERIES } from "@/lib/chart-series";
 import { DecayChart, DilutionChart, UnlockCalendarChart } from "./charts";
-import { AddressLink, Eyebrow, LineSwatch, SectionHeading, Stat, Swatch } from "./primitives";
+import { AddressLink, Eyebrow, SectionHeading, Stat } from "./primitives";
+import { SeriesLegend, SeriesProvider } from "./series";
 
 export function Dilution({ data }: { data: TrackerData }) {
   const { dilution, loyalty, sPendle, vePendle, projection, unlocks, liveUnlocks, lockers, topLocks, yield: y } = data;
@@ -84,45 +86,29 @@ export function Dilution({ data }: { data: TrackerData }) {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="">
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <Eyebrow tip="The snapshot lock schedule replayed forward at daily resolution; the steps are weekly unlock batches. Locks changed after the snapshot do not affect the boost.">
-                Projected virtual sPENDLE
-              </Eyebrow>
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="vependle" /> 1× base
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="boost" /> boost premium
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Swatch tone="spendle" /> sPENDLE today
-                </span>
+            <SeriesProvider series={DECAY_SERIES}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <Eyebrow tip="The snapshot lock schedule replayed forward at daily resolution; the steps are weekly unlock batches. Locks changed after the snapshot do not affect the boost. Legend items switch their series on and off; the 1× base always shows.">
+                  Projected virtual sPENDLE
+                </Eyebrow>
+                <SeriesLegend />
               </div>
-            </div>
-            <DecayChart points={projection} sPendle={sPendle.eligible} expiresAt={loyalty.expiresAt} />
+              <DecayChart points={projection} sPendle={sPendle.eligible} expiresAt={loyalty.expiresAt} />
+            </SeriesProvider>
           </CardContent>
         </Card>
 
         <Card className="">
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <Eyebrow tip="Flat: sPENDLE supply held at today's. Restaked: unlocking PENDLE staked as sPENDLE the day its lock expires. Plain APR, right axis: each distribution held at the latest amount.">
-                Projected dilution &amp; plain APR
-              </Eyebrow>
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <LineSwatch tone="boost" /> dilution, sPENDLE flat
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <LineSwatch tone="vependle" dashed /> dilution, unlocks restaked
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <LineSwatch tone="spendle" /> plain APR, right axis
-                </span>
+            <SeriesProvider series={DILUTION_SERIES}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <Eyebrow tip="Flat: sPENDLE supply held at today's. Restaked: unlocking PENDLE staked as sPENDLE the day its lock expires. Plain APR, right axis: each distribution held at the latest amount. Legend items switch their series on and off; the flat dilution line always shows.">
+                  Projected dilution &amp; plain APR
+                </Eyebrow>
+                <SeriesLegend />
               </div>
-            </div>
-            <DilutionChart points={projection} />
+              <DilutionChart points={projection} />
+            </SeriesProvider>
           </CardContent>
         </Card>
       </div>
@@ -130,20 +116,15 @@ export function Dilution({ data }: { data: TrackerData }) {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="">
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <Eyebrow tip="Snapshot: the vePENDLE unlock schedule as it stood at the 29 Jan snapshot, which fixes the boost. Live: the schedule the contract holds today. They differ where a lock was extended or added after the snapshot; the boost terms of such a lock stay as they were.">
-                When locked PENDLE becomes liquid
-              </Eyebrow>
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <LineSwatch tone="boost" dashed /> snapshot schedule
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <LineSwatch tone="vependle" /> live schedule
-                </span>
+            <SeriesProvider series={UNLOCK_SERIES}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <Eyebrow tip="Live: the schedule the contract holds today. Snapshot: the vePENDLE unlock schedule as it stood at the 29 Jan snapshot, which fixes the boost. They differ where a lock was extended or added after the snapshot; the boost terms of such a lock stay as they were. The live line always shows.">
+                  When locked PENDLE becomes liquid
+                </Eyebrow>
+                <SeriesLegend />
               </div>
-            </div>
-            <UnlockCalendarChart snapshot={unlocks} live={liveUnlocks} now={data.block.timestamp} />
+              <UnlockCalendarChart snapshot={unlocks} live={liveUnlocks} now={data.block.timestamp} />
+            </SeriesProvider>
             <p className="text-xs leading-relaxed text-muted-foreground">
               {fmtCompact(liveRemaining)} PENDLE is under a live lock, last unlock {fmtDate(lastLive.expiry)}.
               {moved.length > 0
