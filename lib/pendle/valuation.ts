@@ -1,4 +1,5 @@
 import { EPOCHS_PER_YEAR } from "./config";
+import type { PricePoint } from "./pendle-api";
 import type { RevenueData } from "./revenue";
 import type { Distribution } from "./tracker";
 
@@ -34,6 +35,8 @@ export type Valuation = {
   payoutEpochs: number;
   /** Realised PENDLE price of each distribution's buyback (USDT spent ÷ PENDLE bought), for the chart. */
   buybackPrices: { epoch: number; timestamp: number; price: number; pendle: number; usd: number }[];
+  /** Daily PENDLE/USD since the snapshot, ending at the live quote. */
+  priceHistory: PricePoint[];
   epochsUsed: number;
   distributionsUsed: number;
 };
@@ -46,8 +49,10 @@ export function buildValuation(input: {
   pendleHeld: number;
   revenue: RevenueData;
   distributions: Distribution[];
+  priceHistory: PricePoint[];
+  now: number;
 }): Valuation {
-  const { price, totalSupply, pendleHeld, revenue, distributions } = input;
+  const { price, totalSupply, pendleHeld, revenue, distributions, priceHistory, now } = input;
   const complete = revenue.epochs.filter((e) => e.complete).slice(-4);
   if (complete.length < 2) throw new Error("Valuation needs at least two complete fee epochs");
   const closed = revenue.epochs.filter((e) => e.buybackWindowClosed && e.buybackFunded > 0).slice(-4);
@@ -86,6 +91,7 @@ export function buildValuation(input: {
     buybackPrices: distributions
       .filter((d) => d.pendleBought > 0)
       .map((d) => ({ epoch: d.epoch, timestamp: d.timestamp, price: d.usdtSpent / d.pendleBought, pendle: d.pendleBought, usd: d.usdtSpent })),
+    priceHistory: [...priceHistory.filter((p) => p.t < now - 3600), { t: now, price }],
     epochsUsed: complete.length,
     distributionsUsed: recent.length,
   };

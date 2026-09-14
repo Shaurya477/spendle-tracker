@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import { ADDRESSES, PENDLE_API, PENDLE_PRICE_API } from "./config";
+import { ADDRESSES, LLAMA_PRICE_API, PENDLE_API, PENDLE_PRICE_API, SNAPSHOT_TS } from "./config";
 
 export type AirdropToken = { token: string; amount: number; valueInUSD: number };
 
@@ -53,6 +53,19 @@ export async function fetchPendleUsd(): Promise<number> {
     throw new Error(`Pendle API returned no USD price for ${id}`);
   }
   return price;
+}
+
+export type PricePoint = { t: number; price: number };
+
+/** Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. */
+export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> {
+  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 1;
+  const data = await getJson<{ coins: Record<string, { prices: { timestamp: number; price: number }[] }> }>(
+    `${LLAMA_PRICE_API}?start=${SNAPSHOT_TS}&span=${days}&period=1d`,
+  );
+  const coin = Object.values(data.coins)[0];
+  if (!coin || coin.prices.length < 2) throw new Error("DefiLlama returned no PENDLE price history");
+  return coin.prices.map((p) => ({ t: p.timestamp, price: p.price }));
 }
 
 /**

@@ -28,7 +28,7 @@ import {
   WEEK,
 } from "./config";
 import { lastExpiry, loyaltyAt, multiplierFor, toTokens, type LockBucket } from "./model";
-import { fetchPendleUsd } from "./pendle-api";
+import { fetchPendleUsd, fetchPendleUsdHistory } from "./pendle-api";
 import { getRevenueData, withExecutedBuybacks, type RevenueData } from "./revenue";
 import { buildValuation, type Valuation } from "./valuation";
 
@@ -245,10 +245,11 @@ async function computeTrackerData(): Promise<TrackerData> {
     fetchMigration(),
     fetchFlows(),
   ]);
-  const [rawUnsorted, wallets, lockPositions] = await Promise.all([
+  const [rawUnsorted, wallets, lockPositions, priceHistory] = await Promise.all([
     fetchDistributions(live.blockNumber),
     fetchKnownWallets(live.blockNumber),
     fetchLockPositions(live.blockNumber),
+    fetchPendleUsdHistory(Number(live.timestamp)),
   ]);
   const raw = rawUnsorted.sort((a, b) => Number(a.blockNumber - b.blockNumber));
   if (raw.length === 0) throw new Error("No sPENDLE reward distributions found onchain");
@@ -321,6 +322,8 @@ async function computeTrackerData(): Promise<TrackerData> {
     pendleHeld: split.pendle + split.contracts,
     revenue,
     distributions,
+    priceHistory,
+    now: Number(live.timestamp),
   });
 
   return {

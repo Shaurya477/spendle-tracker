@@ -159,7 +159,8 @@ export function Methodology({ data }: { data: TrackerData }) {
                 26.09. Emissions cost is AIM&apos;s weekly PENDLE assignment × 52 × today&apos;s price.
                 Revenue reaching stakers is USDT funded to the buyback contract ÷ DefiLlama revenue
                 over the last four closed funding windows. The price paid per PENDLE is each
-                distribution&apos;s USDT spent ÷ PENDLE bought.
+                distribution&apos;s USDT spent ÷ PENDLE bought; the market line beside it is DefiLlama&apos;s
+                daily PENDLE/USD close (<code>coins.llama.fi</code>) from the snapshot, ending at the live quote.
               </Step>
               <Step id="method-assumptions" title="Assumptions">
                 Every holder is treated as &ldquo;active&rdquo; (no one forfeited an epoch by skipping a

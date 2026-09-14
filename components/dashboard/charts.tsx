@@ -780,10 +780,17 @@ export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockW
   );
 }
 
-/** What each distribution's buyback paid per PENDLE, against today's price. */
-export function BuybackPriceChart({ prices, spot }: { prices: Valuation["buybackPrices"]; spot: number }) {
-  const data = prices.map((p) => ({ ...p, t: p.timestamp }));
+/** What each distribution's buyback paid per PENDLE, against PENDLE's daily market price. */
+export function BuybackPriceChart({ prices, history }: { prices: Valuation["buybackPrices"]; history: Valuation["priceHistory"] }) {
+  // Bars and the paid line come from the 16 distributions (14-day bands); the market line carries its
+  // own daily series, so the bars keep their width.
+  type Point = { t: number; market?: number; paid?: number; epoch?: number; pendle?: number; usd?: number };
+  const data: Point[] = prices.map((p) => ({ t: p.timestamp, paid: p.price, epoch: p.epoch, pendle: p.pendle, usd: p.usd }));
+  const market: Point[] = history.map((h) => ({ t: h.t, market: h.price }));
+  const top = Math.max(...history.map((h) => h.price), ...prices.map((p) => p.price));
   const epoch = 14 * 86_400;
+  const t0 = Math.min(history[0].t, prices[0].timestamp) - epoch / 2;
+  const t1 = Math.max(history[history.length - 1].t, prices[prices.length - 1].timestamp) + epoch / 2;
   return (
     <ResponsiveContainer width="100%" height={240}>
       <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
@@ -792,7 +799,8 @@ export function BuybackPriceChart({ prices, spot }: { prices: Valuation["buyback
           dataKey="t"
           type="number"
           scale="time"
-          domain={[(min: number) => min - epoch / 2, (max: number) => max + epoch / 2]}
+          domain={[t0, t1]}
+          allowDataOverflow
           tickFormatter={monthTick}
           tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={{ stroke: GRID }}
@@ -810,7 +818,7 @@ export function BuybackPriceChart({ prices, spot }: { prices: Valuation["buyback
         <YAxis
           yAxisId="price"
           orientation="right"
-          domain={[0, (max: number) => Math.ceil(Math.max(max, spot) * 2) / 2]}
+          domain={[0, Math.ceil(top * 2) / 2]}
           tickFormatter={(v: number) => `$${v.toFixed(1)}`}
           tick={{ fill: AXIS, fontSize: 11, fontFamily: "var(--font-bricolage)" }}
           axisLine={false}
@@ -818,26 +826,37 @@ export function BuybackPriceChart({ prices, spot }: { prices: Valuation["buyback
           width={44}
         />
         <Tooltip
-          cursor={{ fill: CURSOR, fillOpacity: 0.12 }}
+          cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
-            const p = payload[0].payload as (typeof data)[number];
-            return (
-              <TipFrame
-                title={`Distribution ${p.epoch}, ${fmtDate(p.timestamp)}`}
-                rows={[
-                  { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE },
-                  { label: "PENDLE bought", value: fmtCompact(p.pendle) },
-                  { label: "Paid per PENDLE", value: `$${p.price.toFixed(3)}`, color: FUNDED },
-                  { label: "PENDLE today", value: `$${spot.toFixed(3)}` },
-                ]}
-              />
-            );
+            const p = payload[0].payload as Point;
+            const rows: TipRow[] =
+              p.usd !== undefined
+                ? [
+                    { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE },
+                    { label: "PENDLE bought", value: fmtCompact(p.pendle!) },
+                    { label: "Paid per PENDLE", value: `$${p.paid!.toFixed(3)}`, color: FUNDED },
+                    ...(p.market !== undefined ? [{ label: "Market price that day", value: `$${p.market.toFixed(3)}`, color: BOOST }] : []),
+                  ]
+                : [{ label: "PENDLE price", value: `$${p.market!.toFixed(3)}`, color: BOOST }];
+            return <TipFrame title={p.epoch !== undefined ? `Distribution ${p.epoch}, ${fmtDate(p.t)}` : fmtDate(p.t)} rows={rows} />;
           }}
         />
-        <ReferenceLine yAxisId="price" y={spot} stroke={BOOST} strokeDasharray="4 3" />
-        <Bar yAxisId="usd" dataKey="usd" fill={SPENDLE} fillOpacity={0.6} radius={[2, 2, 0, 0]} isAnimationActive={false} />
-        <Line yAxisId="price" type="linear" dataKey="price" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
+        <Bar
+          yAxisId="usd"
+          dataKey="usd"
+          fill={SPENDLE}
+          fillOpacity={0.6}
+          isAnimationActive={false}
+          // The daily market series puts one-day bands on the time axis, which would make the bars
+          // hairlines; draw each as a fixed 12 px column centred on its band instead.
+          shape={(props: { x?: number; y?: number; width?: number; height?: number }) => {
+            const { x = 0, y = 0, width = 0, height = 0 } = props;
+            return <rect x={x + width / 2 - 6} y={y} width={12} height={Math.max(0, height)} rx={2} fill={SPENDLE} fillOpacity={0.6} />;
+          }}
+        />
+        <Line yAxisId="price" data={market} type="monotone" dataKey="market" stroke={BOOST} strokeWidth={1.25} dot={false} isAnimationActive={false} />
+        <Line yAxisId="price" type="linear" dataKey="paid" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
       </ComposedChart>
     </ResponsiveContainer>
   );

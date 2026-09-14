@@ -115,12 +115,12 @@ export function Valuation({ data }: { data: TrackerData }) {
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print.">
+              <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote.">
                 What the protocol paid per PENDLE
               </Eyebrow>
               <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(avgPaid)} on average against{" "}
-                {fmtUsdPrice(v.price)} today.
+                Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(avgPaid)} on average; PENDLE
+                is {fmtUsdPrice(v.price)} today.
               </p>
             </div>
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
@@ -131,11 +131,11 @@ export function Valuation({ data }: { data: TrackerData }) {
                 <LineSwatch tone="foreground" /> paid per PENDLE
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <LineSwatch tone="boost" dashed /> price today
+                <LineSwatch tone="boost" /> PENDLE price, daily
               </span>
             </div>
           </div>
-          <BuybackPriceChart prices={v.buybackPrices} spot={v.price} />
+          <BuybackPriceChart prices={v.buybackPrices} history={v.priceHistory} />
         </CardContent>
       </Card>
     </section>
