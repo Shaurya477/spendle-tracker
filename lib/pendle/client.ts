@@ -20,6 +20,10 @@ import { RPC_URL } from "./config";
  * fresh TLS handshakes on a cold load reordered arrivals and bunched a second past 20 units.
  * A request the gateway still rejects fails immediately; nothing is retried.
  *
+ * Two lanes share the budget. Dataset recomputes run in the normal lane; a wallet lookup a visitor
+ * is waiting on runs in the urgent lane, which is served first whenever a slot frees, so a lookup
+ * that lands during a 30-second recompute waits for one in-flight request, not the whole queue.
+ *
  * Next bundles each route separately, so a module-level variable would give the page and
  * /api/position a pacer each; the state lives on globalThis to keep one budget per process.
  */
@@ -28,11 +32,13 @@ const UNITS_PER_WINDOW = 14;
 const MAX_IN_FLIGHT = 2;
 const unitCost = (method: string) => (method === "eth_call" || method === "eth_getLogs" ? 4 : 1);
 
-type Pacer = { sent: { at: number; cost: number }[]; inFlight: number; waiters: (() => void)[] };
+type Lane = "normal" | "urgent";
+type Pacer = { sent: { at: number; cost: number }[]; inFlight: number; waiters: (() => void)[]; urgent: (() => void)[] };
 const pacer: Pacer = ((globalThis as typeof globalThis & { __spendleRpcPacer?: Pacer }).__spendleRpcPacer ??= {
   sent: [],
   inFlight: 0,
   waiters: [],
+  urgent: [],
 });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -50,23 +56,23 @@ async function reserve(cost: number) {
   }
 }
 
-async function acquire() {
+async function acquire(lane: Lane) {
   if (pacer.inFlight < MAX_IN_FLIGHT) {
     pacer.inFlight++;
     return;
   }
-  await new Promise<void>((r) => pacer.waiters.push(r));
+  await new Promise<void>((r) => (lane === "urgent" ? pacer.urgent : pacer.waiters).push(r));
 }
 
-/** Hand the slot to the next waiter in FIFO order, or free it. */
+/** Hand the slot to the next urgent waiter, then the next normal one in FIFO order, or free it. */
 function release() {
-  const next = pacer.waiters.shift();
+  const next = pacer.urgent.shift() ?? pacer.waiters.shift();
   if (next) next();
   else pacer.inFlight--;
 }
 
-async function paced<T>(method: string, send: () => Promise<T>): Promise<T> {
-  await acquire();
+async function paced<T>(lane: Lane, method: string, send: () => Promise<T>): Promise<T> {
+  await acquire(lane);
   try {
     await reserve(unitCost(method));
     return await send();
@@ -75,16 +81,23 @@ async function paced<T>(method: string, send: () => Promise<T>): Promise<T> {
   }
 }
 
-function serialised(inner: Transport): Transport {
+function serialised(inner: Transport, lane: Lane): Transport {
   return (params) => {
     const transport = inner(params);
     const request: typeof transport.request = (args, options) =>
-      paced(args.method, () => transport.request(args, options));
+      paced(lane, args.method, () => transport.request(args, options));
     return { ...transport, request };
   };
 }
 
+/** Dataset reads: the normal lane. */
 export const client = createPublicClient({
   chain: mainnet,
-  transport: serialised(http(RPC_URL, { timeout: 60_000, retryCount: 0 })),
+  transport: serialised(http(RPC_URL, { timeout: 60_000, retryCount: 0 }), "normal"),
+});
+
+/** Reads a visitor is waiting on (wallet lookups): the urgent lane, same budget. */
+export const userClient = createPublicClient({
+  chain: mainnet,
+  transport: serialised(http(RPC_URL, { timeout: 60_000, retryCount: 0 }), "urgent"),
 });

@@ -1,6 +1,4 @@
-import { isAddress } from "viem";
 import { getTrackerData } from "@/lib/pendle/tracker";
-import { getPosition } from "@/lib/pendle/position";
 import { MobileHeader, Rail } from "@/components/dashboard/header";
 import { Hero } from "@/components/dashboard/hero";
 import { Balances } from "@/components/dashboard/balances";
@@ -35,12 +33,11 @@ const SECTIONS = [
 export const dynamic = "force-dynamic";
 
 export default async function Page({ searchParams }: PageProps<"/">) {
+  // The wallet in the URL is not resolved here: the page paints from the cached dataset and the
+  // Position section fetches the wallet client-side after mount, as it does for a remembered wallet.
   const { address } = await searchParams;
   const preset = typeof address === "string" ? address.trim() : "";
-  const [data, position] = await Promise.all([
-    getTrackerData(),
-    preset && isAddress(preset, { strict: false }) ? getPosition(preset) : null,
-  ]);
+  const data = await getTrackerData();
   return (
     <div
       id="top"
@@ -59,7 +56,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
         <Ledger data={data} />
         <Valuation data={data} />
         <Thesis data={data} />
-        <Position initialHex={preset.replace(/^0x/i, "")} initial={position} />
+        <Position initialHex={preset.replace(/^0x/i, "")} />
         <Methodology data={data} />
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground">
           <span>Not affiliated with Pendle. Numbers are computed from public contract state; verify before acting.</span>

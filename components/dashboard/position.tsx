@@ -44,23 +44,23 @@ type State =
   | { kind: "error"; message: string }
   | { kind: "result"; data: PositionData };
 
-export function Position({
-  initialHex,
-  initial,
-}: {
-  initialHex: string;
-  initial: PositionData | null;
-}) {
+export function Position({ initialHex }: { initialHex: string }) {
   const [hex, setHex] = useState(initialHex);
   const [inputError, setInputError] = useState<string | null>(null);
-  const [state, setState] = useState<State>(initial ? { kind: "result", data: initial } : { kind: "idle" });
+  // An address in the URL is looked up after mount, so the page paints first; the section starts in
+  // its loading state so there is no idle flash before the fetch begins.
+  const fromUrl = HEX40.test(initialHex) && isAddress(`0x${initialHex}`, { strict: false });
+  const [state, setState] = useState<State>(fromUrl ? { kind: "loading", address: `0x${initialHex}` } : { kind: "idle" });
   // Whether the address on screen is saved in this browser's localStorage. A lookup typed here is
   // saved; an address that arrived in the URL is not, until the visitor asks. Nothing leaves the device.
   const [remembered, setRemembered] = useState(false);
 
-  // On return, with no address in the URL, load the remembered wallet.
+  // After the page has painted: look up the URL's wallet, or failing that the remembered one.
   useEffect(() => {
-    if (initial) return;
+    if (fromUrl) {
+      void lookup(initialHex, false);
+      return;
+    }
     const saved = localStorage.getItem(WALLET_KEY);
     if (saved) void restore(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on mount
@@ -94,7 +94,13 @@ export function Position({
     }
     setInputError(null);
     setState({ kind: "loading", address });
-    const res = await fetch(`/api/position?address=${address}`);
+    let res: Response;
+    try {
+      res = await fetch(`/api/position?address=${address}`);
+    } catch (e) {
+      setState({ kind: "error", message: `Could not reach the server: ${(e as Error).message}` });
+      return;
+    }
     const body = (await res.json()) as PositionData | { error: string };
     if (!res.ok || "error" in body) {
       setState({ kind: "error", message: "error" in body ? body.error : `HTTP ${res.status}` });

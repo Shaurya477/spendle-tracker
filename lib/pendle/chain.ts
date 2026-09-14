@@ -11,7 +11,7 @@ import {
   unstakedEvent,
   votingEscrowAbi,
 } from "./abis";
-import { client } from "./client";
+import { client, userClient } from "./client";
 import {
   ADDRESSES,
   KNOWN_WALLETS,
@@ -299,7 +299,7 @@ export type UserState = {
 
 export async function fetchUserState(user: Address, blockNumber: bigint): Promise<UserState> {
   const [live, [snapshotLock]] = await Promise.all([
-    client.multicall({
+    userClient.multicall({
       allowFailure: false,
       blockNumber,
       contracts: [
@@ -310,7 +310,7 @@ export async function fetchUserState(user: Address, blockNumber: bigint): Promis
         { address: merkleDistributor, abi: merkleDistributorAbi, functionName: "claimed", args: [sPendle, user] },
       ],
     }),
-    client.multicall({
+    userClient.multicall({
       allowFailure: false,
       blockNumber: SNAPSHOT_BLOCK,
       contracts: [{ address: vePendle, abi: votingEscrowAbi, functionName: "positionData", args: [user] }],
@@ -419,8 +419,8 @@ export async function fetchUserEpochStates(
 ): Promise<UserEpochState[]> {
   const range = { address: sPendle, event: transferEvent, fromBlock: SNAPSHOT_BLOCK, toBlock: at.block } as const;
   const [ins, outs] = await Promise.all([
-    client.getLogs({ ...range, args: { to: user } }),
-    client.getLogs({ ...range, args: { from: user } }),
+    userClient.getLogs({ ...range, args: { to: user } }),
+    userClient.getLogs({ ...range, args: { from: user } }),
   ]);
   const distributor = merkleDistributor.toLowerCase();
   return blocks.map((b) => {
