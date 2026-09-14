@@ -15,12 +15,15 @@ export function ExpandableTable({
   rows,
   initial = 3,
   noun,
+  order = "latest",
 }: {
   head: ReactNode;
   rows: ReactNode[];
   initial?: number;
   /** Plural noun for the toggle label, e.g. "epochs" or "distributions". */
   noun: string;
+  /** How the first rows are chosen, for the collapse label: "Show latest 3" or "Show largest 6". */
+  order?: "latest" | "largest";
 }) {
   const [open, setOpen] = useState(false);
   const collapsible = rows.length > initial;
@@ -41,7 +44,7 @@ export function ExpandableTable({
             onClick={() => setOpen((o) => !o)}
           >
             <ChevronDown className={cn("transition-transform duration-200", open && "rotate-180")} />
-            {open ? `Show latest ${initial}` : `Show all ${rows.length} ${noun}`}
+            {open ? `Show ${order} ${initial}` : `Show all ${rows.length} ${noun}`}
           </Button>
         </div>
       )}

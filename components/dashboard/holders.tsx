@@ -2,6 +2,8 @@ import type { TrackerData } from "@/lib/pendle/tracker";
 import type { WalletCategory } from "@/lib/pendle/config";
 import { fmtCompact, fmtDate, fmtInt, fmtPct, usdOf } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
+import { ExpandableTable } from "./expandable-table";
 import { AddressLink, Eyebrow, SectionHeading, Stat } from "./primitives";
 
 type Segment = { key: keyof Omit<TrackerData["holders"]["split"], "total">; label: string; className: string; tip: string };
@@ -137,8 +139,8 @@ export function Holders({ data }: { data: TrackerData }) {
       </div>
 
       <Card>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <CardContent className="flex flex-col gap-4 px-0">
+          <div className="flex flex-wrap items-start justify-between gap-3 px-4">
             <Eyebrow tip="PENDLE in the wallet, plus its sPENDLE and PENDLE locked in vePENDLE. Changes are in wallet PENDLE against the balance about 7 and 30 days ago (50,400 and 216,000 blocks). A negative change at an exchange is withdrawals to users or other venues, not necessarily selling.">
               Labelled wallets
             </Eyebrow>
@@ -146,46 +148,45 @@ export function Holders({ data }: { data: TrackerData }) {
               {rows.length} wallets, {fmtCompact(known)} PENDLE, {fmtPct(known / split.total, 0)} of supply
             </div>
           </div>
-          <div className="-mx-2 overflow-x-auto">
-            <table className="w-full min-w-[20rem] text-xs">
-              <thead>
-                <tr className="text-left text-[11px] text-muted-foreground">
-                  <th className="px-2 py-1.5 font-medium">Wallet</th>
-                  <th className="hidden px-2 py-1.5 font-medium sm:table-cell">Type</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Held</th>
-                  <th className="px-2 py-1.5 text-right font-medium">7 d</th>
-                  <th className="px-2 py-1.5 text-right font-medium">30 d</th>
-                  <th className="hidden px-2 py-1.5 text-right font-medium sm:table-cell">Locked until</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {rows.map((w) => (
-                  <tr key={w.address}>
-                    <td className="px-2 py-2">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-foreground">{w.label}</span>
-                        <AddressLink address={w.address} />
-                      </div>
-                    </td>
-                    <td className="hidden px-2 py-2 text-muted-foreground sm:table-cell">{CATEGORY_LABEL[w.category]}</td>
-                    <td className="tabular px-2 py-2 text-right text-foreground">
-                      {fmtCompact(w.held)}
-                      {w.locked > 0 && <div className="text-[10px] text-vependle">locked</div>}
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <Delta n={w.pendle - w.pendle7d} />
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <Delta n={w.pendle - w.pendle30d} />
-                    </td>
-                    <td className="tabular hidden px-2 py-2 text-right text-muted-foreground sm:table-cell">
-                      {w.locked > 0 ? fmtDate(w.lockExpiry) : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ExpandableTable
+            noun="wallets"
+            initial={6}
+            order="largest"
+            head={
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-4 text-xs font-medium text-muted-foreground">Wallet</TableHead>
+                <TableHead className="hidden text-xs font-medium text-muted-foreground sm:table-cell">Type</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">Held</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">7 d</TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">30 d</TableHead>
+                <TableHead className="hidden pr-4 text-right text-xs font-medium text-muted-foreground sm:table-cell">Locked until</TableHead>
+              </TableRow>
+            }
+            rows={rows.map((w) => (
+              <TableRow key={w.address} className="text-xs">
+                <TableCell className="pl-4">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-foreground">{w.label}</span>
+                    <AddressLink address={w.address} />
+                  </div>
+                </TableCell>
+                <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORY_LABEL[w.category]}</TableCell>
+                <TableCell className="tabular text-right text-foreground">
+                  {fmtCompact(w.held)}
+                  {w.locked > 0 && <div className="text-[10px] text-vependle">locked</div>}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Delta n={w.pendle - w.pendle7d} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Delta n={w.pendle - w.pendle30d} />
+                </TableCell>
+                <TableCell className="tabular hidden pr-4 text-right text-muted-foreground sm:table-cell">
+                  {w.locked > 0 ? fmtDate(w.lockExpiry) : ""}
+                </TableCell>
+              </TableRow>
+            ))}
+          />
         </CardContent>
       </Card>
     </section>
