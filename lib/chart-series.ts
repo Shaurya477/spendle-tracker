@@ -74,9 +74,9 @@ export const UNLOCK_SERIES: SeriesDef[] = [
   { key: "snapshot", label: "snapshot schedule", color: BOOST, shape: "dashed" },
 ];
 
-/** What each buyback paid per PENDLE against the market. */
+/** What each buyback paid per PENDLE, with the USDT it spent and the daily market price for context. */
 export const BUYBACK_PRICE_SERIES: SeriesDef[] = [
   { key: "paid", label: "paid per PENDLE", color: FOREGROUND, shape: "line", locked: true },
   { key: "usd", label: "USDT spent", color: SPENDLE, shape: "bar" },
-  { key: "market", label: "PENDLE price, daily", color: BOOST, shape: "line" },
+  { key: "market", label: "PENDLE market price, daily", color: BOOST, shape: "line" },
 ];

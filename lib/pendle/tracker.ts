@@ -43,6 +43,8 @@ export type Distribution = {
   usdtSpent: number;
   /** PENDLE the buyback contract received in that window; every inflow, not only swap output. */
   pendleBought: number;
+  /** The TWAP's USDT outflows in that window, timed by interpolating blocks between the window's bounds. */
+  buys: { t: number; usd: number }[];
   /** Reward-eligible sPENDLE the block before: every sPENDLE, wallet-held or unclaimed in the distributor. */
   eligibleSPendle: number;
   /** Of which rewards not yet claimed, sitting in the distributor. */
@@ -187,6 +189,10 @@ export function buildDistributions(
   }
   return raw.map((d, i) => {
       const w = windows[i];
+      const from = i > 0 ? raw[i - 1] : { blockNumber: SNAPSHOT_BLOCK, timestamp: SNAPSHOT_TS };
+      const span = Number(d.blockNumber - from.blockNumber);
+      const tsOf = (block: bigint) =>
+        Number(from.timestamp) + (Number(block - from.blockNumber) / span) * Number(d.timestamp - from.timestamp);
       const v = loyaltyAt(snapshot, d.timestamp);
       const amount = toTokens(d.amount);
       const eligible = toTokens(d.supplyBefore);
@@ -206,6 +212,7 @@ export function buildDistributions(
         amount,
         usdtSpent: Number(w.usdtSpent) / 1e6,
         pendleBought: toTokens(w.pendleBought),
+        buys: w.usdtOut.map((o) => ({ t: Math.round(tsOf(o.block)), usd: Number(o.usdt) / 1e6 })),
         eligibleSPendle: eligible,
         unclaimedSPendle: toTokens(d.distributorBefore),
         virtualSPendle: virtualThen,

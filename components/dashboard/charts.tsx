@@ -829,21 +829,24 @@ export function UnlockCalendarChart({ snapshot, live, now }: { snapshot: UnlockW
   );
 }
 
-/** What each distribution's buyback paid per PENDLE, against PENDLE's daily market price. */
+/**
+ * What each distribution's buyback paid per PENDLE (line, always shown), the USDT it spent (bars),
+ * and PENDLE's daily market price (line). The market series carries its own daily data and is
+ * removed from the chart entirely when hidden, so hovering then only lands on distributions.
+ */
 export function BuybackPriceChart({ prices, history }: { prices: Valuation["buybackPrices"]; history: Valuation["priceHistory"] }) {
   const { on } = useSeries();
-  // Bars and the paid line come from the 16 distributions (14-day bands); the market line carries its
-  // own daily series, so the bars keep their width.
-  type Point = { t: number; market?: number; paid?: number; epoch?: number; pendle?: number; usd?: number };
-  const data: Point[] = prices.map((p) => ({ t: p.timestamp, paid: p.price, epoch: p.epoch, pendle: p.pendle, usd: p.usd }));
-  const market: Point[] = history.map((h) => ({ t: h.t, market: h.price }));
-  const top = Math.max(...history.map((h) => h.price), ...prices.map((p) => p.price));
+  type Print = Valuation["buybackPrices"][number] & { t: number };
+  const prints: Print[] = prices.map((p) => ({ ...p, t: p.timestamp }));
+  const market = on("market") ? history.map((h) => ({ t: h.t, market: h.price })) : [];
+  const top = Math.max(...(on("market") ? history.map((h) => h.price) : []), ...prices.map((p) => p.price));
   const epoch = 14 * 86_400;
   const t0 = Math.min(history[0].t, prices[0].timestamp) - epoch / 2;
   const t1 = Math.max(history[history.length - 1].t, prices[prices.length - 1].timestamp) + epoch / 2;
+  const signed = (x: number) => `${x >= 0 ? "+" : "−"}${fmtPct(Math.abs(x), 2)}`;
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
+    <ResponsiveContainer width="100%" height={260}>
+      <ComposedChart data={prints} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis
           dataKey="t"
@@ -880,20 +883,36 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
           cursor={{ stroke: CURSOR }}
           content={({ active, payload }) => {
             if (!active || !payload?.length) return null;
-            const p = payload[0].payload as Point;
-            const rows: TipRow[] = visibleRows(
-              p.usd !== undefined
-                ? [
-                    { label: "USDT spent", value: fmtUsd(p.usd), color: SPENDLE, series: "usd" },
+            // The payload lists every series with a point at this x, in render order; the market
+            // series comes first, so pick the distribution entry explicitly when there is one.
+            type Entry = Partial<Print> & { market?: number };
+            const entries = payload.map((e) => e.payload as Entry);
+            const p = entries.find((e) => e.price !== undefined) ?? entries[0];
+            if (p.price === undefined) {
+              // A day with no distribution: only the market series has a point here.
+              if (p.market === undefined) return null;
+              return <TipFrame title={fmtDate(p.t!)} rows={[{ label: "PENDLE market price", value: `$${p.market.toFixed(3)}`, color: BOOST }]} />;
+            }
+            return (
+              <TipFrame
+                title={`Distribution ${p.epoch}, ${fmtDate(p.timestamp!)}`}
+                rows={visibleRows(
+                  [
+                    { label: "Paid per PENDLE", value: `$${p.price.toFixed(3)}`, color: FUNDED },
+                    { label: "USDT spent", value: fmtUsd(p.usd!), color: SPENDLE, series: "usd" },
                     { label: "PENDLE bought", value: fmtCompact(p.pendle!), series: "usd" },
-                    { label: "Paid per PENDLE", value: `$${p.paid!.toFixed(3)}`, color: FUNDED, series: "paid" },
-                    ...(p.market !== undefined ? [{ label: "Market price that day", value: `$${p.market.toFixed(3)}`, color: BOOST, series: "market" }] : []),
-                  ]
-                : [{ label: "PENDLE price", value: `$${p.market!.toFixed(3)}`, color: BOOST, series: "market" }],
-              on,
+                    {
+                      label: `Market while buying, ${fmtDate(p.from!, { year: undefined })} to ${fmtDate(p.to!, { year: undefined })}`,
+                      value: `$${p.benchmark!.toFixed(3)}`,
+                      color: BOOST,
+                      series: "market",
+                    },
+                    { label: "Paid vs that market", value: signed(p.slippage!), series: "market" },
+                  ],
+                  on,
+                )}
+              />
             );
-            if (rows.length === 0) return null;
-            return <TipFrame title={p.epoch !== undefined ? `Distribution ${p.epoch}, ${fmtDate(p.t)}` : fmtDate(p.t)} rows={rows} />;
           }}
         />
         <Bar
@@ -910,8 +929,8 @@ export function BuybackPriceChart({ prices, history }: { prices: Valuation["buyb
             return <rect x={x + width / 2 - 6} y={y} width={12} height={Math.max(0, height)} rx={2} fill={SPENDLE} fillOpacity={0.6} />;
           }}
         />
-        <Line yAxisId="price" data={market} type="monotone" dataKey="market" stroke={BOOST} strokeWidth={1.25} dot={false} hide={!on("market")} isAnimationActive={false} />
-        <Line yAxisId="price" type="linear" dataKey="paid" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
+        <Line yAxisId="price" data={market} type="monotone" dataKey="market" stroke={BOOST} strokeWidth={1.25} dot={false} isAnimationActive={false} />
+        <Line yAxisId="price" type="linear" dataKey="price" stroke={FUNDED} strokeWidth={1.5} dot={{ r: 2.5, fill: FUNDED, strokeWidth: 0 }} isAnimationActive={false} />
       </ComposedChart>
     </ResponsiveContainer>
   );

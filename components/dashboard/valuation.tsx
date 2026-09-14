@@ -9,7 +9,6 @@ import { SeriesLegend, SeriesProvider } from "./series";
 export function Valuation({ data }: { data: TrackerData }) {
   const v = data.valuation;
   const signedPct = (x: number) => `${x >= 0 ? "+" : "−"}${fmtPct(Math.abs(x), 2)}`;
-  const avgPaid = v.buybackPrices.reduce((s, p) => s + p.usd, 0) / v.buybackPrices.reduce((s, p) => s + p.pendle, 0);
 
   return (
     <section id="valuation" className="scroll-mt-20 flex flex-col gap-8">
@@ -118,12 +117,14 @@ export function Valuation({ data }: { data: TrackerData }) {
           <SeriesProvider series={BUYBACK_PRICE_SERIES}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-col gap-1.5">
-                <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote. Legend items switch their series on and off; the paid line always shows.">
+                <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote; hovering a distribution also shows the market over the days its TWAP was buying. The paid line always shows.">
                   What the protocol paid per PENDLE
                 </Eyebrow>
-                <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                  Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(avgPaid)} on average; PENDLE
-                  is {fmtUsdPrice(v.price)} today.
+                <p className="max-w-[72ch] text-xs leading-relaxed text-muted-foreground">
+                  Across {v.buybackPrices.length} distributions the buyback paid {fmtUsdPrice(v.bought.avgPaid)} on average;
+                  PENDLE is {fmtUsdPrice(v.price)} today, so the {fmtCompact(v.bought.pendle)} PENDLE bought for{" "}
+                  {fmtUsdCompact(v.bought.usd)} and paid to stakers is worth {fmtUsdCompact(v.bought.valueToday)} (
+                  {signedPct(v.bought.gain)}).
                 </p>
               </div>
               <SeriesLegend />

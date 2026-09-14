@@ -33,10 +33,26 @@ export type Valuation = {
   /** Buyback USDT funded ÷ DefiLlama revenue over the last four closed funding windows; policy says up to 80%. */
   payoutRatio: number;
   payoutEpochs: number;
-  /** Realised PENDLE price of each distribution's buyback (USDT spent ÷ PENDLE bought), for the chart. */
-  buybackPrices: { epoch: number; timestamp: number; price: number; pendle: number; usd: number }[];
+  /**
+   * Each distribution's buyback: the price paid (USDT spent ÷ PENDLE bought), the market's daily close
+   * on the days the TWAP was buying weighted by USDT spent each day, and paid ÷ benchmark − 1.
+   */
+  buybackPrices: {
+    epoch: number;
+    timestamp: number;
+    price: number;
+    pendle: number;
+    usd: number;
+    benchmark: number;
+    slippage: number;
+    /** First and last buy of the window. */
+    from: number;
+    to: number;
+  }[];
   /** Daily PENDLE/USD since the snapshot, ending at the live quote. */
   priceHistory: PricePoint[];
+  /** Everything bought so far: USDT spent, PENDLE received, and what that PENDLE is worth today. */
+  bought: { usd: number; pendle: number; avgPaid: number; valueToday: number; gain: number };
   epochsUsed: number;
   distributionsUsed: number;
 };
@@ -58,6 +74,49 @@ export function buildValuation(input: {
   const closed = revenue.epochs.filter((e) => e.buybackWindowClosed && e.buybackFunded > 0).slice(-4);
   if (closed.length < 2) throw new Error("Valuation needs at least two closed buyback funding windows");
   const recent = distributions.slice(-6);
+
+  // DefiLlama's daily points are not pinned to midnight and occasionally skip a day, so each buy is
+  // matched to the nearest point in time rather than to a calendar day.
+  const sorted = [...priceHistory].sort((a, b) => a.t - b.t);
+  const priceAt = (t: number) => {
+    let lo = 0;
+    let hi = sorted.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (sorted[mid].t < t) lo = mid + 1;
+      else hi = mid;
+    }
+    const near = lo > 0 && t - sorted[lo - 1].t < sorted[lo].t - t ? sorted[lo - 1] : sorted[lo];
+    if (Math.abs(near.t - t) > 2 * 86_400) {
+      throw new Error(`No PENDLE price within two days of ${new Date(t * 1000).toISOString().slice(0, 10)}`);
+    }
+    return near.price;
+  };
+  const buybackPrices = distributions
+    .filter((d) => d.pendleBought > 0)
+    .map((d) => {
+      let weighted = 0;
+      let weight = 0;
+      for (const b of d.buys) {
+        weighted += b.usd * priceAt(b.t);
+        weight += b.usd;
+      }
+      const price = d.usdtSpent / d.pendleBought;
+      const benchmark = weighted / weight;
+      return {
+        epoch: d.epoch,
+        timestamp: d.timestamp,
+        price,
+        pendle: d.pendleBought,
+        usd: d.usdtSpent,
+        benchmark,
+        slippage: price / benchmark - 1,
+        from: d.buys[0].t,
+        to: d.buys[d.buys.length - 1].t,
+      };
+    });
+  const spentAll = buybackPrices.reduce((s, b) => s + b.usd, 0);
+  const boughtAll = buybackPrices.reduce((s, b) => s + b.pendle, 0);
 
   const circulating = totalSupply - pendleHeld;
   const fdv = totalSupply * price;
@@ -88,10 +147,15 @@ export function buildValuation(input: {
     netBuybackYield: (buybackAnnual - emissionsAnnualUsd) / marketCap,
     payoutRatio: funded / rev,
     payoutEpochs: closed.length,
-    buybackPrices: distributions
-      .filter((d) => d.pendleBought > 0)
-      .map((d) => ({ epoch: d.epoch, timestamp: d.timestamp, price: d.usdtSpent / d.pendleBought, pendle: d.pendleBought, usd: d.usdtSpent })),
+    buybackPrices,
     priceHistory: [...priceHistory.filter((p) => p.t < now - 3600), { t: now, price }],
+    bought: {
+      usd: spentAll,
+      pendle: boughtAll,
+      avgPaid: spentAll / boughtAll,
+      valueToday: boughtAll * price,
+      gain: (boughtAll * price) / spentAll - 1,
+    },
     epochsUsed: complete.length,
     distributionsUsed: recent.length,
   };

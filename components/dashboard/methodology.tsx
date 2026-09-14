@@ -158,9 +158,12 @@ export function Methodology({ data }: { data: TrackerData }) {
                 × 26.09; annualised buybacks are the mean USDT spent over the last six distributions ×
                 26.09. Emissions cost is AIM&apos;s weekly PENDLE assignment × 52 × today&apos;s price.
                 Revenue reaching stakers is USDT funded to the buyback contract ÷ DefiLlama revenue
-                over the last four closed funding windows. The price paid per PENDLE is each
-                distribution&apos;s USDT spent ÷ PENDLE bought; the market line beside it is DefiLlama&apos;s
-                daily PENDLE/USD close (<code>coins.llama.fi</code>) from the snapshot, ending at the live quote.
+                over the last four closed funding windows. Price paid per PENDLE: each distribution&apos;s price paid
+                is USDT spent ÷ PENDLE bought; its benchmark is DefiLlama&apos;s daily PENDLE/USD close
+                (<code>coins.llama.fi</code>) nearest to each USDT outflow from the buyback contract (timed by
+                interpolating blocks between distributions), weighted by USDT spent; paid ÷ benchmark − 1 is
+                the difference shown on hover. Value today is all PENDLE bought × the live quote. The market
+                line is the same daily series, ending at the live quote.
               </Step>
               <Step id="method-assumptions" title="Assumptions">
                 Every holder is treated as &ldquo;active&rdquo; (no one forfeited an epoch by skipping a

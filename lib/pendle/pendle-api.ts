@@ -57,14 +57,23 @@ export async function fetchPendleUsd(): Promise<number> {
 
 export type PricePoint = { t: number; price: number };
 
-/** Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. */
+/**
+ * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. The endpoint returns a
+ * truncated series when `span` lands within a day of the available range (span 230 gave 117 points
+ * from May while 229 and 231 gave the full run, 14 Sep 2026), so the span asked for is a month wider
+ * than needed and the start of what comes back is checked.
+ */
 export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> {
-  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 1;
+  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 30;
   const data = await getJson<{ coins: Record<string, { prices: { timestamp: number; price: number }[] }> }>(
     `${LLAMA_PRICE_API}?start=${SNAPSHOT_TS}&span=${days}&period=1d`,
   );
   const coin = Object.values(data.coins)[0];
   if (!coin || coin.prices.length < 2) throw new Error("DefiLlama returned no PENDLE price history");
+  const first = coin.prices[0].timestamp;
+  if (first > Number(SNAPSHOT_TS) + 2 * 86_400) {
+    throw new Error(`DefiLlama price history starts ${new Date(first * 1000).toISOString().slice(0, 10)}, after the snapshot`);
+  }
   return coin.prices.map((p) => ({ t: p.timestamp, price: p.price }));
 }
 

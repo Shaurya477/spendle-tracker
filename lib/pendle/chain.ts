@@ -224,6 +224,8 @@ export type BuybackWindow = {
   usdtSpent: bigint;
   /** PENDLE the buyback contract received in the window (wei): every inflow, not only swap output. */
   pendleBought: bigint;
+  /** Each USDT outflow with its block, so the caller can place the TWAP's buys in time. */
+  usdtOut: { block: bigint; usdt: bigint }[];
 };
 
 /**
@@ -248,9 +250,11 @@ export function fetchBuybackWindows(bounds: bigint[]): Promise<BuybackWindow[]> 
       memo(cache.windows, keys[i], () =>
         logs.then(([usdtOut, pendleIn]) => {
           const inWindow = (l: { blockNumber: bigint }) => l.blockNumber > after && l.blockNumber <= upTo;
+          const out = usdtOut.filter(inWindow);
           return {
-            usdtSpent: usdtOut.filter(inWindow).reduce((s, l) => s + l.args.value!, 0n),
+            usdtSpent: out.reduce((s, l) => s + l.args.value!, 0n),
             pendleBought: pendleIn.filter(inWindow).reduce((s, l) => s + l.args.value!, 0n),
+            usdtOut: out.map((l) => ({ block: l.blockNumber, usdt: l.args.value! })),
           };
         }),
       );
