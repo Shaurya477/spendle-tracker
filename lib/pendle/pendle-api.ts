@@ -58,20 +58,24 @@ export async function fetchPendleUsd(): Promise<number> {
 export type PricePoint = { t: number; price: number };
 
 /**
- * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. The origin sometimes
- * drops everything before a fixed date (21 May 2026 as of Sep 2026; the same request returns the
- * full run a moment later from another edge), and Cloudflare caches whatever body it got per URL
- * for a while. So the start of what comes back is checked, and a short answer is asked for again
- * under a different `end`, which is a different URL and so a fresh origin read. Anchoring on `end`
- * rather than `start` also avoids a second truncation seen when a start-anchored span ran past
- * today. Four short answers in a row is a failure.
+ * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed.
+ *
+ * The origin has bad minutes in which it drops everything before a fixed date (21 May 2026 as of
+ * Sep 2026). Every short body seen so far was the first read of a URL the origin had not served
+ * before, and reads a few seconds later were complete, so this looks like an origin cache that has
+ * to warm the old months. Cloudflare then caches whatever body it got, per URL, for hours. Hence:
+ * the start of what comes back is checked; `end` is the exact block time, so each recompute is a
+ * URL nobody has cached; a short body is asked for again a few seconds later under a fresh URL;
+ * four short bodies in a row is a failure. Anchoring on `end` rather than `start` also avoids a
+ * separate truncation seen when a start-anchored span ran past today.
  */
 export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> {
   const since = Number(SNAPSHOT_TS) - 86_400;
+  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 3;
   let first = 0;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const end = now - (now % 3600) - attempt * 60;
-    const days = Math.ceil((end - Number(SNAPSHOT_TS)) / 86_400) + 3;
+    if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 3000));
+    const end = now - attempt;
     const data = await getJson<{ coins: Record<string, { prices: { timestamp: number; price: number }[] }> }>(
       `${LLAMA_PRICE_API}?end=${end}&span=${days}&period=1d`,
     );
@@ -82,6 +86,7 @@ export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> 
       // Keep one point at or before the snapshot so the first buys have a neighbour, drop the rest.
       return coin.prices.filter((p) => p.timestamp >= since).map((p) => ({ t: p.timestamp, price: p.price }));
     }
+    console.warn(`DefiLlama price history short on attempt ${attempt + 1}: ${coin.prices.length} points from ${new Date(first * 1000).toISOString().slice(0, 10)}`);
   }
   throw new Error(`DefiLlama price history starts ${new Date(first * 1000).toISOString().slice(0, 10)}, after the snapshot`);
 }
