@@ -15,7 +15,8 @@ const SeriesContext = createContext<SeriesState | null>(null);
 
 /**
  * Holds which of a chart's metrics are shown. Wrap the card content so the legend (wherever it
- * sits in the header) and the chart below it share the state. A locked metric ignores toggles.
+ * sits in the header) and the chart below it share the state. A locked metric ignores toggles, and
+ * the last metric still shown cannot be hidden.
  */
 export function SeriesProvider({ series, children }: { series: SeriesDef[]; children: ReactNode }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -28,7 +29,7 @@ export function SeriesProvider({ series, children }: { series: SeriesDef[]; chil
         setHidden((h) => {
           const next = new Set(h);
           if (next.has(key)) next.delete(key);
-          else next.add(key);
+          else if (series.some((s) => s.key !== key && !next.has(s.key))) next.add(key);
           return next;
         });
       },
@@ -78,17 +79,19 @@ export function SeriesLegend({ className }: { className?: string }) {
     <div className={cn("flex flex-wrap gap-1.5 text-[11px]", className)} role="group" aria-label="Metrics shown; click to hide or show">
       {ctx.defs.map((def) => {
         const off = ctx.hidden.has(def.key);
-        if (def.locked) {
+        // The only metric still shown: it stays on until another is switched back on.
+        const last = !off && ctx.defs.every((d) => d.key === def.key || ctx.hidden.has(d.key));
+        if (def.locked || last) {
           return (
             <span
               key={def.key}
               className="inline-flex items-center gap-1.5 rounded-full border border-transparent bg-muted/40 px-2 py-0.5 text-muted-foreground"
-              title="Always shown"
+              title={def.locked ? "Always shown" : "The last metric shown stays on"}
             >
               <Swatch def={def} off={false} />
               {def.label}
               <Lock className="size-2.5 opacity-70" aria-hidden="true" />
-              <span className="sr-only">, always shown</span>
+              <span className="sr-only">{def.locked ? ", always shown" : ", stays on while it is the only one shown"}</span>
             </span>
           );
         }

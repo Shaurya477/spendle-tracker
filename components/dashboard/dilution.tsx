@@ -88,7 +88,7 @@ export function Dilution({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={DECAY_SERIES}>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <Eyebrow tip="The snapshot lock schedule replayed forward at daily resolution; the steps are weekly unlock batches. Locks changed after the snapshot do not affect the boost. Legend items switch their series on and off; the 1× base always shows.">
+                <Eyebrow tip="The snapshot lock schedule replayed forward at daily resolution; the steps are weekly unlock batches. Locks changed after the snapshot do not affect the boost. Legend items switch their series on and off; the last one shown stays on.">
                   Projected virtual sPENDLE
                 </Eyebrow>
                 <SeriesLegend />
@@ -102,7 +102,7 @@ export function Dilution({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={DILUTION_SERIES}>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <Eyebrow tip="Flat: sPENDLE supply held at today's. Restaked: unlocking PENDLE staked as sPENDLE the day its lock expires. Plain APR, right axis: each distribution held at the latest amount. Legend items switch their series on and off; the flat dilution line always shows.">
+                <Eyebrow tip="Flat: sPENDLE supply held at today's. Restaked: unlocking PENDLE staked as sPENDLE the day its lock expires. Plain APR, right axis: each distribution held at the latest amount. Legend items switch their series on and off; the last one shown stays on.">
                   Projected dilution &amp; plain APR
                 </Eyebrow>
                 <SeriesLegend />
@@ -118,7 +118,7 @@ export function Dilution({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={UNLOCK_SERIES}>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <Eyebrow tip="Live: the schedule the contract holds today. Snapshot: the vePENDLE unlock schedule as it stood at the 29 Jan snapshot, which fixes the boost. They differ where a lock was extended or added after the snapshot; the boost terms of such a lock stay as they were. The live line always shows.">
+                <Eyebrow tip="Live: the schedule the contract holds today. Snapshot: the vePENDLE unlock schedule as it stood at the 29 Jan snapshot, which fixes the boost. They differ where a lock was extended or added after the snapshot; the boost terms of such a lock stay as they were. Legend items switch their series on and off; the last one shown stays on.">
                   When locked PENDLE becomes liquid
                 </Eyebrow>
                 <SeriesLegend />

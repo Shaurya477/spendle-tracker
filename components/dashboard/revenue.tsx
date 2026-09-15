@@ -219,7 +219,7 @@ export function Revenue({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={EPOCH_FEE_SERIES}>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Eyebrow tip="Gross fees per 14-day epoch, non-swap stacked on swap. Click a legend item to hide it; YT and other fees always show.">
+                <Eyebrow tip="Gross fees per 14-day epoch, non-swap stacked on swap. Click a legend item to hide it; the last one shown stays on.">
                   Non-swap vs swap by epoch
                 </Eyebrow>
                 <SeriesLegend />
@@ -232,7 +232,7 @@ export function Revenue({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={ACCRUAL_SERIES}>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the gauge controller paid to Ethereum LPs out of PENDLE it already held; supply is unchanged. Click a legend item to hide it; the 80% share always shows.">
+                <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the gauge controller paid to Ethereum LPs out of PENDLE it already held; supply is unchanged. Click a legend item to hide it; the last one shown stays on.">
                   Cumulative fees vs emissions
                 </Eyebrow>
                 <SeriesLegend />

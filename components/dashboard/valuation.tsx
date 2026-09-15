@@ -117,7 +117,7 @@ export function Valuation({ data }: { data: TrackerData }) {
           <SeriesProvider series={BUYBACK_PRICE_SERIES}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-col gap-1.5">
-                <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window and the PENDLE it received, so spent ÷ received is the price paid. The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote; hovering a distribution also shows the market over the days its TWAP was buying. The paid line always shows.">
+                <Eyebrow tip="For each distribution: USDT the buyback contract spent in the window (mint bars, left axis) and the PENDLE it received (gold bars, second left axis), so spent ÷ received is the price paid (white line, right axis). The hourly TWAP buys over about a week, so it is a weekly average, not a print. The market line is DefiLlama's daily PENDLE/USD close, ending at the live quote. The strip below is paid ÷ the market on the days the TWAP was buying − 1: above zero it paid more than the market, below zero less. Legend items switch their series on and off; the last one shown stays on.">
                   What the protocol paid per PENDLE
                 </Eyebrow>
                 <p className="max-w-[72ch] text-xs leading-relaxed text-muted-foreground">

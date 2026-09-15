@@ -218,7 +218,7 @@ export function Balances({ data }: { data: TrackerData }) {
           <SeriesProvider series={MIGRATION_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="Legend items switch their series on and off; restaked withdrawals always show.">From vePENDLE to sPENDLE</Eyebrow>
+              <Eyebrow tip="Legend items switch their series on and off; the last one shown stays on.">From vePENDLE to sPENDLE</Eyebrow>
               <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
                 There is no conversion: an expired lock is withdrawn, and staking the PENDLE is a
                 separate step. Bars: weekly withdrawals, split by whether the same wallet staked within
@@ -257,13 +257,14 @@ export function Balances({ data }: { data: TrackerData }) {
           <SeriesProvider series={FLOWS_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only. Legend items switch their series on and off; stakes always show.">
+              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only. Legend items switch their series on and off; the last one shown stays on.">
                 Staking flows
               </Eyebrow>
               <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                Weekly PENDLE staked by holders against sPENDLE sent to the {sPendle.cooldownDays}-day cooldown or
-                unstaked instantly for the {sPendle.instantFeePct}% fee. The queue, right axis, is PENDLE that
-                becomes withdrawable within two weeks.
+                Net holder flow each week: PENDLE staked by holders minus sPENDLE sent to the {sPendle.cooldownDays}-day
+                cooldown or unstaked instantly for the {sPendle.instantFeePct}% fee, with cancelled cooldowns added
+                back. The bars are those parts. The queue, right axis, is PENDLE that becomes withdrawable within two
+                weeks.
               </p>
             </div>
             <SeriesLegend />
