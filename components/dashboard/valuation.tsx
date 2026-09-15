@@ -69,6 +69,7 @@ export function Valuation({ data }: { data: TrackerData }) {
               tone="spendle"
               size="lg"
               sub="annualised fees ÷ market cap; the earnings-yield analogue"
+              tip={`Annualised gross fees ÷ market cap, the inverse of a price-to-fees multiple. Fees are the mean of the last ${v.epochsUsed} complete 14-day epochs × 26.09, DefiLlama's Pendle V2 figure across every chain, before the LP share. Not what a holder receives: only the buyback part reaches stakers (see buyback yield).`}
             />
           </CardContent>
         </Card>
