@@ -53,11 +53,11 @@ export function Valuation({ data }: { data: TrackerData }) {
         <Card size="sm">
           <CardContent>
             <Stat
-              label="Price to fees"
-              value={fmtMult(v.mcapToFees, 1)}
+              label="Price to TVL"
+              value={fmtMult(v.mcapToTvl, 2)}
               size="lg"
-              sub={`${fmtMult(v.fdvToFees, 1)} on FDV; ${fmtMult(v.mcapToRevenue, 1)} on revenue after the LP share`}
-              tip={`Market cap ÷ annualised gross fees. Fees are the mean of the last ${v.epochsUsed} complete 14-day epochs × 26.09. A lower multiple is cheaper.`}
+              sub={`${fmtMult(v.fdvToTvl, 2)} on FDV; ${fmtUsdCompact(v.tvl)} deposited in Pendle V2 across all chains`}
+              tip="Market cap ÷ TVL, where TVL is everything deposited in Pendle V2 markets on every chain, DefiLlama's headline figure: staked PENDLE, pool2 and Boros are excluded. It is what the market pays per dollar the protocol holds; a lower multiple is cheaper. Not a cash-flow measure, since fee take varies with market mix."
             />
           </CardContent>
         </Card>

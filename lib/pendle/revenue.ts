@@ -4,6 +4,7 @@ import {
   EPOCH_SECONDS,
   FEE_EPOCH_ORIGIN,
   LLAMA_FEES_API,
+  LLAMA_TVL_API,
   PENDLE_EMISSION_API,
   SNAPSHOT_TS,
 } from "./config";
@@ -133,6 +134,13 @@ function byDay(rows: LlamaBreakdown): Map<number, number> {
 
 function llama(kind: string) {
   return getJson<LlamaSummary>(`${LLAMA_FEES_API}?dataType=${kind}`);
+}
+
+/** Pendle V2 TVL, USD, every chain: DefiLlama's headline figure, so staked PENDLE, pool2 and Boros are out. */
+export async function fetchPendleTvl(): Promise<number> {
+  const tvl = await getJson<number>(LLAMA_TVL_API);
+  if (typeof tvl !== "number" || !(tvl > 0)) throw new Error(`DefiLlama returned no Pendle V2 TVL: ${JSON.stringify(tvl)}`);
+  return tvl;
 }
 
 function epochStart(ts: number) {

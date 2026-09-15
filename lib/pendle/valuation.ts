@@ -19,11 +19,11 @@ export type Valuation = {
   buybackAnnual: number;
   /** AIM's weekly PENDLE assignment × 52 × price. */
   emissionsAnnualUsd: number;
-  /** FDV ÷ annualised fees and revenue. */
-  fdvToFees: number;
-  fdvToRevenue: number;
-  mcapToFees: number;
-  mcapToRevenue: number;
+  /** Pendle V2 deposits across every chain, USD (DefiLlama headline TVL: staked PENDLE, pool2 and Boros excluded). */
+  tvl: number;
+  /** Market cap and FDV ÷ TVL: what the market pays per dollar deposited in the protocol. */
+  mcapToTvl: number;
+  fdvToTvl: number;
   /** Annualised fees ÷ market cap: the earnings-yield analogue for the token. */
   feeYield: number;
   /** Annualised buyback spend ÷ market cap: what reaches stakers, as a yield on the whole float. */
@@ -66,9 +66,10 @@ export function buildValuation(input: {
   revenue: RevenueData;
   distributions: Distribution[];
   priceHistory: PricePoint[];
+  tvl: number;
   now: number;
 }): Valuation {
-  const { price, totalSupply, pendleHeld, revenue, distributions, priceHistory, now } = input;
+  const { price, totalSupply, pendleHeld, revenue, distributions, priceHistory, tvl, now } = input;
   const complete = revenue.epochs.filter((e) => e.complete).slice(-4);
   if (complete.length < 2) throw new Error("Valuation needs at least two complete fee epochs");
   const closed = revenue.epochs.filter((e) => e.buybackWindowClosed && e.buybackFunded > 0).slice(-4);
@@ -138,10 +139,9 @@ export function buildValuation(input: {
     revenueAnnual,
     buybackAnnual,
     emissionsAnnualUsd,
-    fdvToFees: fdv / feesAnnual,
-    fdvToRevenue: fdv / revenueAnnual,
-    mcapToFees: marketCap / feesAnnual,
-    mcapToRevenue: marketCap / revenueAnnual,
+    tvl,
+    mcapToTvl: marketCap / tvl,
+    fdvToTvl: fdv / tvl,
     feeYield: feesAnnual / marketCap,
     buybackYield: buybackAnnual / marketCap,
     netBuybackYield: (buybackAnnual - emissionsAnnualUsd) / marketCap,

@@ -154,7 +154,9 @@ export function Methodology({ data }: { data: TrackerData }) {
                 FDV is total supply × price. Circulating supply is total minus PENDLE in Pendle&apos;s
                 governance multisig, ecosystem fund, team tokens multisig and treasury, and in the
                 buyback contract and gauge controller; staked and locked PENDLE is holders&apos; and
-                counts. Annualised fees and revenue are the mean of the last four complete fee epochs
+                counts. Price to TVL is market cap (and FDV) ÷ DefiLlama&apos;s headline Pendle V2 TVL
+                (<code>tvl/pendle-v2</code>), deposits across every chain with staked PENDLE, pool2 and
+                Boros excluded. Annualised fees and revenue are the mean of the last four complete fee epochs
                 × 26.09; annualised buybacks are the mean USDT spent over the last six distributions ×
                 26.09. Emissions cost is AIM&apos;s weekly PENDLE assignment × 52 × today&apos;s price.
                 Revenue reaching stakers is USDT funded to the buyback contract ÷ DefiLlama revenue

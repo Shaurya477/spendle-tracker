@@ -50,6 +50,8 @@ export const PENDLE_API = "https://api-v2.pendle.finance/core/v1/spendle";
 export const PENDLE_PRICE_API = "https://api-v2.pendle.finance/core/v1/prices/assets";
 export const PENDLE_EMISSION_API = "https://api-v2.pendle.finance/core/v1/pendle-emission";
 export const LLAMA_FEES_API = "https://api.llama.fi/summary/fees/pendle";
+/** Pendle V2 TVL across every chain, one number (DefiLlama); excludes staked PENDLE, pool2 and Boros. */
+export const LLAMA_TVL_API = "https://api.llama.fi/tvl/pendle-v2";
 /** Daily PENDLE/USD history (DefiLlama coins). */
 export const LLAMA_PRICE_API = "https://coins.llama.fi/chart/ethereum:0x808507121B80c02388fAd14726482e061B8da827";
 
