@@ -58,15 +58,17 @@ export async function fetchPendleUsd(): Promise<number> {
 export type PricePoint = { t: number; price: number };
 
 /**
- * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. The endpoint returns a
- * truncated series when `span` lands within a day of the available range (span 230 gave 117 points
- * from May while 229 and 231 gave the full run, 14 Sep 2026), so the span asked for is a month wider
- * than needed and the start of what comes back is checked.
+ * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed. Anchored on `end`, not
+ * `start`: a start-anchored request whose span reaches past today comes back truncated to the last
+ * ~118 days (and the CDN then serves that truncated body for the rest of the day), which took the
+ * page down on 15 Sep 2026. Walking back from the current hour returns the full run every time; the
+ * start of what comes back is still checked.
  */
 export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> {
-  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 30;
+  const end = now - (now % 3600);
+  const days = Math.ceil((end - Number(SNAPSHOT_TS)) / 86_400) + 3;
   const data = await getJson<{ coins: Record<string, { prices: { timestamp: number; price: number }[] }> }>(
-    `${LLAMA_PRICE_API}?start=${SNAPSHOT_TS}&span=${days}&period=1d`,
+    `${LLAMA_PRICE_API}?end=${end}&span=${days}&period=1d`,
   );
   const coin = Object.values(data.coins)[0];
   if (!coin || coin.prices.length < 2) throw new Error("DefiLlama returned no PENDLE price history");
@@ -74,7 +76,9 @@ export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> 
   if (first > Number(SNAPSHOT_TS) + 2 * 86_400) {
     throw new Error(`DefiLlama price history starts ${new Date(first * 1000).toISOString().slice(0, 10)}, after the snapshot`);
   }
-  return coin.prices.map((p) => ({ t: p.timestamp, price: p.price }));
+  // Keep one point at or before the snapshot so the first buys have a neighbour, drop the rest.
+  const since = Number(SNAPSHOT_TS) - 86_400;
+  return coin.prices.filter((p) => p.timestamp >= since).map((p) => ({ t: p.timestamp, price: p.price }));
 }
 
 /**
