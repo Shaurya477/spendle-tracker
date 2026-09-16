@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Backdrop } from "@/components/dashboard/backdrop";
 import { Disclaimer } from "@/components/dashboard/disclaimer";
 import { THEME_KEY } from "@/lib/theme";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Backdrop />
         <Disclaimer />
         {children}
+        <Analytics />
       </body>
     </html>
   );
