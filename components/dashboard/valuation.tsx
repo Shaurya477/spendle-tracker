@@ -45,8 +45,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               label="Market cap"
               value={fmtUsdCompact(v.marketCap)}
               size="lg"
-              sub={`${fmtCompact(v.circulating)} circulating; ${fmtCompact(v.pendleHeld)} in Pendle's wallets and contracts left out`}
-              tip="Circulating = total supply − Pendle's governance multisig, ecosystem fund, team tokens multisig, treasury, buyback contract and gauge controller. Staked and locked PENDLE counts as circulating: it is owned by holders."
+              sub={`${fmtCompact(v.circulating)} circulating × ${fmtUsdPrice(v.price)}`}
+              tip={`Circulating = total supply − the ${fmtCompact(v.pendleHeld)} PENDLE in Pendle's governance multisig, ecosystem fund, team tokens multisig, treasury, buyback contract and gauge controller. Staked and locked PENDLE counts as circulating: it is owned by holders.`}
             />
           </CardContent>
         </Card>
@@ -56,8 +56,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               label="Price to TVL"
               value={fmtMult(v.mcapToTvl, 2)}
               size="lg"
-              sub={`${fmtMult(v.fdvToTvl, 2)} on FDV; ${fmtUsdCompact(v.tvl)} deposited in Pendle V2 across all chains`}
-              tip="Market cap ÷ TVL, where TVL is everything deposited in Pendle V2 markets on every chain, DefiLlama's headline figure: staked PENDLE, pool2 and Boros are excluded. It is what the market pays per dollar the protocol holds; a lower multiple is cheaper. Not a cash-flow measure, since fee take varies with market mix."
+              sub={`${fmtMult(v.fdvToTvl, 2)} on FDV; ${fmtUsdCompact(v.tvl)} TVL`}
+              tip="Market cap ÷ TVL, where TVL is everything deposited in Pendle V2 markets on every chain, DefiLlama's headline figure: staked PENDLE, pool2 and Boros are excluded. What the market pays per dollar the protocol holds; a lower multiple is cheaper. Not a cash-flow measure, since fee take varies with market mix."
             />
           </CardContent>
         </Card>
@@ -68,8 +68,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               value={fmtPct(v.feeYield)}
               tone="spendle"
               size="lg"
-              sub="annualised fees ÷ market cap; the earnings-yield analogue"
-              tip={`Annualised gross fees ÷ market cap, the inverse of a price-to-fees multiple. Fees are the mean of the last ${v.epochsUsed} complete 14-day epochs × 26.09, DefiLlama's Pendle V2 figure across every chain, before the LP share. Not what a holder receives: only the buyback part reaches stakers (see buyback yield).`}
+              sub={`${fmtUsdCompact(v.feesAnnual)} a year on the market cap`}
+              tip={`Annualised gross fees ÷ market cap: the earnings-yield analogue, the inverse of a price-to-fees multiple. Fees are the mean of the last ${v.epochsUsed} complete 14-day epochs × 26.09, DefiLlama's Pendle V2 figure across every chain, before the LP share. Not what a holder receives: only the buyback part reaches stakers (see buyback yield).`}
             />
           </CardContent>
         </Card>
@@ -83,8 +83,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               value={fmtPct(v.buybackYield)}
               tone="spendle"
               size="lg"
-              sub={`${fmtUsdCompact(v.buybackAnnual)} a year at the last ${v.distributionsUsed} distributions' pace, on the market cap`}
-              tip="USDT the buyback contract spent, averaged over the last six distributions and annualised, divided by market cap. This is what reaches stakers, expressed as a yield on every circulating PENDLE; stakers get it concentrated on their share."
+              sub={`${fmtUsdCompact(v.buybackAnnual)} a year on the market cap`}
+              tip={`USDT the buyback contract spent, averaged over the last ${v.distributionsUsed} distributions and annualised, ÷ market cap. What actually reaches stakers, as a yield on every circulating PENDLE; stakers get it concentrated on their share.`}
             />
           </CardContent>
         </Card>
@@ -95,8 +95,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               value={signedPct(v.netBuybackYield)}
               tone={v.netBuybackYield >= 0 ? "spendle" : "boost"}
               size="lg"
-              sub={`buybacks minus ${fmtUsdCompact(v.emissionsAnnualUsd)} a year of AIM incentives at today's price`}
-              tip="AIM assigns a weekly PENDLE budget to LPs across chains and streams; × 52 × price gives the yearly cost in USD. Positive means the protocol buys more PENDLE than it pays out."
+              sub={`buybacks − ${fmtUsdCompact(v.emissionsAnnualUsd)} a year of AIM incentives`}
+              tip="(Annualised buybacks − AIM's weekly PENDLE assignment × 52 × today's price) ÷ market cap. Positive means the protocol buys more PENDLE than it pays out in incentives."
             />
           </CardContent>
         </Card>
@@ -107,8 +107,8 @@ export function Valuation({ data }: { data: TrackerData }) {
               value={fmtPct(v.payoutRatio, 0)}
               tone={v.payoutRatio >= 0.7 ? "spendle" : "boost"}
               size="lg"
-              sub={`USDT funded to the buyback contract ÷ DefiLlama revenue, last ${v.payoutEpochs} closed epochs; policy says up to 80%`}
-              tip={`The share of protocol revenue that was actually handed to the buyback contract, against the policy figure of up to 80%. Revenue is DefiLlama's Pendle V2 figure: fees after the LP share, summed over the last ${v.payoutEpochs} complete 14-day epochs. Funded is every USDT transfer into the buyback contract in those epochs, each attributed to the epoch whose end is nearest, within seven days either side. An epoch counts only once that window has closed, so a late transfer is not read as a shortfall; an epoch with no funding at all is left out rather than counted as zero. Below 70% shows in amber.`}
+              sub={`last ${v.payoutEpochs} closed epochs; policy says up to 80%`}
+              tip={`USDT actually handed to the buyback contract ÷ DefiLlama revenue (fees after the LP share), over the last ${v.payoutEpochs} complete 14-day epochs. Each USDT transfer is attributed to the epoch whose end is nearest, within seven days either side; an epoch counts only once that window has closed, so a late transfer is not read as a shortfall, and an epoch with no funding at all is left out rather than counted as zero. Below 70% shows in amber.`}
             />
           </CardContent>
         </Card>

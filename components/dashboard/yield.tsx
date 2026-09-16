@@ -30,9 +30,7 @@ export function Yield({ data }: { data: TrackerData }) {
       <div className="grid gap-4 rounded-xl border border-border/70 bg-background/40 p-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <Eyebrow tip="Rewards are paid in the asset that is staked, so PENDLE's dollar price cancels out of the ratio. Unclaimed rewards keep earning, so they count in the denominator. Holdings elsewhere on this page use the live USD quote; APR does not.">
-              Denomination
-            </Eyebrow>
+            <Eyebrow>Denomination</Eyebrow>
             <Badge variant="outline" className="text-[11px] text-spendle ring-spendle/30">
               token terms
             </Badge>
@@ -42,19 +40,13 @@ export function Yield({ data }: { data: TrackerData }) {
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Eyebrow tip="One epoch is 14 days, so a year has 365.25 ÷ 14 = 26.09 epochs. Simple interest: rewards are not assumed to be restaked.">
-            Annualisation
-          </Eyebrow>
+          <Eyebrow>Annualisation</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Per-epoch ratio × {EPY} (365.25 ÷ 14). Simple, not compounded.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Eyebrow
-            tip={`Each per-epoch APR uses the eligible total as it stood just before that distribution. Trailing is the arithmetic mean of the last ${y.trailing.epochs} of them.`}
-          >
-            Averaging
-          </Eyebrow>
+          <Eyebrow>Averaging</Eyebrow>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Latest = the most recent distribution. Trailing = mean of the last {y.trailing.epochs} per-epoch APRs.
           </p>
@@ -65,12 +57,7 @@ export function Yield({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-spendle"
-                tip="What one sPENDLE with no lock earns. Every sPENDLE takes the same share of a distribution, so this is the floor every staker gets; lockers earn a multiple of it."
-              >
-                Plain sPENDLE staker
-              </Eyebrow>
+              <Eyebrow className="text-spendle">Plain sPENDLE staker</Eyebrow>
               <span className="text-[11px] text-muted-foreground">sPENDLE earned per sPENDLE held, per year</span>
             </div>
             <div className="grid grid-cols-2 gap-6">
@@ -79,29 +66,27 @@ export function Yield({ data }: { data: TrackerData }) {
                 value={fmtPct(latest.aprPlain)}
                 tone="spendle"
                 size="lg"
-                sub={`${fmtInt(latest.amount)} sPENDLE ÷ ${fmtCompact(latest.eligibleTotal)} eligible × ${EPY}; epoch ${latest.epoch}, ${fmtDate(latest.timestamp)}`}
-                tip="sPENDLE handed to the rewards distributor in the most recent distribution, divided by the reward-eligible total (all sPENDLE + virtual sPENDLE) as it stood in the block before, × 26.09. One epoch's number, so a strong or weak fee fortnight shows here first."
+                sub={`epoch ${latest.epoch}, ${fmtDate(latest.timestamp)}`}
+                tip={`What one sPENDLE with no lock earns: ${fmtInt(latest.amount)} sPENDLE distributed ÷ ${fmtCompact(latest.eligibleTotal)} eligible (all sPENDLE + virtual) in the block before × ${EPY}. Every sPENDLE takes the same share, so this is the floor every staker gets; one epoch's number, so a strong or weak fortnight shows here first.`}
               />
               <Stat
                 label={`Trailing ${y.trailing.epochs} epochs`}
                 value={fmtPct(y.trailing.aprPlain)}
                 size="lg"
-                sub={`mean over ${fmtDate(y.trailing.from)} → ${fmtDate(y.trailing.to)}`}
-                tip={`Arithmetic mean of the last ${y.trailing.epochs} per-epoch plain APRs, each computed against the eligible total of its own epoch. Smooths the fortnight-to-fortnight swing in fees; about three months of history.`}
+                sub={`${fmtDate(y.trailing.from)} → ${fmtDate(y.trailing.to)}`}
+                tip={`Mean of the last ${y.trailing.epochs} per-epoch plain APRs, each against the eligible total of its own epoch. Smooths the fortnight-to-fortnight swing in fees; about three months.`}
               />
             </div>
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
               <Stat
                 label="If lockers counted 1×"
                 value={fmtPct(y.aprNoBoost)}
-                sub={`latest ÷ (${fmtCompact(sPendle.eligible)} sPENDLE + ${fmtCompact(vePendle.snapshotLocked)} locked PENDLE) × ${EPY}`}
-                tip="The latest distribution split over today's sPENDLE plus today's snapshot-locked PENDLE at 1×, with no boost premium. Mixes the latest payout with today's balances."
+                tip={`The latest distribution split over today's ${fmtCompact(sPendle.eligible)} sPENDLE plus ${fmtCompact(vePendle.snapshotLocked)} snapshot-locked PENDLE at 1×, no boost premium, × ${EPY}. Mixes the latest payout with today's balances.`}
               />
               <Stat
                 label="If only sPENDLE existed"
                 value={fmtPct(y.aprSolo)}
-                sub={`latest ÷ ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY}; assumes unlocking PENDLE is not restaked`}
-                tip="Plain APR once every snapshot lock has unlocked, if none of that PENDLE is restaked and each distribution stays at the latest amount."
+                tip={`Plain APR once every snapshot lock has unlocked: the latest distribution ÷ today's ${fmtCompact(sPendle.eligible)} sPENDLE × ${EPY}, if none of the unlocking PENDLE is restaked and each distribution stays at the latest amount.`}
               />
             </div>
           </CardContent>
@@ -110,12 +95,7 @@ export function Yield({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-boost"
-                tip="Rewards arrive as sPENDLE while the principal stays locked as PENDLE; both are PENDLE 1:1, so the ratio is still price-free."
-              >
-                Boosted vePENDLE locker
-              </Eyebrow>
+              <Eyebrow className="text-boost">Boosted vePENDLE locker</Eyebrow>
               <span className="text-[11px] text-muted-foreground">sPENDLE earned per PENDLE locked, per year</span>
             </div>
             <Stat
@@ -123,36 +103,32 @@ export function Yield({ data }: { data: TrackerData }) {
               value={fmtPct(latest.aprBoostedAvg)}
               tone="boost"
               size="lg"
-              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at the time`}
-              tip="Plain APR of the latest distribution × the average multiplier across all snapshot locks at that moment (virtual sPENDLE ÷ locked PENDLE). A lock with more time left than average earns more than this, one with less earns less; a lock changed after the snapshot keeps its snapshot terms."
+              sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)}`}
+              tip="Plain APR of the latest distribution × the average multiplier across snapshot locks at that moment. Rewards arrive as sPENDLE on PENDLE principal, both PENDLE 1:1, so the ratio is price-free. A lock with more time left than average earns more than this, one with less earns less."
             />
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
               <Stat
                 label={`Trailing ${y.trailing.epochs} epochs`}
                 value={fmtPct(y.trailing.aprBoostedAvg)}
-                sub={`same ${y.trailing.epochs} epochs, each plain × that epoch's multiplier`}
-                tip={`Mean of the last ${y.trailing.epochs} boosted APRs, each that epoch's plain APR × the average multiplier at that time. The multiplier falls every epoch as the locks run down, so this sits above the latest figure.`}
+                tip={`Mean of the last ${y.trailing.epochs} boosted APRs, each that epoch's plain APR × the average multiplier at that time. The multiplier falls every epoch, so this sits above the latest figure.`}
               />
               <Stat
                 label="Longest lock today"
                 value={fmtPct(y.aprMaxBoosted)}
-                sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(loyalty.maxMultiplier)}, today's multiplier of the lock unlocking ${fmtDate(loyalty.expiresAt)}`}
-                tip={`Plain APR at the latest distribution × the multiplier a lock unlocking on ${fmtDate(loyalty.expiresAt)} has today. Mixes the latest payout with today's multiplier.`}
+                sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(loyalty.maxMultiplier)}`}
+                tip={`Plain APR at the latest distribution × the multiplier a lock unlocking on ${fmtDate(loyalty.expiresAt)}, the last on the snapshot schedule, has today. Mixes the latest payout with today's multiplier.`}
               />
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Multipliers fall to 1× at unlock; a lock ending next week is already ~1×. The average snapshot
-              lock has {((loyalty.avgMultiplier - 1) / 3 * 2).toFixed(1)} years left, which is what the{" "}
-              {fmtMult(loyalty.avgMultiplier)} average multiplier means.
+              The average snapshot lock has {((loyalty.avgMultiplier - 1) / 3 * 2).toFixed(1)} years left ({fmtMult(loyalty.avgMultiplier)});
+              multipliers reach 1× at unlock.
             </p>
           </CardContent>
         </Card>
 
         <Card className="">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow tip="The most recent distribution and what is queued for the next one, read from the buyback contract, the staking contract and the rewards distributor.">
-              Latest reward flow
-            </Eyebrow>
+            <Eyebrow>Latest reward flow</Eyebrow>
             <Stat
               label="Distributed"
               value={fmtInt(latest.amount)}
@@ -161,7 +137,7 @@ export function Yield({ data }: { data: TrackerData }) {
               tip="PENDLE the buyback contract staked in the latest distribution transaction; the sPENDLE it received went to the rewards distributor for stakers to claim. The USDT figure is what the contract spent on swaps between the previous distribution and this one, so the average is a weekly TWAP price, not a print."
               sub={
                 <>
-                  bought for {fmtUsd(latest.usdtSpent)} USDT at {fmtUsdPrice(latest.usdtSpent / latest.pendleBought)} average;{" "}
+                  {fmtUsd(latest.usdtSpent)} USDT at {fmtUsdPrice(latest.usdtSpent / latest.pendleBought)};{" "}
                   {fmtDateTime(latest.timestamp)}, tx <TxLink hash={latest.txHash} />
                 </>
               }
@@ -172,8 +148,7 @@ export function Yield({ data }: { data: TrackerData }) {
                 value={fmtCompact(y.pendingBuyback)}
                 unit="PENDLE"
                 usd={usdOf(y.pendingBuyback, data.pendleUsd)}
-                sub="bought back, still in the buyback contract"
-                tip="PENDLE balanceOf the buyback contract at the latest block. The hourly TWAP accumulates it between distributions; at the next distribution it is staked and paid out, so this is a floor for the next payout, not the whole of it."
+                tip="PENDLE bought back and still in the buyback contract. The hourly TWAP accumulates it between distributions; at the next one it is staked and paid out, so this is a floor for the next payout, not the whole of it."
               />
               <Stat
                 label="Next distribution"
@@ -187,8 +162,8 @@ export function Yield({ data }: { data: TrackerData }) {
                 label="Distributed since launch"
                 value={fmtInt(y.totalDistributed)}
                 unit="sPENDLE"
-                sub={`${data.distributions.length} distributions; bought for ${fmtUsd(y.totalBuybackUsd)} USDT in total`}
-                tip="Sum of every distribution since the sPENDLE launch on 29 Jan 2026, and the USDT the buyback contract spent to acquire it. Each sPENDLE is one PENDLE; what that PENDLE is worth today is in the Valuation section."
+                sub={`${data.distributions.length} distributions; ${fmtUsd(y.totalBuybackUsd)} USDT spent`}
+                tip="Every distribution since the sPENDLE launch on 29 Jan 2026 summed, with the USDT the buyback contract spent to acquire it. What that PENDLE is worth today is in the Valuation section."
               />
             </div>
           </CardContent>

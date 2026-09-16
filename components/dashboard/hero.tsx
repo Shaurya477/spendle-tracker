@@ -53,7 +53,7 @@ export function Hero({ data }: { data: TrackerData }) {
           </dt>
           <dd className="font-figure text-3xl text-spendle sm:text-4xl">{fmtPct(y.latest.aprPlain)}</dd>
           <dd className="text-xs text-muted-foreground">
-            {fmtPct(y.trailing.aprPlain)} trailing mean over {y.trailing.epochs} epochs, in PENDLE terms
+            {fmtPct(y.trailing.aprPlain)} trailing mean, {y.trailing.epochs} epochs
           </dd>
         </div>
         <div className="flex flex-col gap-1">
@@ -67,7 +67,7 @@ export function Hero({ data }: { data: TrackerData }) {
           </dt>
           <dd className="font-figure text-3xl text-vependle sm:text-4xl">{fmtPct(y.latest.aprBoostedAvg)}</dd>
           <dd className="text-xs text-muted-foreground">
-            plain × {y.latest.avgMultiplier.toFixed(2)}× average multiplier at the latest distribution
+            plain × {y.latest.avgMultiplier.toFixed(2)}× at the latest distribution
           </dd>
         </div>
         <div className="flex flex-col gap-1">
@@ -81,7 +81,7 @@ export function Hero({ data }: { data: TrackerData }) {
           </dt>
           <dd className="font-figure text-3xl sm:text-4xl">{fmtPct(y.aprSolo)}</dd>
           <dd className="text-xs text-muted-foreground">
-            if unlocking PENDLE is not restaked; boost ends {fmtDate(data.loyalty.expiresAt)}
+            boost ends {fmtDate(data.loyalty.expiresAt)}
           </dd>
         </div>
       </dl>

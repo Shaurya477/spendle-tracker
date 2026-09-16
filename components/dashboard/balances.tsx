@@ -56,12 +56,7 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card className="relative overflow-hidden">
           <CardContent className="flex flex-col gap-6 py-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-spendle"
-                tip="totalSupply() of the staking contract. Every sPENDLE earns rewards, claimed or not, so distributed but unclaimed rewards are part of this figure."
-              >
-                sPENDLE staked
-              </Eyebrow>
+              <Eyebrow className="text-spendle">sPENDLE staked</Eyebrow>
               <Badge variant="outline" className="text-[11px] text-spendle ring-spendle/30">
                 live, liquid
               </Badge>
@@ -82,23 +77,22 @@ export function Balances({ data }: { data: TrackerData }) {
                 label="Unclaimed rewards"
                 value={fmtCompact(sPendle.unclaimedInDistributor)}
                 usd={usdOf(sPendle.unclaimedInDistributor, pendleUsd)}
-                sub="keeps earning for its owners; included in the supply above"
-                tip="The rewards distributor's sPENDLE balance: distributions paid out but not yet claimed. It is minted sPENDLE, so it is inside the supply figure and earns the next distribution for whoever it belongs to."
+                tip="The rewards distributor's sPENDLE balance: distributions paid out but not yet claimed. It is minted sPENDLE, so it sits inside the supply figure and keeps earning for whoever it belongs to."
               />
               <Stat
                 label="In cooldown"
                 value={fmtCompact(sPendle.cooldownQueue)}
                 unit="PENDLE"
                 usd={usdOf(sPendle.cooldownQueue, pendleUsd)}
-                sub={`sPENDLE already burned; PENDLE withdrawable ${sPendle.cooldownDays} days after unstaking`}
-                tip={`Unstaking burns the sPENDLE at once. The PENDLE is withdrawable after ${sPendle.cooldownDays} days, or immediately for a ${sPendle.instantFeePct}% fee.`}
+                sub={`withdrawable ${sPendle.cooldownDays} days after unstaking`}
+                tip={`Unstaking burns the sPENDLE at once; the PENDLE waits here and earns nothing. It is withdrawable after ${sPendle.cooldownDays} days, or immediately for a ${sPendle.instantFeePct}% fee.`}
               />
               <Stat
                 label="PENDLE in contract"
                 value={fmtCompact(sPendle.pendleHeld)}
                 usd={usdOf(sPendle.pendleHeld, pendleUsd)}
-                sub="sPENDLE supply + cooldown queue"
-                tip="PENDLE balanceOf the staking contract. Every sPENDLE is backed by one PENDLE here; the excess over sPENDLE supply is PENDLE whose sPENDLE was burned for cooldown and not yet withdrawn."
+                sub="sPENDLE supply + cooldown"
+                tip="PENDLE balanceOf the staking contract. Every sPENDLE is backed by one PENDLE here; the excess over sPENDLE supply is the cooldown queue."
               />
             </div>
           </CardContent>
@@ -107,12 +101,7 @@ export function Balances({ data }: { data: TrackerData }) {
         <Card className="relative overflow-hidden">
           <CardContent className="flex flex-col gap-6 py-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-vependle"
-                tip="PENDLE balanceOf the vePENDLE contract. No new locks are being taken; the balance only falls as expired locks are withdrawn. Split below by the contract's weekly unlock schedule read at the latest block."
-              >
-                Locked in vePENDLE
-              </Eyebrow>
+              <Eyebrow className="text-vependle">Locked in vePENDLE</Eyebrow>
               <Badge variant="outline" className="text-[11px] text-vependle ring-vependle/30">
                 deprecated, depleting
               </Badge>
@@ -125,7 +114,7 @@ export function Balances({ data }: { data: TrackerData }) {
                 {usdOf(vePendle.pendleHeld, pendleUsd)}
               </div>
               <div className="text-xs text-muted-foreground">
-                PENDLE in the old vePENDLE lock contract, lock running or ended
+                PENDLE in the old lock contract; no new locks, only withdrawals.
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-3">
@@ -134,20 +123,18 @@ export function Balances({ data }: { data: TrackerData }) {
                 value={fmtCompact(vePendle.activeLocked)}
                 usd={usdOf(vePendle.activeLocked, pendleUsd)}
                 sub={`last unlock ${fmtDate(vePendle.lastLiveExpiry)}${vePendle.lastLiveExpiry > loyalty.expiresAt ? ", after the boost ends" : ""}`}
-                tip={`Read from the vePENDLE contract's weekly unlock schedule.${vePendle.lastLiveExpiry > loyalty.expiresAt ? " The last unlock is after the boost ends because one lock was extended after the snapshot; its boost terms stay fixed." : ""}`}
+                tip={`PENDLE whose lock has not expired, from the vePENDLE contract's weekly unlock schedule at the latest block.${vePendle.lastLiveExpiry > loyalty.expiresAt ? " The last unlock is after the boost ends because one lock was extended after the snapshot; its boost terms stay fixed." : ""}`}
               />
               <Stat
                 label="Expired, unwithdrawn"
                 value={fmtCompact(vePendle.expiredUnwithdrawn)}
                 usd={usdOf(vePendle.expiredUnwithdrawn, pendleUsd)}
-                sub="lock ended, PENDLE not withdrawn yet"
-                tip="PENDLE in the contract minus PENDLE under a live lock. Its owners can withdraw at any time; it earns nothing and carries no boost, and it is what the migration chart below counts as it leaves."
+                tip="Lock ended, PENDLE not withdrawn yet: PENDLE in the contract minus PENDLE under a live lock. Its owners can withdraw at any time; it earns nothing and carries no boost."
               />
               <Stat
                 label="vePENDLE balance"
                 value={fmtCompact(vePendle.veBalance)}
-                sub="time-decayed voting weight, not a PENDLE quantity"
-                tip="Sum over live locks of amount × remaining time ÷ 2 years, the contract's voting weight. It falls every second and reaches zero at each lock's expiry. The loyalty boost's virtual sPENDLE is locked PENDLE + 3 × this figure, on the snapshot schedule."
+                tip="Voting weight, not a PENDLE quantity: Σ amount × remaining time ÷ 2 years over live locks. It falls every second and reaches zero at each lock's expiry. Virtual sPENDLE is locked PENDLE + 3 × this figure, on the snapshot schedule."
               />
             </div>
           </CardContent>
@@ -156,7 +143,7 @@ export function Balances({ data }: { data: TrackerData }) {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Eyebrow tip="The staking hub's total staked, as the three onchain balances above: sPENDLE supply, PENDLE under a live vePENDLE lock, and PENDLE whose lock has ended but has not been withdrawn.">
+          <Eyebrow tip="The staking hub's total staked as the three onchain balances above: sPENDLE supply, PENDLE under a live lock, and PENDLE whose lock ended but was not withdrawn.">
             How total staked splits
           </Eyebrow>
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
@@ -186,7 +173,7 @@ export function Balances({ data }: { data: TrackerData }) {
               value={fmtCompact(loyalty.virtual)}
               tone="boost"
               size="lg"
-              sub={`${fmtCompact(vePendle.snapshotLocked)} locked snapshot PENDLE × ${fmtMult(loyalty.avgMultiplier)} average multiplier`}
+              sub={`${fmtCompact(vePendle.snapshotLocked)} snapshot-locked × ${fmtMult(loyalty.avgMultiplier)}`}
               tip="The loyalty boost. Each snapshot lock counts 1 + 3 × remaining ÷ 2 years: 4× for a full two-year lock, 2.5× at one year, 1× at unlock. Summed over all snapshot locks; locks changed after the snapshot do not count."
             />
           </CardContent>
@@ -197,8 +184,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Boost premium"
               value={fmtCompact(loyalty.premium)}
               size="lg"
-              sub="virtual sPENDLE above 1×; the part that dilutes stakers"
-              tip="Virtual sPENDLE minus the locked PENDLE behind it, which is 3 × the snapshot vePENDLE balance. Counting each locked PENDLE once is the same as one staked PENDLE; only this excess takes reward share from everyone else. It falls to zero as the snapshot locks run down."
+              tip="Virtual sPENDLE above a 1× count of the locked PENDLE behind it (3 × the snapshot vePENDLE balance). Only this excess takes reward share from everyone else; it falls to zero as the snapshot locks run down."
             />
           </CardContent>
         </Card>
@@ -208,8 +194,7 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Reward-eligible total"
               value={fmtCompact(combined.rewardEligible)}
               size="lg"
-              sub="all sPENDLE + virtual sPENDLE; what each distribution is split over"
-              tip="The denominator of every distribution: sPENDLE supply (wallet-held and unclaimed) plus virtual sPENDLE from the snapshot locks. A staker's share of a distribution is their sPENDLE ÷ this figure."
+              tip="All sPENDLE (wallet-held and unclaimed) + virtual sPENDLE: the denominator of every distribution. A staker's share is their sPENDLE ÷ this figure."
             />
           </CardContent>
         </Card>
@@ -219,8 +204,8 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Boost ends"
               value={fmtDate(loyalty.expiresAt)}
               size="lg"
-              sub={`${fmtDays(loyalty.maxRemainingDays)} left, fixed by the snapshot schedule`}
-              tip={`Between weekly unlock batches the virtual balance falls about ${fmtCompact(loyalty.decayPerDay)} per day. After this date the premium is zero.`}
+              sub={`${fmtDays(loyalty.maxRemainingDays)} left`}
+              tip={`The last expiry on the snapshot lock schedule, fixed at the 29 Jan 2026 snapshot. Between weekly unlock batches the virtual balance falls about ${fmtCompact(loyalty.decayPerDay)} per day; after this date the premium is zero.`}
             />
           </CardContent>
         </Card>
@@ -231,12 +216,9 @@ export function Balances({ data }: { data: TrackerData }) {
           <SeriesProvider series={MIGRATION_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="Legend items switch their series on and off; the last one shown stays on.">From vePENDLE to sPENDLE</Eyebrow>
-              <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                There is no conversion: an expired lock is withdrawn, and staking the PENDLE is a
-                separate step. Bars: weekly withdrawals, split by whether the same wallet staked within
-                30 days. Lines, right axis: PENDLE still in vePENDLE and sPENDLE supply.
-              </p>
+              <Eyebrow tip="There is no conversion: an expired lock is withdrawn, and staking the PENDLE is a separate step. Bars: weekly withdrawals, split by whether the same wallet staked within 30 days. Lines, right axis: PENDLE still in vePENDLE and sPENDLE supply. Legend items switch their series on and off; the last one shown stays on.">
+                From vePENDLE to sPENDLE
+              </Eyebrow>
             </div>
             <SeriesLegend />
           </div>
@@ -245,22 +227,22 @@ export function Balances({ data }: { data: TrackerData }) {
               label="Withdrawn since the snapshot"
               value={fmtCompact(m.withdrawn)}
               unit="PENDLE"
-              sub={`by ${fmtInt(m.wallets)} wallets; PENDLE in vePENDLE went ${fmtCompact(first.vePendle)} → ${fmtCompact(last.vePendle)}`}
-              tip="Every PENDLE transfer out of the vePENDLE contract since the 29 Jan 2026 snapshot block. withdraw() on an expired lock is the only way PENDLE leaves, so each transfer is one lock being closed."
+              sub={`by ${fmtInt(m.wallets)} wallets; vePENDLE ${fmtCompact(first.vePendle)} → ${fmtCompact(last.vePendle)}`}
+              tip="Every PENDLE transfer out of the vePENDLE contract since the 29 Jan 2026 snapshot. withdraw() on an expired lock is the only way out, so each transfer is one lock closing."
             />
             <Stat
               label="Restaked as sPENDLE"
               value={fmtPct(restakeRate, 0)}
               tone="spendle"
-              sub={`${fmtCompact(m.restaked)} PENDLE by ${fmtInt(m.restakers)} wallets, within 30 days of withdrawing`}
-              tip="A withdrawal counts as restaked to the extent the same wallet minted sPENDLE within the 30 days after it. The rate is restaked ÷ withdrawn over withdrawals whose 30-day window has closed, so the most recent weeks are not in the denominator yet. Restaking from a different wallet is not matched."
+              sub={`${fmtCompact(m.restaked)} PENDLE by ${fmtInt(m.restakers)} wallets`}
+              tip="A withdrawal counts as restaked to the extent the same wallet minted sPENDLE within 30 days after it. The rate is over withdrawals whose 30-day window has closed, so the latest weeks are not in it yet. A different wallet restaking is not matched."
             />
             <Stat
               label="sPENDLE supply since the snapshot"
               value={`${fmtCompact(first.sPendle)} → ${fmtCompact(last.sPendle)}`}
               tone="spendle"
-              sub={`+${fmtCompact(last.sPendle - first.sPendle)}; restaked locks are ${fmtPct(m.restaked / (last.sPendle - first.sPendle), 0)} of it, the rest new staking and rewards`}
-              tip="sPENDLE totalSupply at the snapshot week and now, walked back through the mint and burn logs. Growth comes from three places: PENDLE restaked out of expired locks, fresh staking by holders, and the sPENDLE each distribution mints for stakers."
+              sub={`+${fmtCompact(last.sPendle - first.sPendle)}; ${fmtPct(m.restaked / (last.sPendle - first.sPendle), 0)} of it restaked locks`}
+              tip="sPENDLE supply at the snapshot week and now. Growth comes from three places: PENDLE restaked out of expired locks, fresh staking by holders, and the sPENDLE each distribution mints for stakers."
             />
           </div>
           <MigrationChart weeks={migration.weeks} />
@@ -273,15 +255,11 @@ export function Balances({ data }: { data: TrackerData }) {
           <SeriesProvider series={FLOWS_SERIES}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-1.5">
-              <Eyebrow tip="From the staking contract's Staked, CooldownInitiated, CooldownCanceled and Unstaked events since the snapshot. The buyback contract's own stakes (reward distributions) are left out, so this is holder behaviour only. Legend items switch their series on and off; the last one shown stays on.">
+              <Eyebrow
+                tip={`Net holder flow each week: PENDLE staked by holders minus sPENDLE sent to the ${sPendle.cooldownDays}-day cooldown or unstaked instantly for the ${sPendle.instantFeePct}% fee, cancelled cooldowns added back. The bars are those parts; the queue, right axis, is PENDLE that becomes withdrawable within two weeks. From the staking contract's events since the snapshot, the buyback contract's own stakes left out. Legend items switch their series on and off; the last one shown stays on.`}
+              >
                 Staking flows
               </Eyebrow>
-              <p className="max-w-[64ch] text-xs leading-relaxed text-muted-foreground">
-                Net holder flow each week: PENDLE staked by holders minus sPENDLE sent to the {sPendle.cooldownDays}-day
-                cooldown or unstaked instantly for the {sPendle.instantFeePct}% fee, with cancelled cooldowns added
-                back. The bars are those parts. The queue, right axis, is PENDLE that becomes withdrawable within two
-                weeks.
-              </p>
             </div>
             <SeriesLegend />
           </div>
@@ -291,23 +269,23 @@ export function Balances({ data }: { data: TrackerData }) {
               value={signed(flows.net7d)}
               unit="PENDLE"
               tone={flows.net7d >= 0 ? "spendle" : "boost"}
-              sub={`${signed(flows.net30d)} over 30 days; stakes minus cooldowns and instant unstakes, cancellations added back`}
-              tip="Staked − (sent to cooldown + unstaked instantly − cooldowns cancelled) over the last 7 days, from the staking contract's events. The buyback contract's own stakes are excluded, so this is holders adding or removing PENDLE, not rewards. Positive in green, negative in amber."
+              sub={`${signed(flows.net30d)} over 30 days`}
+              tip="Staked − (sent to cooldown + unstaked instantly − cooldowns cancelled) over the last 7 days. The buyback contract's own stakes are excluded, so this is holders adding or removing PENDLE, not rewards. Green when positive, amber when negative."
             />
             <Stat
               label="Cooldown queue"
               value={fmtCompact(flows.queue.now)}
               unit="PENDLE"
               tone="vependle"
-              sub={`${signed(flows.queue.now - flows.queue.weekAgo)} vs a week ago; withdrawable within ${sPendle.cooldownDays} days`}
-              tip={`PENDLE whose sPENDLE has been burned for cooldown and not yet withdrawn: PENDLE in the staking contract minus sPENDLE supply. It no longer earns. All of it becomes withdrawable within ${sPendle.cooldownDays} days, so it is the near-term selling that is already decided.`}
+              sub={`${signed(flows.queue.now - flows.queue.weekAgo)} vs a week ago`}
+              tip={`PENDLE whose sPENDLE was burned for cooldown and not yet withdrawn. It no longer earns, and all of it becomes withdrawable within ${sPendle.cooldownDays} days: unstaking that is already decided.`}
             />
             <Stat
               label="Unstaked instantly"
               value={fmtCompact(f.instant)}
               unit="PENDLE"
-              sub={`${fmtInt(f.instantCount)} unstakes since the snapshot, ${fmtPct(f.instant / (f.instant + f.toCooldown), 0)} of all unstaking by amount`}
-              tip="Holders who paid the fee rather than wait. The rest went through the cooldown."
+              sub={`${fmtInt(f.instantCount)} unstakes; ${fmtPct(f.instant / (f.instant + f.toCooldown), 0)} of all unstaking`}
+              tip="sPENDLE unstaked for the fee rather than through the cooldown, since the snapshot, gross of the fee. The share is by amount against everything unstaked either way."
             />
             <Stat
               label="Fees paid to skip the queue"
@@ -315,8 +293,7 @@ export function Balances({ data }: { data: TrackerData }) {
               unit="PENDLE"
               tone="boost"
               usd={usdOf(f.instantFee, pendleUsd)}
-              sub="sent to the Pendle treasury in the same transaction"
-              tip="The PENDLE transfer paired with every Unstaked event with a non-zero fee goes to Pendle's treasury multisig, 0x8270…b592."
+              tip="Fees on instant unstakes since the snapshot. The PENDLE transfer paired with every Unstaked event with a non-zero fee goes to Pendle's treasury multisig, 0x8270…b592, in the same transaction."
             />
           </div>
           <FlowsChart weeks={flows.weeks} />

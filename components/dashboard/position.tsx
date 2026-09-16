@@ -292,8 +292,8 @@ function Result({ data }: { data: PositionData }) {
               value={usd(held)}
               tone="spendle"
               size="lg"
-              sub={`(sPENDLE incl. unclaimed rewards + locked + cooldown + wallet PENDLE) × ${fmtUsdPrice(pendleUsd)}`}
-              tip="Every PENDLE-denominated balance this address has on mainnet, at the live PENDLE quote from Pendle's price API. sPENDLE, unclaimed rewards, locked PENDLE and PENDLE in cooldown are each one PENDLE. Other chains and LP positions are not read."
+              sub={`${fmtInt(held)} PENDLE × ${fmtUsdPrice(pendleUsd)}`}
+              tip="sPENDLE (unclaimed rewards included) + locked + cooldown + wallet PENDLE, each one PENDLE, at the live quote from Pendle's price API. Mainnet only; other chains and LP positions are not read."
             />
           </div>
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -302,28 +302,28 @@ function Result({ data }: { data: PositionData }) {
               value={fmtInt(sPendle.balance + sPendle.unclaimed)}
               usd={usd(sPendle.balance + sPendle.unclaimed)}
               tone="spendle"
-              sub={`${fmtInt(sPendle.balance)} in wallet + ${fmtNum(sPendle.unclaimed)} unclaimed, which keep earning`}
-              tip="sPENDLE balanceOf this address, plus rewards Pendle's API says it has accrued minus what it has claimed onchain. Unclaimed rewards sit in the distributor but earn for you, so they count toward your reward weight."
+              sub={`${fmtInt(sPendle.balance)} in wallet + ${fmtNum(sPendle.unclaimed)} unclaimed`}
+              tip="sPENDLE balanceOf this address, plus rewards Pendle's API says it has accrued minus what it has claimed onchain. Unclaimed rewards sit in the distributor but earn for you, so they count in your reward weight."
             />
             <Stat
               label="Locked"
               value={fmtInt(locked)}
               usd={usd(locked)}
               tone="vependle"
-              tip="PENDLE under a live vePENDLE lock for this address, from the contract's position at the latest block. The snapshot figures are the same position at the 29 Jan 2026 block; the boost is computed from those, so extending or adding to the lock since then changes nothing about the boost."
+              tip="PENDLE under a live vePENDLE lock for this address at the latest block. The snapshot figures are the same position at the 29 Jan 2026 block; the boost is computed from those, so extending or adding to the lock since then changes nothing about it."
               sub={
                 lock && lock.amount > 0
-                  ? `unlocks ${fmtDate(lock.expiry)}; at the snapshot, ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
+                  ? `unlocks ${fmtDate(lock.expiry)}; snapshot: ${fmtInt(lock.snapshotAmount)} to ${fmtDate(lock.snapshotExpiry)}`
                   : lock
-                    ? `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}; withdrawn`
-                    : "no lock at the snapshot, none now"
+                    ? `snapshot lock of ${fmtInt(lock.snapshotAmount)} expired ${fmtDate(lock.snapshotExpiry)}`
+                    : "none"
               }
             />
             <Stat
               label="Cooldown"
               value={fmtInt(sPendle.cooldownAmount)}
               usd={usd(sPendle.cooldownAmount)}
-              tip="PENDLE this address has unstaked and is waiting out the cooldown on. The sPENDLE was burned when the cooldown started, so this earns nothing; the date is cooldown start + the contract's cooldown period."
+              tip="PENDLE this address has unstaked and is waiting out the cooldown on. The sPENDLE was burned when the cooldown started, so it earns nothing; the date is cooldown start + the contract's cooldown period."
               sub={
                 sPendle.cooldownAmount > 0
                   ? `withdrawable ${fmtDate(sPendle.cooldownReadyAt!)}`
@@ -334,8 +334,7 @@ function Result({ data }: { data: PositionData }) {
               label="Wallet PENDLE"
               value={fmtInt(sPendle.walletPendle)}
               usd={usd(sPendle.walletPendle)}
-              sub="liquid, not staked"
-              tip="PENDLE balanceOf this address on mainnet. It earns nothing until staked; included in the dollar value held for completeness."
+              tip="PENDLE balanceOf this address on mainnet: liquid, not staked, earning nothing. Included in the dollar value held."
             />
           </div>
         </CardContent>
@@ -349,12 +348,8 @@ function Result({ data }: { data: PositionData }) {
               value={fmtInt(lock?.virtualNow ?? 0)}
               tone="boost"
               size="lg"
-              sub={
-                hasBoost && lock
-                  ? `${fmtMult(lock.multiplierNow)} on the snapshot lock, 1× on ${fmtDate(lock.snapshotExpiry)}; reward weight, not a balance`
-                  : "no active boost; reward weight, not a balance"
-              }
-              tip="Your snapshot lock × (1 + 3 × time remaining ÷ 2 years), using the lock as it stood at the 29 Jan 2026 snapshot. This is the weight your lock carries in each distribution; it falls every day and reaches zero when the snapshot lock expires, even if you have since extended."
+              sub={hasBoost && lock ? `${fmtMult(lock.multiplierNow)} today, 1× on ${fmtDate(lock.snapshotExpiry)}` : "no active boost"}
+              tip="Reward weight, not a balance: your snapshot lock × (1 + 3 × time remaining ÷ 2 years), using the lock as it stood at the 29 Jan 2026 snapshot. It falls every day and reaches zero when the snapshot lock expires, even if you have since extended."
             />
           </CardContent>
         </Card>
@@ -364,8 +359,8 @@ function Result({ data }: { data: PositionData }) {
               label="Reward weight and share"
               value={fmtPct(weight.share, 4)}
               size="lg"
-              sub={`${fmtInt(weight.now)} of the eligible total; ≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} bought back so far this epoch`}
-              tip="Your sPENDLE, unclaimed rewards included, plus your virtual sPENDLE, divided by the protocol's reward-eligible total. Your share of the next distribution if nothing changes."
+              sub={`≈ ${fmtNum(weight.pendingShare, 1)} sPENDLE of the ${fmtCompact(weight.pendingBuyback)} bought so far this epoch`}
+              tip={`Your sPENDLE, unclaimed rewards included, plus your virtual sPENDLE (${fmtInt(weight.now)} in total) ÷ the protocol's reward-eligible total. Your share of the next distribution if nothing changes.`}
             />
           </CardContent>
         </Card>
@@ -374,31 +369,29 @@ function Result({ data }: { data: PositionData }) {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="">
           <CardContent className="flex flex-col gap-5">
-            <Eyebrow tip="What this address has earned from distributions since the snapshot: this page's own estimate from your weight each epoch, and Pendle's record from its API, side by side.">
-              Paid so far
-            </Eyebrow>
+            <Eyebrow>Paid so far</Eyebrow>
             <Stat
               label="Earned (estimate)"
               value={fmtNum(rewards.earnedEstimate)}
               unit="sPENDLE"
               usd={usd(rewards.earnedEstimate)}
               size="lg"
-              sub={`${rewards.epochsWithPosition} epochs with a position; assumes you were active in each`}
-              tip="Your weight ÷ eligible total × each distribution, summed. Assumes you were active in every epoch (Pendle requires a governance vote); compare with Pendle's record beside it."
+              sub={`${rewards.epochsWithPosition} epochs with a position`}
+              tip="Your weight ÷ eligible total × each distribution, summed since the snapshot. Assumes you were active in every epoch (Pendle requires a governance vote); compare with Pendle's record beside it."
             />
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <Stat
                 label="Pendle's record"
                 value={fmtNum(rewards.apiAccrued)}
                 usd={usd(rewards.apiAccrued)}
-                sub={`accrued per the Pendle API: ${fmtNum(rewards.claimed)} claimed onchain, ${fmtNum(rewards.unclaimed)} unclaimed (${usd(rewards.unclaimed)})`}
-                tip="All-time sPENDLE rewards Pendle's API has recorded for this address. Claimed is what the rewards distributor has paid out to it onchain. If this is below the estimate, the address most likely missed a governance vote in some epoch and forfeited that epoch's rewards."
+                sub={`${fmtNum(rewards.claimed)} claimed, ${fmtNum(rewards.unclaimed)} unclaimed`}
+                tip="All-time sPENDLE rewards Pendle's API has recorded for this address; claimed is what the rewards distributor has paid it onchain. Below the estimate most likely means a missed governance vote forfeited an epoch's rewards."
               />
               <Stat
                 label="In-kind airdrops"
                 value={fmtUsd(rewards.airdropUsd)}
-                sub={`≈ ${fmtNum(rewards.airdropPendle)} PENDLE at each epoch's buyback price, over ${rewards.airdropEpochsCovered} epochs with data`}
-                tip="Your share of each epoch's airdrop USD as Pendle's API reports it, using the same reward share as the sPENDLE estimate. Airdrops are paid in the airdropped tokens, not PENDLE; the PENDLE figure converts each epoch's USD at that epoch's buyback price so it can be added to APR."
+                sub={`≈ ${fmtNum(rewards.airdropPendle)} PENDLE; ${rewards.airdropEpochsCovered} epochs with data`}
+                tip="Your reward share × each epoch's airdrop USD as Pendle's API reports it. Airdrops are paid in the airdropped tokens, not PENDLE; the PENDLE figure converts each epoch's USD at that epoch's buyback price so it can be added to APR."
               />
             </div>
           </CardContent>
@@ -407,12 +400,7 @@ function Result({ data }: { data: PositionData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-spendle"
-                tip="sPENDLE earned in an epoch ÷ your principal in that epoch (sPENDLE incl. unclaimed + locked PENDLE) × 26.09. Both sides are PENDLE, so price cancels. The protocol figures beside it are the same formula for a plain staker and for the average locker."
-              >
-                Your APR
-              </Eyebrow>
+              <Eyebrow className="text-spendle">Your APR</Eyebrow>
               <span className="text-[11px] text-muted-foreground">on sPENDLE + locked PENDLE, per year</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -421,29 +409,28 @@ function Result({ data }: { data: PositionData }) {
                 value={apr.latestBuyback === null ? "—" : fmtPct(apr.latestBuyback)}
                 tone="spendle"
                 size="lg"
-                sub={`protocol plain ${fmtPct(apr.protocolPlainLatest)}, average locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
-                tip="Your estimated sPENDLE from the most recent distribution ÷ your principal at that block × 26.09. Above the protocol's plain APR means your lock's boost is lifting you; below it means the boost premium others hold is diluting you."
+                sub={`protocol: plain ${fmtPct(apr.protocolPlainLatest)}, average locker ${fmtPct(apr.protocolBoostedAvgLatest)}`}
+                tip="Your estimated sPENDLE from the most recent distribution ÷ your principal at that block (sPENDLE incl. unclaimed + locked PENDLE) × 26.09; both sides PENDLE, so price cancels. Above the protocol's plain APR means your boost is lifting you; below it, others' boost is diluting you."
               />
               <Stat
                 label="Latest incl. airdrops"
                 value={apr.latestTotal === null ? "—" : fmtPct(apr.latestTotal)}
                 size="lg"
-                sub="airdrops converted to PENDLE at that epoch's buyback price"
-                tip="The same APR with your share of that epoch's in-kind airdrops added, converted to PENDLE at the epoch's buyback price. Shown as a dash when Pendle's API has no airdrop figure for the epoch."
+                tip="The same APR with your share of that epoch's in-kind airdrops added, converted to PENDLE at the epoch's buyback price. A dash when Pendle's API has no airdrop figure for the epoch."
               />
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <Stat
                 label="Mean, buybacks only"
                 value={apr.meanBuyback === null ? "—" : fmtPct(apr.meanBuyback)}
-                sub={`${apr.epochsAveraged} epochs with a position`}
-                tip="Arithmetic mean of your per-epoch buyback APRs over every epoch in which you held sPENDLE or a lock. Epochs before you had a position are left out, not counted as zero."
+                sub={`${apr.epochsAveraged} epochs`}
+                tip="Mean of your per-epoch buyback APRs over every epoch in which you held sPENDLE or a lock. Epochs before you had a position are left out, not counted as zero."
               />
               <Stat
                 label="Mean incl. airdrops"
                 value={apr.meanTotal === null ? "—" : fmtPct(apr.meanTotal)}
-                sub={`${apr.epochsAveragedTotal} of those epochs with airdrop data`}
-                tip="The same mean with airdrops included, over only the epochs where Pendle's API reports an airdrop figure. Fewer epochs than the buyback-only mean, so the two are not strictly comparable."
+                sub={`${apr.epochsAveragedTotal} epochs with airdrop data`}
+                tip="The same mean with airdrops included, over only the epochs where Pendle's API reports an airdrop figure. Fewer epochs than the buyback-only mean, so not strictly comparable."
               />
             </div>
           </CardContent>
@@ -451,12 +438,7 @@ function Result({ data }: { data: PositionData }) {
 
         <Card className="">
           <CardContent className="flex flex-col gap-5">
-            <Eyebrow
-              className="text-boost"
-              tip="The loyalty boost moves sPENDLE from every 1× unit to snapshot lockers. These figures split that into what your sPENDLE has lost to it and what your lock has gained from it, epoch by epoch, plus the remainder until the boost ends at the latest distribution size."
-            >
-              What the boost does to you
-            </Eyebrow>
+            <Eyebrow className="text-boost">What the boost does to you</Eyebrow>
             {hasStake && (
               <Stat
                 label="Dilution on your sPENDLE"
@@ -464,8 +446,8 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="boost"
                 size="lg"
-                sub={`shortfall vs everyone at 1×; ≈ ${fmtNum(outlook.remainingDilutionCost)} more by ${fmtDate(outlook.boostEndsAt)} at the latest distribution`}
-                tip="For each epoch: what your sPENDLE would have earned if every locked PENDLE counted 1×, minus what it did earn, summed. The remainder projects the same gap day by day to the boost's end, with each epoch paying the latest distribution and protocol sPENDLE held flat."
+                sub={`≈ ${fmtNum(outlook.remainingDilutionCost)} more by ${fmtDate(outlook.boostEndsAt)}`}
+                tip="What your sPENDLE would have earned if every locked PENDLE counted 1×, minus what it did earn, summed over the epochs. The remainder projects the same gap day by day to the boost's end, each epoch paying the latest distribution and protocol sPENDLE held flat."
               />
             )}
             {lock && (rewards.premiumEarned > 0 || hasBoost) && (
@@ -475,15 +457,14 @@ function Result({ data }: { data: PositionData }) {
                 unit="sPENDLE so far"
                 tone="vependle"
                 size="lg"
-                sub={`above a 1× count of your lock; ≈ ${fmtNum(outlook.remainingPremium)} more before your boost ends`}
-                tip="For each epoch: (your virtual sPENDLE − your snapshot-locked PENDLE) ÷ the eligible total × the distribution, summed. The part of your rewards that exists only because of the multiplier. The remainder projects it to your snapshot lock's expiry at the latest distribution size."
+                sub={`≈ ${fmtNum(outlook.remainingPremium)} more before your boost ends`}
+                tip="(Your virtual sPENDLE − your snapshot-locked PENDLE) ÷ the eligible total × each distribution, summed: the part of your rewards that exists only because of the multiplier. The remainder projects it to your snapshot lock's expiry at the latest distribution size."
               />
             )}
             {hasStake && lock && hasBoost && (
               <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
                 Net so far: {rewards.premiumEarned - rewards.dilutionCost >= 0 ? "+" : "−"}
-                {fmtNum(Math.abs(rewards.premiumEarned - rewards.dilutionCost))} sPENDLE. Your lock&apos;s
-                premium is paid by everyone&apos;s sPENDLE, including yours.
+                {fmtNum(Math.abs(rewards.premiumEarned - rewards.dilutionCost))} sPENDLE.
               </p>
             )}
           </CardContent>
@@ -495,14 +476,11 @@ function Result({ data }: { data: PositionData }) {
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <Eyebrow tip="A day-by-day projection of your buyback APR from today to the last snapshot unlock. Your weight is your sPENDLE plus your decaying virtual sPENDLE; when your own lock expires its PENDLE is assumed restaked at 1×. The protocol side holds sPENDLE supply flat and lets only the snapshot boost decay.">
+                <Eyebrow
+                  tip={`Your buyback APR projected day by day to the last snapshot unlock. Position held as-is, protocol sPENDLE flat, each epoch paying the latest ${fmtInt(outlook.latestDistribution)} sPENDLE; your virtual sPENDLE decays on the snapshot schedule, and when your own lock expires its PENDLE is assumed restaked at 1×. Buybacks only, no airdrops.`}
+                >
                   Your APR until boost ends
                 </Eyebrow>
-                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-                  Position held as-is, protocol sPENDLE flat, each epoch paying the latest{" "}
-                  {fmtInt(outlook.latestDistribution)} sPENDLE; your unlocked PENDLE assumed restaked at
-                  1×. Buybacks only.
-                </p>
               </div>
               <div className="flex flex-wrap gap-x-8 gap-y-4">
                 <Stat
@@ -513,8 +491,6 @@ function Result({ data }: { data: PositionData }) {
                     </span>
                   }
                   value={fmtPct(outlook.aprNow)}
-                  tipLabel="Today"
-                  tip="Your projected APR at today's weights if the next distribution equalled the latest one."
                 />
                 {outlook.aprAtUnlockRestaked !== null && (
                   <Stat
@@ -525,8 +501,6 @@ function Result({ data }: { data: PositionData }) {
                       </span>
                     }
                     value={fmtPct(outlook.aprAtUnlockRestaked)}
-                    tipLabel="Your unlock"
-                    tip="Your projected APR on the day your live lock expires, with its PENDLE restaked as sPENDLE at 1×. Any remaining snapshot boost on your position ends at the snapshot expiry, which may differ from this date."
                   />
                 )}
                 <Stat
@@ -538,8 +512,6 @@ function Result({ data }: { data: PositionData }) {
                   }
                   value={fmtPct(outlook.aprAfterBoost!)}
                   tone="spendle"
-                  tipLabel="Boost ends"
-                  tip="Your projected APR once every snapshot lock has expired and no virtual sPENDLE remains, so every unit counts 1×. If your own lock has unlocked by then it is assumed restaked and this matches the protocol's plain APR; if it runs past this date, its PENDLE is still in your principal but earns nothing, so the figure sits lower."
                 />
               </div>
             </div>
@@ -551,7 +523,7 @@ function Result({ data }: { data: PositionData }) {
       <Card className="">
         <CardContent className="flex flex-col gap-3 px-0">
           <div className="px-4">
-            <Eyebrow tip="One row per distribution, newest first: your sPENDLE (wallet + unclaimed) and lock at that block, your multiplier and share of the eligible total, the sPENDLE that share earned, your airdrop share converted at the buyback price, the price the buyback paid, and your APR for the epoch with and without airdrops.">
+            <Eyebrow tip="One row per distribution, newest first: your sPENDLE (wallet + unclaimed) and lock at that block, your multiplier and share of the eligible total, the sPENDLE that share earned, your airdrop share at the buyback price, the price the buyback paid, and your APR for the epoch with and without airdrops.">
               Epoch by epoch
             </Eyebrow>
           </div>

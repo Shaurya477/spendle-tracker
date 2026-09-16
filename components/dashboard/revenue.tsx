@@ -10,7 +10,6 @@ import { ACCRUAL_SERIES, EPOCH_FEE_SERIES } from "@/lib/chart-series";
 import { AccrualChart, EpochFeeChart } from "./charts";
 import { SeriesLegend, SeriesProvider } from "./series";
 import { Eyebrow, SectionHeading, Stat } from "./primitives";
-import { InfoTip } from "./info-tip";
 
 const YT = "var(--spendle)";
 const SWAP = "var(--vependle)";
@@ -82,34 +81,9 @@ export function Revenue({ data }: { data: TrackerData }) {
         }
       />
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-background/40 p-4 text-xs leading-relaxed text-muted-foreground sm:grid-cols-[auto_1fr_auto_1fr] sm:gap-x-6">
-        <dt className="text-xs font-medium text-spendle">Funded</dt>
-        <dd>USDT sent to the buyback contract for the epoch.</dd>
-        <dt className="text-xs font-medium text-spendle">Bought</dt>
-        <dd>PENDLE that USDT bought; paid to stakers 14 to 28 days after the epoch starts.</dd>
-        <dt className="flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground">
-          <span>80% share</span>
-          <InfoTip label="80% share">
-            The gap between the 80% share and Funded is in-kind airdrops, which sit inside Revenue but
-            are passed to stakers as tokens, plus funding that arrives after the epoch.
-          </InfoTip>
-        </dt>
-        <dd>0.8 × DefiLlama Revenue; a policy figure, not a flow.</dd>
-        <dt className="flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground">
-          <span>Source</span>
-          <InfoTip label="Source">
-            DefiLlama books a fee on the day the tokens reach Pendle&apos;s treasury, so single epochs
-            are lumpy, can run a day late, and are not Pendle&apos;s own epoch accounting.
-          </InfoTip>
-        </dt>
-        <dd>DefiLlama, Pendle V2 only, all chains, since 29 Jan 2026.</dd>
-      </dl>
-
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <Eyebrow tip="Fee epochs are 14 days, aligned to Pendle's epoch calendar (a known epoch start on 7 Apr 2026 fixes the grid). An epoch is complete once its 14 days have passed; the one in progress is shown on the right and in the table below, but the cards use the last complete one so a partial fortnight is not read as a drop.">
-            Latest complete epoch
-          </Eyebrow>
+          <Eyebrow>Latest complete epoch</Eyebrow>
           <span className="tabular text-sm">
             {fmtDate(e.start)} → {fmtDate(ends(e))}
           </span>
@@ -127,8 +101,8 @@ export function Revenue({ data }: { data: TrackerData }) {
               value={fmtUsd(e.yt)}
               tone="spendle"
               size="lg"
-              sub={`${fmtPct(share(e.yt, gross), 1)} of gross; everything booked at the treasury except swap fees`}
-              tip="DefiLlama Revenue minus the protocol's 80% of swap fees: YT yield and points fees, limit-order fees, post-maturity yield, and airdrop tokens forwarded to the treasury."
+              sub={`${fmtPct(share(e.yt, gross), 1)} of gross`}
+              tip="Everything booked at the treasury except swap fees: DefiLlama Revenue minus the protocol's 80% of swap fees, which is YT yield and points fees, limit-order fees, post-maturity yield, and airdrop tokens forwarded to the treasury."
             />
           </CardContent>
         </Card>
@@ -150,8 +124,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               label="Protocol take"
               value={fmtUsd(e.revenue)}
               size="lg"
-              sub="DefiLlama Revenue; split 80 / 10 / 10 below"
-              tip="DefiLlama's Revenue for Pendle V2 over the epoch: everything booked at Pendle's treasury, which is gross fees minus the LPs' 20% of swap fees. This is the base the 80 / 10 / 10 policy applies to, and the number valuation multiples call revenue."
+              tip="DefiLlama's Revenue for Pendle V2 over the epoch: everything booked at Pendle's treasury, which is gross fees minus the LPs' 20% of swap fees. The base the 80 / 10 / 10 policy applies to, split in the card below."
             />
           </CardContent>
         </Card>
@@ -161,8 +134,8 @@ export function Revenue({ data }: { data: TrackerData }) {
               label="Gross fees"
               value={fmtUsd(gross)}
               size="lg"
-              sub={`non-swap + swap; LPs keep ${fmtPct(share(e.lp, gross), 1)} of it`}
-              tip="Everything users paid Pendle over the epoch: YT and other fees plus gross swap fees, before the LP share. This is the fee figure the Valuation section annualises."
+              sub={`LPs keep ${fmtPct(share(e.lp, gross), 1)}`}
+              tip="Everything users paid Pendle over the 14-day epoch, before the LP share: YT and other fees plus gross swap fees, from DefiLlama's daily Pendle V2 data across every chain. DefiLlama books a fee on the day tokens reach the treasury, so single epochs are lumpy and can run a day late. The figure the Valuation section annualises."
             />
           </CardContent>
         </Card>
@@ -241,17 +214,13 @@ export function Revenue({ data }: { data: TrackerData }) {
           <CardContent className="flex flex-col gap-4">
             <SeriesProvider series={ACCRUAL_SERIES}>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the gauge controller paid to Ethereum LPs out of PENDLE it already held; supply is unchanged. Click a legend item to hide it; the last one shown stays on.">
+                <Eyebrow tip="Stacked areas: the 80/10/10 policy split of DefiLlama Revenue plus LP swap fees, since 29 Jan 2026. Solid line: USDT the buyback contract received. Dashed line, right axis: PENDLE the Ethereum gauge controller paid to LPs out of PENDLE it already held (Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere); supply is unchanged. Click a legend item to hide it; the last one shown stays on.">
                   Cumulative fees vs emissions
                 </Eyebrow>
                 <SeriesLegend />
               </div>
               <AccrualChart points={r.cumulative} />
             </SeriesProvider>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Emissions: Ethereum gauge controller, Performance stream only; limit-order and co-incentive
-              PENDLE is paid elsewhere.
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -259,9 +228,7 @@ export function Revenue({ data }: { data: TrackerData }) {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
         <Card className="">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow tip="Totals from the 29 Jan 2026 snapshot, when sPENDLE launched, to now. Fee figures are DefiLlama's daily Pendle V2 data summed; funded, bought and emissions are read from the chain.">
-              sPENDLE era, since 29 Jan 2026
-            </Eyebrow>
+            <Eyebrow>sPENDLE era, since 29 Jan 2026</Eyebrow>
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
               <Stat
                 label="Bought back"
@@ -269,27 +236,26 @@ export function Revenue({ data }: { data: TrackerData }) {
                 unit="PENDLE"
                 usd={fmtUsd(r.totals.boughtUsd)}
                 tone="spendle"
-                sub={`over ${r.epochs.filter((x) => x.bought).length} distributions; USD is the USDT spent`}
-                tip="PENDLE the buyback contract received and then staked for stakers, summed over every distribution, with the USDT it spent on the swaps. This is the buyback that has actually happened, against the policy share next to it."
+                sub={`${r.epochs.filter((x) => x.bought).length} distributions`}
+                tip="PENDLE the buyback contract received and staked for stakers, summed over every distribution since the snapshot; the USD is the USDT it spent on the swaps. The buyback that has actually happened, against the policy share beside it."
               />
               <Stat
                 label="Buyback funded"
                 value={fmtUsd(r.totals.buybackFunded)}
-                sub="USDT received by the buyback contract"
                 tip="Every USDT transfer into the buyback contract since 29 Jan 2026. The part not yet spent is the current epoch's open funding window."
               />
               <Stat
                 label="80% policy share"
                 value={fmtUsd(r.totals.buyback)}
-                sub={`0.8 × Revenue, policy not flow; funded is ${fmtPct(share(r.totals.buybackFunded, r.totals.buyback), 0)} of it`}
-                tip="0.8 × DefiLlama Revenue since the snapshot: what the policy would send to buybacks if applied to every dollar. The gap to Funded is in-kind airdrops passed to stakers as tokens, funding for the current epoch that has not arrived yet, and any shortfall."
+                sub={`funded is ${fmtPct(share(r.totals.buybackFunded, r.totals.buyback), 0)} of it`}
+                tip="0.8 × DefiLlama Revenue since the snapshot: a policy figure, not a flow. The gap to Funded is in-kind airdrops passed to stakers as tokens, funding for the current epoch that has not arrived yet, and any shortfall."
               />
               <Stat
                 label="In-kind airdrops"
                 value={fmtUsd(r.airdrops.usd)}
                 tone="vependle"
-                sub={`passed to stakers as-is, not bought back; ${r.airdrops.epochs} epochs since ${fmtDate(r.airdrops.from)}`}
-                tip="Per-epoch airdrop USD from Pendle's staking API. These sit inside DefiLlama Revenue but are forwarded to stakers as tokens, never bought back."
+                sub={`${r.airdrops.epochs} epochs since ${fmtDate(r.airdrops.from)}`}
+                tip="Per-epoch airdrop USD from Pendle's staking API. These sit inside DefiLlama Revenue but are forwarded to stakers as the airdropped tokens, never bought back."
               />
             </div>
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4 sm:grid-cols-4">
@@ -302,20 +268,17 @@ export function Revenue({ data }: { data: TrackerData }) {
               <Stat
                 label="Treasury"
                 value={fmtUsd(r.totals.treasury)}
-                sub="10% policy share of Revenue"
                 tip="0.1 × DefiLlama Revenue since the snapshot. A policy figure: the treasury's actual receipts are not read from the chain here."
               />
               <Stat
                 label="Operations"
                 value={fmtUsd(r.totals.ops)}
-                sub="10% policy share of Revenue"
                 tip="0.1 × DefiLlama Revenue since the snapshot. A policy figure, the same as Treasury."
               />
               <Stat
                 label="LP swap fees"
                 value={fmtUsd(r.totals.lp)}
-                sub="20% of gross swap"
-                tip="DefiLlama's supply-side revenue since the snapshot: the 20% of swap fees that stays with liquidity providers and never reaches the protocol."
+                tip="The 20% of gross swap fees that stays with liquidity providers and never reaches the protocol: DefiLlama's supply-side revenue since the snapshot."
               />
             </div>
             <div className="grid gap-6 border-t border-border pt-4 sm:grid-cols-2">
@@ -325,8 +288,8 @@ export function Revenue({ data }: { data: TrackerData }) {
                 unit="PENDLE"
                 usd={usdOf(r.totals.emittedPendle, pendleUsd)}
                 tone="boost"
-                sub={`Ethereum gauge controller, Performance stream only; ${fmtInt(r.gaugePendle)} PENDLE left in it`}
-                tip="PENDLE paid to Ethereum LPs from the gauge controller since 29 Jan 2026: start balance + top-ups − end balance. Limit-order and co-incentive PENDLE is paid elsewhere. USD at the live quote."
+                sub={`${fmtInt(r.gaugePendle)} PENDLE left in the gauge controller`}
+                tip="PENDLE paid to Ethereum LPs from the gauge controller since 29 Jan 2026: start balance + top-ups − end balance. Performance stream only; limit-order and co-incentive PENDLE is paid elsewhere. USD at the live quote."
               />
             </div>
           </CardContent>
@@ -335,12 +298,7 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow
-                className="text-boost"
-                tip="Pendle's Adaptive Incentive Mechanism decides each week how much PENDLE goes to which market and through which stream. This card is the current week's assignment as Pendle's API reports it, not what has been paid out yet."
-              >
-                Current AIM assignment
-              </Eyebrow>
+              <Eyebrow className="text-boost">Current AIM assignment</Eyebrow>
               <span className="text-[11px] text-muted-foreground">{r.aim.markets} markets</span>
             </div>
             <Stat
@@ -350,8 +308,8 @@ export function Revenue({ data }: { data: TrackerData }) {
               usd={usdOf(r.aim.pendle, pendleUsd)}
               tone="boost"
               size="lg"
-              sub="per week, all chains; not all of it goes to LPs"
-              tip="The weekly assignment from Pendle's incentives API across every chain. TVL and fee streams (the Performance stream) go to pools through the gauge controllers; limit-order PENDLE goes to order makers; the rest is discretionary and co-incentives."
+              sub="per week, all chains"
+              tip="This week's assignment by Pendle's Adaptive Incentive Mechanism, from its incentives API across every chain; an assignment, not a payout yet. TVL and fee streams (the Performance stream) go to pools through the gauge controllers; limit-order PENDLE goes to order makers; the rest is discretionary and co-incentives."
             />
             <Split
               format={(n) => `${fmtCompact(n)} PENDLE`}
@@ -370,7 +328,7 @@ export function Revenue({ data }: { data: TrackerData }) {
       <Card className="">
         <CardContent className="px-0">
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
-            <Eyebrow tip="One row per 14-day fee epoch since the snapshot, newest first. Fee columns are DefiLlama's daily data summed over the epoch; Funded and Bought are read from the chain and attributed to the epoch as described above. The open epoch is marked in progress.">
+            <Eyebrow tip="One row per 14-day fee epoch since the snapshot, newest first; the grid is fixed by a known epoch start on 7 Apr 2026. Fee columns are DefiLlama's daily data summed over the epoch; Funded and Bought are read from the chain. Definitions are under Column notes below the table.">
               Every fee epoch
             </Eyebrow>
             <span className="text-[11px] text-muted-foreground">since 29 Jan 2026</span>
