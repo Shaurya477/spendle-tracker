@@ -108,6 +108,7 @@ export function Valuation({ data }: { data: TrackerData }) {
               tone={v.payoutRatio >= 0.7 ? "spendle" : "boost"}
               size="lg"
               sub={`USDT funded to the buyback contract ÷ DefiLlama revenue, last ${v.payoutEpochs} closed epochs; policy says up to 80%`}
+              tip={`The share of protocol revenue that was actually handed to the buyback contract, against the policy figure of up to 80%. Revenue is DefiLlama's Pendle V2 figure: fees after the LP share, summed over the last ${v.payoutEpochs} complete 14-day epochs. Funded is every USDT transfer into the buyback contract in those epochs, each attributed to the epoch whose end is nearest, within seven days either side. An epoch counts only once that window has closed, so a late transfer is not read as a shortfall; an epoch with no funding at all is left out rather than counted as zero. Below 70% shows in amber.`}
             />
           </CardContent>
         </Card>
