@@ -107,7 +107,9 @@ export function Revenue({ data }: { data: TrackerData }) {
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <Eyebrow>Latest complete epoch</Eyebrow>
+          <Eyebrow tip="Fee epochs are 14 days, aligned to Pendle's epoch calendar (a known epoch start on 7 Apr 2026 fixes the grid). An epoch is complete once its 14 days have passed; the one in progress is shown on the right and in the table below, but the cards use the last complete one so a partial fortnight is not read as a drop.">
+            Latest complete epoch
+          </Eyebrow>
           <span className="tabular text-sm">
             {fmtDate(e.start)} → {fmtDate(ends(e))}
           </span>
@@ -138,6 +140,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               tone="vependle"
               size="lg"
               sub={`${fmtPct(share(e.swap, gross), 1)} of gross: ${fmtUsd(e.lp)} to LPs, ${fmtUsd(e.swapToProtocol)} to protocol`}
+              tip="Gross PT/YT swap fees, derived as DefiLlama's supply-side revenue ÷ 0.20, since LPs keep a fixed 20% of swap fees. The other 80% is the protocol's and is inside DefiLlama Revenue."
             />
           </CardContent>
         </Card>
@@ -148,6 +151,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               value={fmtUsd(e.revenue)}
               size="lg"
               sub="DefiLlama Revenue; split 80 / 10 / 10 below"
+              tip="DefiLlama's Revenue for Pendle V2 over the epoch: everything booked at Pendle's treasury, which is gross fees minus the LPs' 20% of swap fees. This is the base the 80 / 10 / 10 policy applies to, and the number valuation multiples call revenue."
             />
           </CardContent>
         </Card>
@@ -158,6 +162,7 @@ export function Revenue({ data }: { data: TrackerData }) {
               value={fmtUsd(gross)}
               size="lg"
               sub={`non-swap + swap; LPs keep ${fmtPct(share(e.lp, gross), 1)} of it`}
+              tip="Everything users paid Pendle over the epoch: YT and other fees plus gross swap fees, before the LP share. This is the fee figure the Valuation section annualises."
             />
           </CardContent>
         </Card>
@@ -167,7 +172,9 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Gross fees, latest complete epoch</Eyebrow>
+              <Eyebrow tip="Where the epoch's gross fees went: non-swap fees all to the protocol, swap fees split 80% protocol and 20% LPs. The two protocol parts together are DefiLlama Revenue.">
+                Gross fees, latest complete epoch
+              </Eyebrow>
               <span className="text-[11px] text-muted-foreground">100% = non-swap + swap</span>
             </div>
             <Split
@@ -182,7 +189,9 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow>Policy split 80 / 10 / 10</Eyebrow>
+              <Eyebrow tip="Pendle's stated split of Revenue: up to 80% to PENDLE buybacks for stakers, 10% to treasury, 10% to operations. The bar is that policy applied to the epoch's Revenue; the lines below it are what actually happened onchain for this epoch.">
+                Policy split 80 / 10 / 10
+              </Eyebrow>
               <span className="text-[11px] text-muted-foreground">100% = DefiLlama Revenue</span>
             </div>
             <Split
@@ -250,7 +259,9 @@ export function Revenue({ data }: { data: TrackerData }) {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
         <Card className="">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow>sPENDLE era, since 29 Jan 2026</Eyebrow>
+            <Eyebrow tip="Totals from the 29 Jan 2026 snapshot, when sPENDLE launched, to now. Fee figures are DefiLlama's daily Pendle V2 data summed; funded, bought and emissions are read from the chain.">
+              sPENDLE era, since 29 Jan 2026
+            </Eyebrow>
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
               <Stat
                 label="Bought back"
@@ -259,6 +270,7 @@ export function Revenue({ data }: { data: TrackerData }) {
                 usd={fmtUsd(r.totals.boughtUsd)}
                 tone="spendle"
                 sub={`over ${r.epochs.filter((x) => x.bought).length} distributions; USD is the USDT spent`}
+                tip="PENDLE the buyback contract received and then staked for stakers, summed over every distribution, with the USDT it spent on the swaps. This is the buyback that has actually happened, against the policy share next to it."
               />
               <Stat
                 label="Buyback funded"
@@ -270,6 +282,7 @@ export function Revenue({ data }: { data: TrackerData }) {
                 label="80% policy share"
                 value={fmtUsd(r.totals.buyback)}
                 sub={`0.8 × Revenue, policy not flow; funded is ${fmtPct(share(r.totals.buybackFunded, r.totals.buyback), 0)} of it`}
+                tip="0.8 × DefiLlama Revenue since the snapshot: what the policy would send to buybacks if applied to every dollar. The gap to Funded is in-kind airdrops passed to stakers as tokens, funding for the current epoch that has not arrived yet, and any shortfall."
               />
               <Stat
                 label="In-kind airdrops"
@@ -280,10 +293,30 @@ export function Revenue({ data }: { data: TrackerData }) {
               />
             </div>
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4 sm:grid-cols-4">
-              <Stat label="Gross fees" value={fmtUsd(r.totals.yt + r.totals.swap)} sub={`non-swap ${fmtUsd(r.totals.yt)}, swap ${fmtUsd(r.totals.swap)}`} />
-              <Stat label="Treasury" value={fmtUsd(r.totals.treasury)} sub="10% policy share of Revenue" />
-              <Stat label="Operations" value={fmtUsd(r.totals.ops)} sub="10% policy share of Revenue" />
-              <Stat label="LP swap fees" value={fmtUsd(r.totals.lp)} sub="20% of gross swap" />
+              <Stat
+                label="Gross fees"
+                value={fmtUsd(r.totals.yt + r.totals.swap)}
+                sub={`non-swap ${fmtUsd(r.totals.yt)}, swap ${fmtUsd(r.totals.swap)}`}
+                tip="All fees users paid Pendle V2 since the snapshot, before the LP share: DefiLlama's daily fees summed across every chain."
+              />
+              <Stat
+                label="Treasury"
+                value={fmtUsd(r.totals.treasury)}
+                sub="10% policy share of Revenue"
+                tip="0.1 × DefiLlama Revenue since the snapshot. A policy figure: the treasury's actual receipts are not read from the chain here."
+              />
+              <Stat
+                label="Operations"
+                value={fmtUsd(r.totals.ops)}
+                sub="10% policy share of Revenue"
+                tip="0.1 × DefiLlama Revenue since the snapshot. A policy figure, the same as Treasury."
+              />
+              <Stat
+                label="LP swap fees"
+                value={fmtUsd(r.totals.lp)}
+                sub="20% of gross swap"
+                tip="DefiLlama's supply-side revenue since the snapshot: the 20% of swap fees that stays with liquidity providers and never reaches the protocol."
+              />
             </div>
             <div className="grid gap-6 border-t border-border pt-4 sm:grid-cols-2">
               <Stat
@@ -302,7 +335,12 @@ export function Revenue({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow className="text-boost">Current AIM assignment</Eyebrow>
+              <Eyebrow
+                className="text-boost"
+                tip="Pendle's Adaptive Incentive Mechanism decides each week how much PENDLE goes to which market and through which stream. This card is the current week's assignment as Pendle's API reports it, not what has been paid out yet."
+              >
+                Current AIM assignment
+              </Eyebrow>
               <span className="text-[11px] text-muted-foreground">{r.aim.markets} markets</span>
             </div>
             <Stat
@@ -332,7 +370,9 @@ export function Revenue({ data }: { data: TrackerData }) {
       <Card className="">
         <CardContent className="px-0">
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
-            <Eyebrow>Every fee epoch</Eyebrow>
+            <Eyebrow tip="One row per 14-day fee epoch since the snapshot, newest first. Fee columns are DefiLlama's daily data summed over the epoch; Funded and Bought are read from the chain and attributed to the epoch as described above. The open epoch is marked in progress.">
+              Every fee epoch
+            </Eyebrow>
             <span className="text-[11px] text-muted-foreground">since 29 Jan 2026</span>
           </div>
           <ExpandableTable

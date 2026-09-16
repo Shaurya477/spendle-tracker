@@ -110,6 +110,7 @@ export function Holders({ data }: { data: TrackerData }) {
               tone="spendle"
               size="lg"
               sub={`${fmtCompact(offMarket)} PENDLE staked, locked, held by Pendle, or escrowed for other chains`}
+              tip="Staked (PENDLE in the sPENDLE contract) + locked (in vePENDLE) + Pendle's multisigs and treasury + investor wallets + bridge escrows + the buyback contract and gauge controller, as a share of total supply. None of it can be sold without first unstaking, unlocking, bridging back, or a Pendle decision."
             />
           </CardContent>
         </Card>
@@ -122,6 +123,7 @@ export function Holders({ data }: { data: TrackerData }) {
               size="lg"
               usd={usdOf(split.exchanges, pendleUsd)}
               sub={`${fmtPct(split.exchanges / split.total, 1)} of supply; ${fmtPct(split.exchanges / (split.exchanges + float), 0)} of what is not staked, locked, held or bridged`}
+              tip="PENDLE in the labelled Binance, Crypto.com and Gate.io wallets on mainnet, from their live balances. Exchange inventory is the most readily sellable supply, but it is customers' deposits, not the exchange's own position. Unlabelled exchange wallets and PENDLE on other chains are not counted."
             />
           </CardContent>
         </Card>
@@ -133,6 +135,7 @@ export function Holders({ data }: { data: TrackerData }) {
               tone="vependle"
               size="lg"
               sub={`Penpie, Equilibria and Stake DAO; ${fmtPct(rows.filter((w) => w.category === "locker").reduce((s, w) => s + w.locked, 0) / vePendle.activeLocked, 0)} of active locked PENDLE`}
+              tip="PENDLE under a live vePENDLE lock in the three liquid-locker protocols' positions, read from the vePENDLE contract. These protocols keep their locks at the maximum, so this PENDLE is the slowest to become liquid and carries the largest share of the boost."
             />
           </CardContent>
         </Card>

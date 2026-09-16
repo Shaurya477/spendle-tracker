@@ -64,6 +64,7 @@ export function Stat({
   usd,
   sub,
   tip,
+  tipLabel,
   tone,
   className,
   size = "md",
@@ -74,13 +75,15 @@ export function Stat({
   usd?: ReactNode;
   sub?: ReactNode;
   tip?: ReactNode;
+  /** Accessible name for the info button when `label` is not a plain string. */
+  tipLabel?: string;
   tone?: "spendle" | "vependle" | "boost";
   className?: string;
   size?: "md" | "lg";
 }) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Eyebrow tip={tip} tipLabel={typeof label === "string" ? label : undefined}>
+      <Eyebrow tip={tip} tipLabel={tipLabel ?? (typeof label === "string" ? label : undefined)}>
         {label}
       </Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-2">

@@ -65,7 +65,12 @@ export function Yield({ data }: { data: TrackerData }) {
         <Card className="">
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Eyebrow className="text-spendle">Plain sPENDLE staker</Eyebrow>
+              <Eyebrow
+                className="text-spendle"
+                tip="What one sPENDLE with no lock earns. Every sPENDLE takes the same share of a distribution, so this is the floor every staker gets; lockers earn a multiple of it."
+              >
+                Plain sPENDLE staker
+              </Eyebrow>
               <span className="text-[11px] text-muted-foreground">sPENDLE earned per sPENDLE held, per year</span>
             </div>
             <div className="grid grid-cols-2 gap-6">
@@ -75,12 +80,14 @@ export function Yield({ data }: { data: TrackerData }) {
                 tone="spendle"
                 size="lg"
                 sub={`${fmtInt(latest.amount)} sPENDLE ÷ ${fmtCompact(latest.eligibleTotal)} eligible × ${EPY}; epoch ${latest.epoch}, ${fmtDate(latest.timestamp)}`}
+                tip="sPENDLE handed to the rewards distributor in the most recent distribution, divided by the reward-eligible total (all sPENDLE + virtual sPENDLE) as it stood in the block before, × 26.09. One epoch's number, so a strong or weak fee fortnight shows here first."
               />
               <Stat
                 label={`Trailing ${y.trailing.epochs} epochs`}
                 value={fmtPct(y.trailing.aprPlain)}
                 size="lg"
                 sub={`mean over ${fmtDate(y.trailing.from)} → ${fmtDate(y.trailing.to)}`}
+                tip={`Arithmetic mean of the last ${y.trailing.epochs} per-epoch plain APRs, each computed against the eligible total of its own epoch. Smooths the fortnight-to-fortnight swing in fees; about three months of history.`}
               />
             </div>
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
@@ -117,12 +124,14 @@ export function Yield({ data }: { data: TrackerData }) {
               tone="boost"
               size="lg"
               sub={`plain ${fmtPct(latest.aprPlain)} × ${fmtMult(latest.avgMultiplier)} average multiplier at the time`}
+              tip="Plain APR of the latest distribution × the average multiplier across all snapshot locks at that moment (virtual sPENDLE ÷ locked PENDLE). A lock with more time left than average earns more than this, one with less earns less; a lock changed after the snapshot keeps its snapshot terms."
             />
             <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
               <Stat
                 label={`Trailing ${y.trailing.epochs} epochs`}
                 value={fmtPct(y.trailing.aprBoostedAvg)}
                 sub={`same ${y.trailing.epochs} epochs, each plain × that epoch's multiplier`}
+                tip={`Mean of the last ${y.trailing.epochs} boosted APRs, each that epoch's plain APR × the average multiplier at that time. The multiplier falls every epoch as the locks run down, so this sits above the latest figure.`}
               />
               <Stat
                 label="Longest lock today"
@@ -141,12 +150,15 @@ export function Yield({ data }: { data: TrackerData }) {
 
         <Card className="">
           <CardContent className="flex flex-col gap-6">
-            <Eyebrow>Latest reward flow</Eyebrow>
+            <Eyebrow tip="The most recent distribution and what is queued for the next one, read from the buyback contract, the staking contract and the rewards distributor.">
+              Latest reward flow
+            </Eyebrow>
             <Stat
               label="Distributed"
               value={fmtInt(latest.amount)}
               unit="sPENDLE"
               size="lg"
+              tip="PENDLE the buyback contract staked in the latest distribution transaction; the sPENDLE it received went to the rewards distributor for stakers to claim. The USDT figure is what the contract spent on swaps between the previous distribution and this one, so the average is a weekly TWAP price, not a print."
               sub={
                 <>
                   bought for {fmtUsd(latest.usdtSpent)} USDT at {fmtUsdPrice(latest.usdtSpent / latest.pendleBought)} average;{" "}
@@ -161,11 +173,13 @@ export function Yield({ data }: { data: TrackerData }) {
                 unit="PENDLE"
                 usd={usdOf(y.pendingBuyback, data.pendleUsd)}
                 sub="bought back, still in the buyback contract"
+                tip="PENDLE balanceOf the buyback contract at the latest block. The hourly TWAP accumulates it between distributions; at the next distribution it is staked and paid out, so this is a floor for the next payout, not the whole of it."
               />
               <Stat
                 label="Next distribution"
                 value={fmtDate(y.nextDistributionEta)}
                 sub={overdue ? "14 days have passed; due any time" : "≈ 14 days after the last"}
+                tip="The latest distribution's timestamp + 14 days. So far distributions have landed on alternate Fridays with gaps between 11.5 and 17 days, so this is an expectation, not a contract deadline."
               />
             </div>
             <div className="border-t border-border pt-4">
@@ -174,6 +188,7 @@ export function Yield({ data }: { data: TrackerData }) {
                 value={fmtInt(y.totalDistributed)}
                 unit="sPENDLE"
                 sub={`${data.distributions.length} distributions; bought for ${fmtUsd(y.totalBuybackUsd)} USDT in total`}
+                tip="Sum of every distribution since the sPENDLE launch on 29 Jan 2026, and the USDT the buyback contract spent to acquire it. Each sPENDLE is one PENDLE; what that PENDLE is worth today is in the Valuation section."
               />
             </div>
           </CardContent>

@@ -57,7 +57,14 @@ export function Hero({ data }: { data: TrackerData }) {
           </dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-muted-foreground">Boosted APR, average locker</dt>
+          <dt className="flex flex-wrap items-center gap-x-1 text-xs font-medium text-muted-foreground">
+            <span>Boosted APR, average locker</span>
+            <InfoTip label="Boosted APR, average locker">
+              Plain APR × the average multiplier across snapshot locks at the latest distribution
+              (virtual sPENDLE ÷ locked PENDLE). Each lock earns 1 + 3 × time remaining ÷ 2 years, so
+              a longer lock than average earns more than this and a shorter one less.
+            </InfoTip>
+          </dt>
           <dd className="font-figure text-3xl text-vependle sm:text-4xl">{fmtPct(y.latest.aprBoostedAvg)}</dd>
           <dd className="text-xs text-muted-foreground">
             plain × {y.latest.avgMultiplier.toFixed(2)}× average multiplier at the latest distribution

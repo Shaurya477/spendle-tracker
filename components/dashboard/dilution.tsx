@@ -57,6 +57,7 @@ export function Dilution({ data }: { data: TrackerData }) {
               tone="vependle"
               size="lg"
               sub={`vs ${fmtPct(dilution.stakerShare, 1)} to plain stakers, who hold ${fmtCompact(sPendle.eligible)} eligible sPENDLE`}
+              tip="Virtual sPENDLE ÷ reward-eligible total: the share of each distribution that goes to snapshot lockers, boost included. The staker share is sPENDLE supply ÷ the same total; the two add to 100%. Lockers' share falls every week as their multipliers decay."
             />
           </CardContent>
         </Card>
@@ -68,6 +69,7 @@ export function Dilution({ data }: { data: TrackerData }) {
               tone="spendle"
               size="lg"
               sub={`from ${fmtPct(y.latest.aprPlain)} today; latest distribution and sPENDLE supply held flat`}
+              tip="The latest distribution amount ÷ (today's sPENDLE supply + the virtual sPENDLE the snapshot schedule implies one year from now) × 26.09. Only the boost decay moves; fees, buybacks and staking are held at today's levels, so this isolates what the fading boost alone does for plain stakers."
             />
           </CardContent>
         </Card>
@@ -78,6 +80,7 @@ export function Dilution({ data }: { data: TrackerData }) {
               value={fmtMult(loyalty.avgMultiplier)}
               size="lg"
               sub={`${fmtMult(loyalty.snapshot.avgMultiplier)} at the ${fmtDate(loyalty.snapshot.timestamp)} snapshot → 1.00× on the last unlock`}
+              tip="Virtual sPENDLE ÷ snapshot-locked PENDLE: the PENDLE-weighted mean of 1 + 3 × remaining ÷ 2 years across every snapshot lock. Each PENDLE locked has this many units of reward weight against a staker's one. It falls linearly between unlock batches and reaches 1× when the last snapshot lock expires."
             />
           </CardContent>
         </Card>
