@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import { ADDRESSES, LLAMA_PRICE_API, PENDLE_API, PENDLE_PRICE_API, SNAPSHOT_TS } from "./config";
+import { ADDRESSES, COINBASE_CANDLES_API, PENDLE_API, PENDLE_PRICE_API, SNAPSHOT_TS } from "./config";
 
 export type AirdropToken = { token: string; amount: number; valueInUSD: number };
 
@@ -58,37 +58,37 @@ export async function fetchPendleUsd(): Promise<number> {
 export type PricePoint = { t: number; price: number };
 
 /**
- * Daily PENDLE/USD closes since the snapshot, from DefiLlama's coins feed.
- *
- * The origin has bad minutes in which it drops everything before a fixed date (21 May 2026 as of
- * Sep 2026). Every short body seen so far was the first read of a URL the origin had not served
- * before, and reads a few seconds later were complete, so this looks like an origin cache that has
- * to warm the old months. Cloudflare then caches whatever body it got, per URL, for hours. Hence:
- * the start of what comes back is checked; `end` is the exact block time, so each recompute is a
- * URL nobody has cached; a short body is asked for again a few seconds later under a fresh URL;
- * four short bodies in a row is a failure. Anchoring on `end` rather than `start` also avoids a
- * separate truncation seen when a start-anchored span ran past today.
+ * Daily PENDLE/USD closes since the snapshot, from Coinbase Exchange's public candles. Each point is
+ * a UTC day's close, timestamped at the end of that day; the day in progress closes at `now`.
+ * Coinbase answers at most 300 candles per request, so the range is walked in 300-day windows.
+ * (DefiLlama's chart endpoint was the source until Sep 2026; its origin intermittently dropped every
+ * point before a fixed date, for minutes at a time, and took the page down twice.)
  */
 export async function fetchPendleUsdHistory(now: number): Promise<PricePoint[]> {
-  const since = Number(SNAPSHOT_TS) - 86_400;
-  const days = Math.ceil((now - Number(SNAPSHOT_TS)) / 86_400) + 3;
-  let first = 0;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 3000));
-    const end = now - attempt;
-    const data = await getJson<{ coins: Record<string, { prices: { timestamp: number; price: number }[] }> }>(
-      `${LLAMA_PRICE_API}?end=${end}&span=${days}&period=1d`,
-    );
-    const coin = Object.values(data.coins)[0];
-    if (!coin || coin.prices.length < 2) throw new Error("DefiLlama returned no PENDLE price history");
-    first = coin.prices[0].timestamp;
-    if (first <= Number(SNAPSHOT_TS) + 2 * 86_400) {
-      // Keep one point at or before the snapshot so the first buys have a neighbour, drop the rest.
-      return coin.prices.filter((p) => p.timestamp >= since).map((p) => ({ t: p.timestamp, price: p.price }));
-    }
-    console.warn(`DefiLlama price history short on attempt ${attempt + 1}: ${coin.prices.length} points from ${new Date(first * 1000).toISOString().slice(0, 10)}`);
+  const DAY = 86_400;
+  const since = Number(SNAPSHOT_TS) - DAY;
+  const iso = (t: number) => new Date(t * 1000).toISOString();
+  const points: PricePoint[] = [];
+  for (let from = since; from < now; from += 300 * DAY) {
+    const to = Math.min(from + 300 * DAY, now);
+    const res = await fetch(`${COINBASE_CANDLES_API}?granularity=${DAY}&start=${iso(from)}&end=${iso(to)}`, {
+      cache: "no-store",
+      headers: { "User-Agent": "penconomics/1.0" },
+    });
+    if (!res.ok) throw new Error(`Coinbase candles → HTTP ${res.status}`);
+    // [time, low, high, open, close, volume], newest first.
+    const candles = (await res.json()) as [number, number, number, number, number, number][];
+    for (const c of candles) points.push({ t: Math.min(c[0] + DAY, now), price: c[4] });
   }
-  throw new Error(`DefiLlama price history starts ${new Date(first * 1000).toISOString().slice(0, 10)}, after the snapshot`);
+  points.sort((a, b) => a.t - b.t);
+  const expected = Math.floor((now - since) / DAY);
+  if (points.length < expected - 2) {
+    throw new Error(`Coinbase returned ${points.length} daily PENDLE-USD closes, expected about ${expected}`);
+  }
+  if (points[0].t > Number(SNAPSHOT_TS) + DAY) {
+    throw new Error(`Coinbase price history starts ${iso(points[0].t).slice(0, 10)}, after the snapshot`);
+  }
+  return points;
 }
 
 /**

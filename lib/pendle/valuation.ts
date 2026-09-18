@@ -76,8 +76,8 @@ export function buildValuation(input: {
   if (closed.length < 2) throw new Error("Valuation needs at least two closed buyback funding windows");
   const recent = distributions.slice(-6);
 
-  // DefiLlama's daily points are not pinned to midnight and occasionally skip a day, so each buy is
-  // matched to the nearest point in time rather than to a calendar day.
+  // Each buy is matched to the nearest daily close in time, so a missing day or a buy near midnight
+  // still finds a neighbour.
   const sorted = [...priceHistory].sort((a, b) => a.t - b.t);
   const priceAt = (t: number) => {
     let lo = 0;
